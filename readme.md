@@ -1,6 +1,6 @@
 # Eco Discord Lazy Consensus Bot
 
-The Eco Discord Lazy Consensus Bot is a Discord bot that helps communities make decisions by implementing the Lazy Consensus decision-making process. It allows users to submit grant proposals and have them approved if there are no objections after a certain period of time.
+The Eco Discord Lazy Consensus Bot is a Discord bot that helps communities make decisions by implementing the Lazy Consensus decision-making process. It allows users to submit grant proposals and have them approved if there are no objections after a certain period of time. It was developed for [Eco](https://eco.org/) Discord community.
 
 ## Getting Started
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
@@ -28,3 +28,6 @@ These instructions will get you a copy of the project up and running on your loc
 
 5. To stop the bot, use shutdown.sh.
 `./shutdown.sh`
+
+## Contributing
+Contributions are welcome! Feel free to create pull requests or reach out. Also you can always [buy me a coffee](https://www.buymeacoffee.com/a.nisnevich).
