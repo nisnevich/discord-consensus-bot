@@ -24,7 +24,7 @@ chmod 600 token.txt # You should make it only readable by you
 
 3. Run startup.sh to install dependencies and start the project.
 ```
-./startup.sh
+./startup.sh # Made with Debian-based systems in mind
 ```
 
 4. Use bot from Discord:
