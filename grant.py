@@ -16,7 +16,9 @@ conn = db_utils.connect_db()
 
 
 @client.command()
-async def grant(client, channel_id, message_id, mention: discord.User, amount: int, *, description=""):
+async def grant_send(
+    client, channel_id, message_id, mention: discord.User, amount: int, *, description=""
+):
     """
     Approve a grant proposal by adding the amount to the mentioned user.
 
@@ -33,7 +35,9 @@ async def grant(client, channel_id, message_id, mention: discord.User, amount: i
     grant_proposal = grant_proposals.get(message_id)
     if not grant_proposal:
         # Send error message if grant proposal is not found
-        await original_message.channel.send("Error: grant proposal not found.", reply=original_message)
+        await original_message.channel.send(
+            "Error: grant proposal not found.", reply=original_message
+        )
         logger.error("Grant proposal not found. message_id=%d", message_id)
         return
 

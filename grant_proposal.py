@@ -16,6 +16,7 @@ logger.addHandler(log_handler)
 
 conn = db_utils.connect_db()
 
+
 @client.command()
 async def approve_grant_proposal(message_id, channel_id, mention, amount, description):
     """
@@ -32,9 +33,10 @@ async def approve_grant_proposal(message_id, channel_id, mention, amount, descri
         conn.commit()
     if message_id in grant_proposals:
         # Approve grant proposal
-        await client.get_command("grant")(channel_id, message_id, mention, amount, description=description)
+        await client.get_command("grant_send")(
+            channel_id, message_id, mention, amount, description=description
+        )
         del grant_proposals[message_id]
-
 
 
 @client.command()
@@ -52,7 +54,9 @@ async def grant_proposal(client, ctx, mention, amount, *, description=""):
 
         # Validity checks
         if not validate_roles(ctx.message.author):
-            await original_message.channel.send("Error: You do not have the required role to use this command.")
+            await original_message.channel.send(
+                "Error: You do not have the required role to use this command."
+            )
             logger.warning("Unauthorized user. message_id=%d", original_message.id)
             return
         if not validate_grant_message(ctx, original_message, amount):
@@ -82,7 +86,11 @@ async def grant_proposal(client, ctx, mention, amount, *, description=""):
             ctx.message.channel.id,
         )
 
-        client.loop.create_task(approve_grant_proposal(ctx.message.id, ctx.message.channel.id, mention, amount, description))
+        client.loop.create_task(
+            approve_grant_proposal(
+                ctx.message.id, ctx.message.channel.id, mention, amount, description
+            )
+        )
 
         # Send confirmation message
         await original_message.channel.send(
@@ -94,6 +102,8 @@ async def grant_proposal(client, ctx, mention, amount, *, description=""):
         )
 
     except Exception as e:
-        await ctx.send("Error: An unexpected error occurred, proposal wasn't added. cc " + RESPONSIBLE_MENTION, reply=ctx.message)
+        await ctx.send(
+            "Error: An unexpected error occurred, proposal wasn't added. cc " + RESPONSIBLE_MENTION,
+            reply=ctx.message,
+        )
         logger.critical("An error occurred", exc_info=True)
-
