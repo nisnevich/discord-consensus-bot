@@ -51,7 +51,7 @@ fi
 
 # Run main.py with pm2 (and log any output of this command in a bright color to distinguish it easily)
 echo -e "\033[1;33m"
-pm2 start main.py --name "eco-lazy-consensus-bot"
+pm2 start main.py --interpreter python3 --name "eco-lazy-consensus-bot"
 echo -e "\033[0m"
 
 # Save the current process list
