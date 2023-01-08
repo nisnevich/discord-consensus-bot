@@ -4,6 +4,8 @@ A Discord bot that helps communities make decisions by implementing the [Lazy Co
 
 The bot is developed specifically for [Eco](https://eco.org/) Discord community. You can [join](http://discord.eco.org/) to see it in action.
 
+To improve sustainability, the bot uses PM2. If the script or system crashes, PM2 will restore the execution and any pending proposals will be recovered from the database, preserving the timer.
+
 ## Getting Started
 These instructions will get you a copy of the project up and running on your machine.
 
