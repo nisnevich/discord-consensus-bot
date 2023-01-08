@@ -5,6 +5,13 @@ if ! command -v python3 &> /dev/null; then
   echo "Installing python3..."
   apt-get update
   apt-get install python3 -y
+  echo "Adding python3 to PATH..."
+  export PATH=$PATH:/usr/bin/python3
+fi
+# Check if python is available in path, or drop error otherwise
+if ! command -v python3 &> /dev/null; then
+    echo "ERROR: Python3 not found in PATH!"
+    exit 1
 fi
 if ! command -v pip3 &> /dev/null; then
   echo "Installing pip3..."
@@ -25,15 +32,27 @@ if ! command -v pm2 &> /dev/null; then
   npm install -g pm2
 fi
 
-# Install required python packages
-echo "Installing required python packages..."
-pip3 install -r requirements.txt
+# Check if requirements.txt packages are installed before installing them
+if [ ! -f /requirements.txt ]; then 
+    echo "Checking if required python packages are installed..."
+    for package in $(cat requirements.txt); do
+        if ! pip freeze | grep -q "$package"; then
+            echo "Installing required python package: $package"
+            pip3 install "$package"
+        fi
+    done
+fi
 
-# Set up pm2 to run on reboot
-pm2 startup
+# Check if "pm2 startup" was already set up before running it
+if ! command -v pm2 startup &> /dev/null; then
+    # Set up pm2 to run on reboot
+    pm2 startup
+fi
 
-# Run main.py with pm2
+# Run main.py with pm2 (and log any output of this command in a bright color to distinguish it easily)
+echo -e "\033[1;33m"
 pm2 start main.py --name "eco-lazy-consensus-bot"
+echo -e "\033[0m"
 
 # Save the current process list
 pm2 save
