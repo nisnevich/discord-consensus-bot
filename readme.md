@@ -1,6 +1,6 @@
 # Eco Discord Lazy Consensus Bot
 
-A Discord bot that helps communities make decisions by implementing the [Lazy Consensus](https://community.apache.org/committers/lazyConsensus.html) decision-making process. It allows users to submit grant proposals and have them approved if there are no objections after a certain period of time. This approach is used by open source projects such as Apache Foundation. 
+This Discord bot helps communities make faster and more efficient decisions using the [Lazy Consensus](https://community.apache.org/committers/lazyConsensus.html) process. Users can submit proposals and have them automatically approved if there are no objections. This approach, used by leading open-source projects, saves time by eliminating the need for explicit voting.
 
 The bot is developed specifically for [Eco](https://eco.org/) Discord community. You can [join](http://discord.eco.org/) to see it in action.
 
