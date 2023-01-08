@@ -32,28 +32,23 @@ def main():
 
     # Load pending grant proposals from database
 
-    cursor = conn.execute("SELECT id, mention, amount, description, timer, channel_id FROM grant_proposals")
+    cursor = conn.execute(
+        "SELECT id, mention, amount, description, timer, channel_id FROM grant_proposals"
+    )
     for row in cursor:
         grant_proposals[row[0]] = {
             "mention": row[1],
             "amount": row[2],
             "description": row[3],
             "timer": row[4],
-            "channel_id": row[5]
+            "channel_id": row[5],
         }
         # Start background task to approve grant proposals
         client.loop.create_task(approve_grant_proposal(row[0], row[5], row[1], row[2], row[3]))
     logger.info("Loaded %d pending grant proposals from database", len(grant_proposals))
 
-
-
     # Read token from file and start the bot
-    # TODO secure the file with permissions
-    # TODO run pm2 startup
-    # pm2 start script.py --name
-    # pm2 startup
-
-    with open("token.txt", "r") as f:
+    with open("token", "r") as f:
         token = f.read().strip()
     client.run(token)
     logger.info("Bot is up.")
