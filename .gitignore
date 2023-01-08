@@ -1,0 +1,7 @@
+token.txt
+**/__pycache__/
+logs/
+.project
+.pydevproject
+venv/
+.idea/

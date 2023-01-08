@@ -1,1 +1,30 @@
+# Eco Discord Lazy Consensus Bot
 
+The Eco Discord Lazy Consensus Bot is a Discord bot that helps communities make decisions by implementing the Lazy Consensus decision-making process. It allows users to submit grant proposals and have them approved if there are no objections after a certain period of time.
+
+## Getting Started
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+
+1. Clone the project:
+`git clone https://github.com/<project-url>`
+
+2. Create token.txt file with your bot's token:
+`echo <TOKEN> > token.txt`
+`chmod 600 token.txt # You should make it only readable by you`
+
+3. Run startup.sh to install dependencies and start the project.
+`./startup.sh`
+
+### Dependencies:
+- [Node.js](https://nodejs.org)
+- [npm](https://www.npmjs.com)
+- [PM2](https://pm2.io)
+- [Python 3.6](https://www.python.org/downloads/release/python-360/) or higher
+- [sqlite3](https://www.sqlite.org)
+
+4. The bot has the following commands:
+- `!grant_proposal <mention> <amount> [description]`: Submit a grant proposal to the Discord channel. The proposal will be approved after GRANT_PROPOSAL_TIMER_SECONDS unless a L3 member reacts with a :x: emoji to the original message or the confirmation message.
+- `!grant <mention> <amount> [description]`: Approve a grant and send the funds to the mentioned user. In Eco Discord there's another bot that understands this command.
+
+5. To stop the bot, use shutdown.sh.
+`./shutdown.sh`
