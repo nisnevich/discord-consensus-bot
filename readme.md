@@ -19,13 +19,17 @@ chmod 600 token.txt # You should make it only readable by you
 ```
 
 3. Run startup.sh to install dependencies and start the project.
-`./startup.sh`
+```
+./startup.sh
+```
 
 4. Use bot from Discord:
 - `!grant_proposal <mention> <amount> [description]`: Submit a grant proposal. The proposal will be approved after GRANT_PROPOSAL_TIMER_SECONDS unless a L3 member reacts with a :x: emoji to the original message or the confirmation message.
 
 5. To stop the bot, use shutdown.sh.
-`./shutdown.sh`
+```
+./shutdown.sh
+```
 
 ### Dependencies:
 - [Node.js](https://nodejs.org)
