@@ -6,10 +6,12 @@ The Eco Discord Lazy Consensus Bot is a Discord bot that helps communities make 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 1. Clone the project:
-`git clone https://github.com/<project-url>`
+`git clone https://github.com/nisnevich/eco-discord-lazy-consensus-bot`
 
 2. Create token.txt file with your bot's token:
+
 `echo <TOKEN> > token.txt`
+
 `chmod 600 token.txt # You should make it only readable by you`
 
 3. Run startup.sh to install dependencies and start the project.
