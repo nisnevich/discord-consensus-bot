@@ -1,6 +1,8 @@
 # Eco Discord Lazy Consensus Bot
 
-This Discord bot helps communities make faster and more efficient decisions using the [Lazy Consensus](https://community.apache.org/committers/lazyConsensus.html) process. Users can submit proposals and have them automatically approved if there are no objections. This approach, used by leading open-source projects, saves time by eliminating the need for explicit voting.
+This Discord bot helps communities make faster and more efficient decisions using the Lazy Consensus process. Users can submit proposals and have them automatically approved if there are no objections. This approach, used by leading open-source [projects](https://community.apache.org/committers/lazyConsensus.html), saves time by eliminating the need for explicit voting:
+
+> The key thing about lazy consensus is that it’s easier for people to agree by doing nothing, than it is to object, which requires them to propose an alternative. This has two effects: first, people are less likely to object for the sake of objecting and, second, it cuts down on the amount of unnecessary email traffic and discussion.
 
 The bot is developed specifically for [Eco](https://eco.org/) Discord community. You can [join](http://discord.eco.org/) to see it in action.
 
