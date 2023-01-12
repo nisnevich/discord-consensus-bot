@@ -5,3 +5,6 @@ logs/
 .pydevproject
 venv/
 .idea/
+lazy-consensus-bot.db
+question-about-error.txt
+

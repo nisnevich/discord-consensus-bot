@@ -4,7 +4,7 @@ from discord import User
 from discord.ext import commands
 from discord.utils import find
 
-from logging_config import log_handler
+from utils.logging_config import log_handler
 from utils.const import ROLE_IDS_ALLOWED
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,9 @@ async def validate_grant_message(original_message, amount: str) -> bool:
     # Check if mention is a valid user
     user = original_message.mentions[0]
     if user is None:
-        await original_message.channel.send("Error: Invalid mention, unable to resolve username.", reply=original_message)
+        await original_message.channel.send(
+            "Error: Invalid mention, unable to resolve username.", reply=original_message
+        )
         return False
 
     # Check if amount is a positive integer
