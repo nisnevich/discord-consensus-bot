@@ -6,7 +6,7 @@ from discord.ext import commands
 
 from utils.const import *
 import utils.db_utils
-from main import grant_proposals
+from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
 from utils import db_utils
 from utils.logging_config import log_handler
 from utils.validation import validate_roles, validate_grant_message
@@ -21,7 +21,11 @@ async def approve_grant_proposal(message_id, channel_id, mention, amount, descri
     """
     Loop until the timer reaches GRANT_PROPOSAL_TIMER_SECONDS days. Every minute, the timer is incremented by 60 seconds and updated in the database. If the timer ends, the grant proposal is approved and the entry is removed from the dictionary and database.
     """
-    grant_proposal = grant_proposals[message_id]
+    try:
+        grant_proposal = get_grant_proposal(message_id)
+    except ValueError as e:
+        logger.error(f"Error while getting grant proposal: {e}")
+        return
     while grant_proposal["timer"] < utils.GRANT_PROPOSAL_TIMER_SECONDS:
         await asyncio.sleep(utils.GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
         grant_proposal["timer"] += utils.GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
@@ -30,10 +34,11 @@ async def approve_grant_proposal(message_id, channel_id, mention, amount, descri
             (grant_proposal["timer"], message_id),
         )
         conn.commit()
-    if message_id in grant_proposals:
-        # Approve grant proposal
+    try:
         await grant(channel_id, message_id, mention, amount, description=description)
-        del grant_proposals[message_id]
+        remove_grant_proposal(message_id)
+    except ValueError as e:
+        logger.error(f"Error while removing grant proposal: {e}")
 
 
 @client.command()
@@ -60,14 +65,9 @@ async def grant_proposal(client, ctx, mention, amount, *, description=""):
             return
 
         # Add grant proposal to dictionary and database
-        grant_proposals[ctx.message.id] = {
-            "mention": mention,
-            "amount": amount,
-            "description": description,
-            "timer": 0,  # Add timer field to store elapsed time
-            "message_id": ctx.message.id,
-            "channel_id": ctx.message.channel.id,
-        }
+        add_grant_proposal(
+            ctx.message.id, ctx.message.channel.id, mention, amount, description, timer=0
+        )
         conn.execute(
             "INSERT INTO grant_proposals (mention, amount, description, timer, message_id, channel_id) VALUES (?, ?, ?, ?, ?, ?)",
             (mention, amount, description, 0, ctx.message.id, ctx.message.channel.id),

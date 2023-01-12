@@ -1,4 +1,4 @@
-import const
+from utils import const
 import sqlite3
 import atexit
 

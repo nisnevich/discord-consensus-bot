@@ -3,7 +3,7 @@ import logging
 import discord
 from discord import client
 
-from main import grant_proposals
+from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
 from utils import db_utils
 from utils.const import RESPONSIBLE_MENTION
 from utils.logging_config import log_handler
@@ -29,10 +29,9 @@ async def grant(
 
     original_message = await client.get_channel(channel_id).fetch_message(message_id)
 
-    # Check if grant proposal exists
-    grant_proposal = grant_proposals.get(message_id)
-    if not grant_proposal:
-        # Send error message if grant proposal is not found
+    try:
+        grant_proposal = get_grant_proposal(message_id)
+    except ValueError as e:
         await original_message.channel.send(
             "Error: grant proposal not found.", reply=original_message
         )
@@ -66,7 +65,11 @@ async def grant(
         return
 
     # Remove grant proposal from dictionary and database
-    del grant_proposals[message_id]
+    try:
+        remove_grant_proposal(message_id)
+    except ValueError as e:
+        logger.critical(f"Error while removing grant proposal: {e}")
+        return
     conn.execute("DELETE FROM grant_proposals WHERE id = ?", (message_id,))
     conn.commit()
     logger.info("Successfully applied grant. message_id=%d", message_id)

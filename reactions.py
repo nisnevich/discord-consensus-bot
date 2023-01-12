@@ -3,7 +3,7 @@ import logging
 import discord
 from discord import client
 
-from main import grant_proposals
+from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
 from utils import db_utils
 from utils.logging_config import log_handler
 from utils.validation import validate_roles
@@ -28,11 +28,11 @@ async def on_raw_reaction_add(client, payload):
     # Check if the reaction was made to the original grant proposal message or the confirmation message
     # If the reaction was made to the confirmation message, we need to get the original grant proposal message
     original_message_id = payload.message_id
-    if payload.message_id in grant_proposals:
-        original_message_id = grant_proposals[payload.message_id]["message_id"]
-
-    # Check if message is a pending grant proposal
-    if original_message_id not in grant_proposals:
+    try:
+        proposal = get_grant_proposal(payload.message_id)
+        original_message_id = proposal["message_id"]
+    except ValueError as e:
+        logger.critical(f"Error while getting grant proposal: {e}")
         return
 
     # Get member object and validate roles
@@ -41,8 +41,14 @@ async def on_raw_reaction_add(client, payload):
     if not validate_roles(member):
         return
 
-    # Cancel grant proposal
-    del grant_proposals[original_message_id]
+    try:
+        remove_grant_proposal(original_message_id)
+    except ValueError as e:
+        logger.critical(
+            f"A cancel emoji was added to the response of the bot, but the original grant proposal message couldn't be found in the list of active proposals: {e}"
+        )
+        return
+
     conn.execute("DELETE FROM grant_proposals WHERE id = ?", (original_message_id,))
     conn.commit()
     logger.info("Cancelled grant proposal. message_id=%d", original_message_id)
@@ -52,10 +58,9 @@ async def on_raw_reaction_add(client, payload):
         original_message_id
     )
     await original_message.channel.send(
-        f"Proposal was cancelled by {member.mention} (friendly reminder: please make sure you explain why it was cancelled).",
+        f"Proposal was cancelled by {member.mention} (friendly reminder: please make sure to explain why it was cancelled).",
         reply_to_message_id=original_message.id,
     )
     logger.info(
         "Confirmed cancellation of grant proposal in chat. message_id=%d", original_message_id
     )
-
