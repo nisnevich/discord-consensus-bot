@@ -23,9 +23,6 @@ def main():
     conn.execute(
         "CREATE TABLE IF NOT EXISTS grant_proposals (id INTEGER PRIMARY KEY, mention TEXT, amount INTEGER, description TEXT)"
     )
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS grants (id INTEGER PRIMARY KEY, mention TEXT, amount INTEGER, description TEXT)"
-    )
 
     # Create bot client
     client = commands.Bot(command_prefix='!')

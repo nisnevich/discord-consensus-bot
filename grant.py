@@ -15,15 +15,13 @@ logger.addHandler(log_handler)
 conn = db_utils.connect_db()
 
 
-@client.command()
-async def grant_send(
+async def grant(
     client, channel_id, message_id, mention: discord.User, amount: int, *, description=""
 ):
     """
     Approve a grant proposal by adding the amount to the mentioned user.
 
     Parameters:
-    ctx (commands.Context): The context of the command.
     mention (str): The mention of the user to grant the amount to.
     amount (str): The amount to grant.
     description (str): The optional description of the grant.

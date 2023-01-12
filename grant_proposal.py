@@ -17,7 +17,6 @@ logger.addHandler(log_handler)
 conn = db_utils.connect_db()
 
 
-@client.command()
 async def approve_grant_proposal(message_id, channel_id, mention, amount, description):
     """
     Loop until the timer reaches GRANT_PROPOSAL_TIMER_SECONDS days. Every minute, the timer is incremented by 60 seconds and updated in the database. If the timer ends, the grant proposal is approved and the entry is removed from the dictionary and database.
@@ -33,9 +32,7 @@ async def approve_grant_proposal(message_id, channel_id, mention, amount, descri
         conn.commit()
     if message_id in grant_proposals:
         # Approve grant proposal
-        await client.get_command("grant_send")(
-            channel_id, message_id, mention, amount, description=description
-        )
+        await grant(channel_id, message_id, mention, amount, description=description)
         del grant_proposals[message_id]
 
 
