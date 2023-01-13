@@ -71,19 +71,20 @@ async def grant_proposal(client, ctx, mention, amount, *, description=""):
             ctx.message.id, ctx.message.channel.id, mention, amount, description, timer=0
         )
         conn.execute(
-            "INSERT INTO grant_proposals (mention, amount, description, timer, message_id, channel_id) VALUES (?, ?, ?, ?, ?, ?)",
-            (mention, amount, description, 0, ctx.message.id, ctx.message.channel.id),
+            "INSERT INTO grant_proposals (message_id, mention, amount, description, timer, channel_id) VALUES (?, ?, ?, ?, ?, ?)",
+            (ctx.message.id, mention, amount, description, 0, ctx.message.channel.id),
         )
         conn.commit()
         logger.info(
-            "Inserted data: mention=%s, amount=%d, description=%s, timer=%d, message_id=%d, channel_id=%d",
+            "Inserted data: message_id=%d, mention=%s, amount=%d, description=%s, timer=%d, channel_id=%d",
+            ctx.message.id,
             mention,
             amount,
             description,
             0,
-            ctx.message.id,
             ctx.message.channel.id,
         )
+        # TODO backup DB somewhere remote after inserting or deleting any grant proposal, so if it gets lots then no proposals would be lost (if the timer will reset it's not a big deal compared to wasting proposals themselves)
 
         client.loop.create_task(
             approve_grant_proposal(
