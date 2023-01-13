@@ -7,12 +7,14 @@ from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_gra
 from utils import db_utils
 from utils.const import RESPONSIBLE_MENTION
 from utils.logging_config import log_handler
+from utils.bot_utils import get_discord_client
 
 logger = logging.getLogger(__name__)
 
 logger.addHandler(log_handler)
 
 conn = db_utils.connect_db()
+client = get_discord_client()
 
 
 async def grant(

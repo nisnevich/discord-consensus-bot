@@ -7,6 +7,7 @@ from grant_proposal import approve_grant_proposal
 from utils import db_utils
 from utils.logging_config import log_handler
 from utils.grant_utils import get_grant_proposal, add_grant_proposal, get_grant_proposals_count
+from utils.bot_utils import get_discord_client
 
 logger = logging.getLogger(__name__)
 logger.addHandler(log_handler)
@@ -24,10 +25,9 @@ def main():
     )
 
     # Create bot client
-    client = commands.Bot(command_prefix='!')
+    client = get_discord_client()
 
     # Load pending grant proposals from database
-
     cursor = conn.execute(
         "SELECT id, mention, amount, description, timer, channel_id FROM grant_proposals"
     )
