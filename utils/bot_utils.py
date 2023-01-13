@@ -1,15 +1,23 @@
 import discord
 from discord.ext import commands
+from typing import Optional
 
 client = None
 
 
 def get_discord_client(prefix: Optional[str] = "!") -> commands.Bot:
     """
-    Initialize and return an instance of Discord bot client.
+    Initialize and return an instance of Discord bot client with the permissions that are needed for
+    the application.
     """
+    global client
+
     if client is None:
-        client = commands.Bot(prefix)
+        intents = discord.Intents.default()
+        intents.members = True
+        intents.messages = True
+        intents.emojis = True
+        client = commands.Bot(prefix, intents=intents)
 
     # Add validation for the client
     if not isinstance(client, commands.Bot):
