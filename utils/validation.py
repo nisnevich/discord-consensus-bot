@@ -8,6 +8,7 @@ from utils.logging_config import log_handler
 from utils.const import ROLE_IDS_ALLOWED
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
 
