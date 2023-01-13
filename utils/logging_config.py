@@ -8,6 +8,7 @@ if not os.path.exists(LOG_PATH):
     os.makedirs(os.path.dirname(LOG_PATH))
 
 log_handler = RotatingFileHandler(LOG_PATH, mode='a', maxBytes=LOG_FILE_SIZE, backupCount=5)
+log_handler.setLevel(logging.INFO)
 
 # Set the log level and format
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')

@@ -3,7 +3,7 @@ import logging
 from discord.ext import commands
 
 # These imports are needed to make Discord client know about the implemented methods.
-from grant_proposal import approve_grant_proposal
+from grant_proposal import approve_grant_proposal, grant_proposal
 from utils import db_utils
 from utils.logging_config import log_handler
 from utils.grant_utils import get_grant_proposal, add_grant_proposal, get_grant_proposals_count

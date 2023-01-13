@@ -51,6 +51,7 @@ async def grant(
         try:
             await original_message.channel.send(grant_message, reply=original_message)
             success = True
+            # TODO add "green tick" reaction to the original grant proposal message when succeed
             break
         except Exception:
             logger.critical("An error occurred while sending grant message", exc_info=True)
