@@ -9,6 +9,7 @@ from utils.logging_config import log_handler
 from utils.grant_utils import get_grant_proposal, add_grant_proposal, get_grant_proposals_count
 from utils.bot_utils import get_discord_client
 
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)

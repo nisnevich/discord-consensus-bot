@@ -7,17 +7,15 @@ client = None
 
 def get_discord_client(prefix: Optional[str] = "!") -> commands.Bot:
     """
-    Initialize and return an instance of Discord bot client with the permissions that are needed for
-    the application.
+    Initialize and return an instance of Discord bot client with the permissions that are needed for the application.
     """
     global client
 
     if client is None:
-        intents = discord.Intents.default()
-        intents.members = True
-        intents.messages = True
-        intents.emojis = True
-        client = commands.Bot(prefix, intents=intents)
+        intents = discord.Intents.all()
+        # To use Intents.default() instead of .all(), enable priveliged message content manually:
+        # intents.message_content = True
+        client = commands.Bot(command_prefix=prefix, intents=intents)
 
     # Add validation for the client
     if not isinstance(client, commands.Bot):

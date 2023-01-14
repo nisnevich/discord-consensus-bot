@@ -1,7 +1,6 @@
 import asyncio
 import logging
 
-from discord import client
 from discord.ext import commands
 
 from utils.const import *
@@ -44,7 +43,7 @@ async def approve_grant_proposal(message_id, channel_id, mention, amount, descri
         logger.error(f"Error while removing grant proposal: {e}")
 
 
-@client.command(name='grant-proposal')
+@client.command(name='propose')
 async def grant_proposal(ctx, mention, amount, *, description=""):
     """
     Submit a grant proposal to the Discord channel. The proposal will be approved after GRANT_PROPOSAL_TIMER_SECONDS unless a L3 member reacts with a :x: emoji to the original message or the confirmation message.
@@ -54,7 +53,6 @@ async def grant_proposal(ctx, mention, amount, *, description=""):
         amount (str): The amount of the grant being proposed.
         description (str, optional): The description of the grant being proposed.
     """
-    print("I see command")
     try:
         original_message = await ctx.fetch_message(ctx.message.id)
 
