@@ -43,8 +43,19 @@ async def approve_grant_proposal(message_id, channel_id, mention, amount, descri
         logger.error(f"Error while removing grant proposal: {e}")
 
 
+COMMAND_FORMAT_RESPONSE = """Hi @author, this command should look like: \"!propose \@mention amount description\":
+- \@mention - the user you would like to reward.
+- amount - how many points you would like to give him.
+- description - just some description of the grant, so others will know what is it about. I'll post it when (if) the grant will be applied.
+
+Examples:
+!propose @author 100
+!propose @author 100 for using Lazy Consensus bot
+"""
+
+
 @client.command(name='propose')
-async def grant_proposal(ctx, mention, amount, *, description=""):
+async def grant_proposal(ctx, mention=None, amount=None, *, description=""):
     """
     Submit a grant proposal to the Discord channel. The proposal will be approved after GRANT_PROPOSAL_TIMER_SECONDS unless a L3 member reacts with a :x: emoji to the original message or the confirmation message.
     Parameters:
@@ -57,13 +68,16 @@ async def grant_proposal(ctx, mention, amount, *, description=""):
         original_message = await ctx.fetch_message(ctx.message.id)
 
         # Validity checks
-        if not validate_roles(ctx.message.author):
-            await original_message.channel.send(
-                "Error: You do not have the required role to use this command."
-            )
+        if not await validate_roles(ctx.message.author):
+            await original_message.reply("Error: you must have Layer 3 role to use this command.")
             logger.warning("Unauthorized user. message_id=%d", original_message.id)
             return
-        if not validate_grant_message(ctx, original_message, amount):
+        if not mention or not amount:
+            await original_message.reply(
+                COMMAND_FORMAT_RESPONSE.format(author=ctx.message.author.mention)
+            )
+            return
+        if not await validate_grant_message(ctx, original_message, amount):
             return
 
         # Add grant proposal to dictionary and database

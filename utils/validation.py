@@ -14,9 +14,8 @@ logger.addHandler(log_handler)
 
 async def validate_grant_message(original_message, amount: str) -> bool:
     """
-    Validate grant message to check if it is a valid grant message.
+    Validate grant message - mention, amount etc.
     Parameters:
-        ctx (commands.Context): The context in which the grant proposal message was sent.
         amount (str): The amount of the grant being proposed.
 
     Returns:
@@ -25,15 +24,14 @@ async def validate_grant_message(original_message, amount: str) -> bool:
     # Check if mention is a valid user
     user = original_message.mentions[0]
     if user is None:
-        await original_message.channel.send(
-            "Error: Invalid mention, unable to resolve username.", reply=original_message
-        )
+        await original_message.reply("Error: invalid mention, unable to resolve username.")
+        logger.info("Invalid mention. message_id=%d", original_message.id)
         return False
 
     # Check if amount is a positive integer
     if not amount.isdigit() or int(amount) <= 0:
-        await original_message.channel.send("Error: Invalid amount, should be positive integer.")
-        logger.warning("Invalid amount. message_id=%d", original_message.id)
+        await original_message.reply("Error: invalid amount, should be positive integer.")
+        logger.info("Invalid amount. message_id=%d", original_message.id)
         return False
     return True
 
