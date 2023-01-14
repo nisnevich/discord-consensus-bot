@@ -1,4 +1,5 @@
 # L3 or Eco role
+# TODO: change roles back to Eco Discord when testing is done
 ROLE_IDS_ALLOWED = 1063903240925749389
 #  ROLE_IDS_ALLOWED = (812675567438659624, 1038497110754086913)
 
@@ -9,5 +10,6 @@ LOG_PATH = "logs/lazy-consensus-bot.log"
 LOG_FILE_SIZE = 1024 * 1024 * 10
 DB_NAME = "lazy-consensus-bot.db"
 
+DISCORD_COMMAND_PREFIX = "!"
 # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 RESPONSIBLE_MENTION = "@yulston#0081"

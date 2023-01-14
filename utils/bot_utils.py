@@ -2,19 +2,23 @@ import discord
 from discord.ext import commands
 from typing import Optional
 
+from utils.const import DISCORD_COMMAND_PREFIX
+
 client = None
 
 
-def get_discord_client(prefix: Optional[str] = "!") -> commands.Bot:
+def get_discord_client(prefix: Optional[str] = DISCORD_COMMAND_PREFIX) -> commands.Bot:
     """
     Initialize and return an instance of Discord bot client with the permissions that are needed for the application.
     """
     global client
 
     if client is None:
-        intents = discord.Intents.all()
+        intents = discord.Intents.default()
         # To use Intents.default() instead of .all(), enable priveliged message content manually:
-        # intents.message_content = True
+        intents.message_content = True
+        intents.members = True
+
         client = commands.Bot(command_prefix=prefix, intents=intents)
 
     # Add validation for the client
