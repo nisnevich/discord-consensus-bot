@@ -32,7 +32,7 @@ chmod 600 token # You should make it only readable by you
 ```
 
 4. Use bot from Discord:
-- `!propose <mention> <amount> [description]`: Submit a grant proposal. The proposal will be approved after 3 days (72 hours) unless any Layer 3 member reacts with :x: emoji, in that case the proposal will be cancelled.
+- `!propose <mention> <amount> [description]`: Submit a grant proposal. The proposal will be approved after 3 days (72 hours) unless any Layer 3 member reacts with :x: emoji during that time (then the proposal will be cancelled). In each case, the bot will respond with a detailed information.
 
 5. To stop the bot, use shutdown.sh.
 ```
