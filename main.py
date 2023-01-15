@@ -26,7 +26,7 @@ def main():
     for row in pending_grant_proposals:
         add_grant_proposal(row[0], row[5], row[1], row[2], row[3], row[4])
         # Start background task to approve grant proposals
-        client.loop.create_task(approve_grant_proposal(row[0], row[5], row[1], row[2], row[3]))
+        client.loop.create_task(approve_grant_proposal(row[0]))
     logger.info("Loaded %d pending grant proposals from database", get_grant_proposals_count())
 
     # Read token from file and start the bot

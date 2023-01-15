@@ -18,9 +18,7 @@ session = DBUtil().session
 client = get_discord_client()
 
 
-async def grant(
-    client, channel_id, message_id, mention: discord.User, amount: int, *, description=""
-):
+async def grant(message_id):
     """
     Approve a grant proposal by adding the amount to the mentioned user.
 
@@ -29,20 +27,21 @@ async def grant(
     amount (str): The amount to grant.
     description (str): The optional description of the grant.
     """
-
-    original_message = await client.get_channel(channel_id).fetch_message(message_id)
-
     try:
         grant_proposal = get_grant_proposal(message_id)
     except ValueError as e:
-        await original_message.channel.send(
-            "Error: grant proposal not found.", reply=original_message
-        )
         logger.error("Grant proposal not found. message_id=%d", message_id)
         return
 
+    mention = grant_proposal["mention"]
+    amount = grant_proposal["amount"]
+    description = grant_proposal["description"]
+    channel_id = grant_proposal["channel_id"]
+
+    original_message = await client.get_channel(channel_id).fetch_message(message_id)
+
     # Construct the grant message
-    grant_message = f"!grant {mention.mention} {amount}"
+    grant_message = f"!grant {mention} {amount}"
     if description:
         grant_message += f" {description}"
 
@@ -50,7 +49,7 @@ async def grant(
     success = False
     for i in range(2):
         try:
-            await original_message.channel.send(grant_message, reply=original_message)
+            await original_message.reply(grant_message)
             success = True
             # TODO add "green tick" reaction to the original grant proposal message when succeed
             break
@@ -60,9 +59,8 @@ async def grant(
 
     # Send error message if grant message could not be sent
     if not success:
-        await original_message.channel.send(
-            f"Error: could not apply grant for {mention.mention}. cc " + RESPONSIBLE_MENTION,
-            reply=original_message,
+        await original_message.reply(
+            f"Error: could not apply grant for {mention}. cc " + RESPONSIBLE_MENTION,
         )
         logger.error("Could not apply grant. message_id=%d", message_id)
         # TODO: add extra handling if grant message wasn't delivered for some reason, such as email

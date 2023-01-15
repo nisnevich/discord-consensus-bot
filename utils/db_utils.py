@@ -1,5 +1,6 @@
 
 from utils import const
+
 from schemas.grant_proposals import Base, GrantProposals
 from sqlalchemy.orm import sessionmaker
 
