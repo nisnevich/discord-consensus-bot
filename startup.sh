@@ -43,6 +43,17 @@ if [ ! -f /requirements.txt ]; then
     done
 fi
 
+echo "Running unit tests..."
+# Run unit tests
+output=$(python3 -m unittest discover -s tests -p test_*.py -v)
+# Check if any test failed
+if echo "$output" | grep "FAILED"
+then
+    echo "Error: Unit tests failed."
+    echo "$output"
+    exit 1
+fi
+
 # Check if "pm2 startup" was already set up before running it
 if ! command -v pm2 startup &> /dev/null; then
     # Set up pm2 to run on reboot

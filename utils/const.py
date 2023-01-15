@@ -7,6 +7,7 @@ GRANT_PROPOSAL_TIMER_SECONDS = 259200  # 3 days
 GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 60  # 1 minute
 
 LOG_PATH = "logs/lazy-consensus-bot.log"
+TESTS_PATH = "tests/"
 LOG_FILE_SIZE = 1024 * 1024 * 10
 DB_NAME = "lazy-consensus-bot.db"
 
