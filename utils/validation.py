@@ -47,7 +47,6 @@ async def validate_roles(user: User) -> bool:
     """
 
     # Check if user has allowed role
-    # FIXME
     role = find(lambda r: r.id in ROLE_IDS_ALLOWED, user.roles)
     if role is None:
         return False

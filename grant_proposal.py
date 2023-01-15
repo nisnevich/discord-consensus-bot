@@ -78,6 +78,7 @@ async def grant_proposal(ctx, mention=None, amount=None, *, description=""):
             )
             return
         if not await validate_grant_message(ctx, original_message, amount):
+            # FIXME: add SQL injection validation
             return
 
         # Add grant proposal to dictionary and database
