@@ -43,7 +43,7 @@ async def approve_grant_proposal(message_id, channel_id, mention, amount, descri
         logger.error(f"Error while removing grant proposal: {e}")
 
 
-@client.command(name='propose')
+@client.command(name=GRANT_PROPOSAL_COMMAND_NAME)
 async def grant_proposal(ctx, mention=None, amount=None, description=None):
     """
     Submit a grant proposal to the Discord channel. The proposal will be approved after GRANT_PROPOSAL_TIMER_SECONDS unless a L3 member reacts with a :x: emoji to the original message or the confirmation message.
@@ -66,7 +66,7 @@ async def grant_proposal(ctx, mention=None, amount=None, description=None):
                 COMMAND_FORMAT_RESPONSE.format(author=ctx.message.author.mention)
             )
             return
-        if not await validate_grant_message(ctx, original_message, amount):
+        if not await validate_grant_message(original_message, amount, description):
             # FIXME: add SQL injection validation
             return
 
