@@ -2,20 +2,23 @@ import asyncio
 import logging
 
 from discord.ext import commands
+from grant import grant
 
 from utils.const import *
 import utils.db_utils
 from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
-from utils import db_utils
+from utils.db_utils import DBUtil
 from utils.logging_config import log_handler
 from utils.validation import validate_roles, validate_grant_message
 from utils.bot_utils import get_discord_client
+
+from schemas.grant_proposals import GrantProposals
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
-conn = db_utils.connect_db()
+session = DBUtil().session
 client = get_discord_client()
 
 
@@ -28,14 +31,15 @@ async def approve_grant_proposal(message_id, channel_id, mention, amount, descri
     except ValueError as e:
         logger.error(f"Error while getting grant proposal: {e}")
         return
-    while grant_proposal["timer"] < utils.GRANT_PROPOSAL_TIMER_SECONDS:
+    while grant_proposal.timer < utils.GRANT_PROPOSAL_TIMER_SECONDS:
         await asyncio.sleep(utils.GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
-        grant_proposal["timer"] += utils.GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
-        conn.execute(
-            "UPDATE grant_proposals SET timer = ? WHERE id = ?",
-            (grant_proposal["timer"], message_id),
-        )
-        conn.commit()
+        grant_proposal.timer += utils.GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
+        session.commit()
+        # conn.execute(
+        #     "UPDATE grant_proposals SET timer = ? WHERE id = ?",
+        #     (grant_proposal["timer"], message_id),
+        # )
+        # conn.commit()
     try:
         await grant(channel_id, message_id, mention, amount, description=description)
         remove_grant_proposal(message_id)
@@ -71,14 +75,24 @@ async def grant_proposal(ctx, mention=None, amount=None, description=None):
             return
 
         # Add grant proposal to dictionary and database
-        add_grant_proposal(
-            ctx.message.id, ctx.message.channel.id, mention, amount, description, timer=0
+        new_grant_proposal = GrantProposals(
+            id=ctx.message.id,
+            mention=mention,
+            amount=amount,
+            description=description,
+            timer=0,
+            channel_id=ctx.message.channel.id
         )
-        conn.execute(
-            "INSERT INTO grant_proposals (message_id, mention, amount, description, timer, channel_id) VALUES (?, ?, ?, ?, ?, ?)",
-            (ctx.message.id, mention, amount, description, 0, ctx.message.channel.id),
-        )
-        conn.commit()
+        add_grant_proposal(new_grant_proposal)
+        session.add(new_grant_proposal)
+        session.commit()
+
+        # conn.execute(
+        #     "INSERT INTO grant_proposals (message_id, mention, amount, description, timer, channel_id) VALUES (?, ?, ?, ?, ?, ?)",
+        #     (ctx.message.id, mention, amount, description, 0, ctx.message.channel.id),
+        # )
+        # conn.commit()
+
         logger.info(
             "Inserted data: message_id=%d, mention=%s, amount=%d, description=%s, timer=%d, channel_id=%d",
             ctx.message.id,
