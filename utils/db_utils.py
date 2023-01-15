@@ -1,42 +1,39 @@
+
 from utils import const
-import sqlite3
-import atexit
+from schemas.grant_proposals import Base, GrantProposals
+from sqlalchemy.orm import sessionmaker
 
-conn = None
-
-
-def connect_db():
-    """
-    Connect to the database. If the connection hasn't been established yet, create a new connection and register a function to close the connection when the program exits.
-    Returns:
-        conn (sqlite3.Connection): The connection to the database.
-    """
-    global conn
-    if conn is None:
-        conn = sqlite3.connect(const.DB_NAME)
-        atexit.register(close_db)
-    return conn
+import sqlalchemy
 
 
-def close_db():
-    """
-    Close the connection to the database if it has been established.
-    """
-    global conn
-    if conn is not None:
-        conn.close()
+class DBUtil:
 
+    def __init__(self):
+        self.engine = None
 
-def run_query(query, params=()):
-    """
-    Run a query on the database.
-    Parameters:
-        query (str): The query to run.
-        params (tuple, optional): The parameters to bind to the query.
-    Returns:
-        cursor (sqlite3.Cursor): The cursor for the query.
-    """
-    conn = connect_db()
-    cursor = conn.cursor()
-    cursor.execute(query, params)
-    return cursor
+        # Connect to the database
+        self.connect_db()
+
+        # Create the Session
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()
+
+    def connect_db(self):
+        if self.engine is None:
+            self.engine = sqlalchemy.create_engine(f'sqlite:///{const.DB_NAME}')
+    
+    def create_all_tables(self):
+        Base.metadata.create_all(self.engine)
+
+    def close_db(self):
+        self.engine.close_db()
+
+    def load_pending_grant_proposals(self):
+        return self.session.query(GrantProposals)
+
+    def query(self):
+        """
+        Do ORM querying here, or we can also create standalone methods to
+        run different queries for different purposes.
+        """
+        pass
