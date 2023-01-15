@@ -62,7 +62,8 @@ fi
 
 # Run main.py with pm2 (and log any output of this command in a bright color to distinguish it easily)
 echo -e "\033[1;33m"
-pm2 start main.py --interpreter python3 --name "eco-lazy-consensus-bot" --watch
+pm2 start main.py --interpreter python3 --name "eco-lazy-consensus-bot" 
+pm2 update eco-lazy-consensus-bot --auto-restart true
 echo -e "\033[0m"
 
 # Some pm2 commands for monitoring:
@@ -72,5 +73,22 @@ echo -e "\033[0m"
 # pm2 env 0 # display environment variables
 # pm2 monit # monitor CPU and Memory usage eco-lazy-consensus-bot
 
-# Save the current process list
+# Save the current process list to run on startup
 pm2 save
+
+echo "Running resilience tests..."
+# Simulate a crash by stopping and deleting the bot process
+pm2 delete eco-lazy-consensus-bot
+# Wait for a few seconds
+sleep 5
+# Check if the bot has been restarted
+result=$(pm2 list | grep eco-lazy-consensus-bot | grep online)
+if [ -z "$result" ]; then
+  echo "Resilience test failed: bot has not been restarted."
+  exit 1
+else
+  echo "Bot has been restarted successfully."
+  exit 0
+fi
+
+
