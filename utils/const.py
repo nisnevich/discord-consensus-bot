@@ -13,3 +13,16 @@ DB_NAME = "lazy-consensus-bot.db"
 DISCORD_COMMAND_PREFIX = "!"
 # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 RESPONSIBLE_MENTION = "@yulston#0081"
+
+COMMAND_FORMAT_RESPONSE = """Hi {author}! This command should look like:
+
+`!propose @username amount description`
+
+> @username - the user you would like to reward.
+> amount - how many points you would like to give.
+> description - a text that should explain for others what the grant is given for. If the grant will be applied, I'll post this message.
+
+Some examples:
+!propose {author} 100 for being awesome
+!propose {author} 100 for using Lazy Consensus bot
+"""

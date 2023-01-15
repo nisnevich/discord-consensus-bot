@@ -43,19 +43,8 @@ async def approve_grant_proposal(message_id, channel_id, mention, amount, descri
         logger.error(f"Error while removing grant proposal: {e}")
 
 
-COMMAND_FORMAT_RESPONSE = """Hi @author, this command should look like: \"!propose \@mention amount description\":
-- \@mention - the user you would like to reward.
-- amount - how many points you would like to give him.
-- description - just some description of the grant, so others will know what is it about. I'll post it when (if) the grant will be applied.
-
-Examples:
-!propose @author 100
-!propose @author 100 for using Lazy Consensus bot
-"""
-
-
 @client.command(name='propose')
-async def grant_proposal(ctx, mention=None, amount=None, *, description=""):
+async def grant_proposal(ctx, mention=None, amount=None, description=None):
     """
     Submit a grant proposal to the Discord channel. The proposal will be approved after GRANT_PROPOSAL_TIMER_SECONDS unless a L3 member reacts with a :x: emoji to the original message or the confirmation message.
     Parameters:
@@ -72,7 +61,7 @@ async def grant_proposal(ctx, mention=None, amount=None, *, description=""):
             await original_message.reply("Error: you must have Layer 3 role to use this command.")
             logger.warning("Unauthorized user. message_id=%d", original_message.id)
             return
-        if not mention or not amount:
+        if not mention or not amount or not description:
             await original_message.reply(
                 COMMAND_FORMAT_RESPONSE.format(author=ctx.message.author.mention)
             )
