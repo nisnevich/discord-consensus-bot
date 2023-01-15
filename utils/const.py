@@ -37,7 +37,7 @@ PROPOSAL_ACCEPTED_RESPONSE = """
 
 Note that during {time_hours} hours any Layer 3 member (including yourself) may cancel it by adding :x: reaction to mine or your message. It is important that the grant proposal process is fair and transparent for all.
 
-If no objections will be raised, then I'll give the grant at {date_finish}.
+If no objections will be raised, then I'll apply the grant to {mention} at {date_finish}.
 """
 # validation.py error messages
 ERROR_MESSAGE_NO_MENTIONS = (

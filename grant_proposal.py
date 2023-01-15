@@ -102,11 +102,12 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         # Send confirmation message
         await original_message.reply(
             PROPOSAL_ACCEPTED_RESPONSE.format(
-                author=mention,
+                author=ctx.message.author.mention,
                 time_hours=int(
                     GRANT_PROPOSAL_TIMER_SECONDS / 60 / 60,
                 ),
                 date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
+                mention=mention,
             )
         )
         logger.info(
