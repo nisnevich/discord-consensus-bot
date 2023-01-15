@@ -1,8 +1,11 @@
 # L3 or Eco role
-# TODO: change roles back to Eco Discord when testing is done
+# FIXME: change roles back to Eco Discord when testing is done
 ROLE_IDS_ALLOWED = (1063903240925749389,)
 #  ROLE_IDS_ALLOWED = (812675567438659624, 1038497110754086913)
 
+# FIXME change values back after testing
+#  GRANT_PROPOSAL_TIMER_SECONDS = 2
+#  GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 1
 GRANT_PROPOSAL_TIMER_SECONDS = 259200  # 3 days
 GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 60  # 1 minute
 
@@ -16,7 +19,8 @@ DISCORD_COMMAND_PREFIX = "!"
 RESPONSIBLE_MENTION = "@yulston#0081"
 
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
-COMMAND_FORMAT_RESPONSE = """Hi {author}! This command should look like:
+COMMAND_FORMAT_RESPONSE = """
+Hi {author}! This command should look like:
 
 `!propose @username amount description`
 
@@ -27,6 +31,13 @@ COMMAND_FORMAT_RESPONSE = """Hi {author}! This command should look like:
 Some examples:
 !propose {author} 100 for being awesome
 !propose {author} 100 for using Lazy Consensus bot
+"""
+PROPOSAL_ACCEPTED_RESPONSE = """
+{author}, your grant proposal has been accepted. :rocket:
+
+Note that during {time_hours} hours any Layer 3 member (including yourself) may cancel it by adding :x: reaction to mine or your message. It is important that the grant proposal process is fair and transparent for all.
+
+If no objections will be raised, then I'll give the grant at {date_finish}.
 """
 # validation.py error messages
 ERROR_MESSAGE_NO_MENTIONS = (

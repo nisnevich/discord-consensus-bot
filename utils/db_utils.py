@@ -1,6 +1,13 @@
 from utils import const
 import sqlite3
 import atexit
+import logging
+
+from utils.logging_config import log_handler
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(log_handler)
 
 conn = None
 
@@ -13,6 +20,7 @@ def connect_db():
     """
     global conn
     if conn is None:
+        logger.info("Connecting to DB.")
         conn = sqlite3.connect(const.DB_NAME)
         atexit.register(close_db)
     return conn

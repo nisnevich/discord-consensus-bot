@@ -14,8 +14,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
-conn = db_utils.connect_db()
-
 
 def main():
     # Connect to SQLite database
@@ -23,7 +21,7 @@ def main():
 
     # Create tables for grant proposals
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS grant_proposals (id INTEGER PRIMARY KEY, mention TEXT, amount INTEGER, description TEXT, timer INTEGER, channel_id INTEGER)"
+        "CREATE TABLE IF NOT EXISTS grant_proposals (id INTEGER PRIMARY KEY, message_id INTEGER, channel_id INTEGER, mention TEXT, amount INTEGER, description TEXT, timer INTEGER)"
     )
     conn.commit()
 
@@ -32,12 +30,12 @@ def main():
 
     # Load pending grant proposals from database
     cursor = conn.execute(
-        "SELECT id, mention, amount, description, timer, channel_id FROM grant_proposals"
+        "SELECT message_id, channel_id, mention, amount, description, timer FROM grant_proposals"
     )
     for row in cursor:
-        add_grant_proposal(row[0], row[5], row[1], row[2], row[3], row[4])
+        add_grant_proposal(row[0], row[1], row[2], row[3], row[4], row[5])
         # Start background task to approve grant proposals
-        client.loop.create_task(approve_grant_proposal(row[0], row[5], row[1], row[2], row[3]))
+        client.loop.create_task(approve_grant_proposal(row[0]))
     logger.info("Loaded %d pending grant proposals from database", get_grant_proposals_count())
 
     # Read token from file and start the bot

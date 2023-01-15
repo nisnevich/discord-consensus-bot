@@ -28,6 +28,9 @@ async def on_raw_reaction_add(client, payload):
     # Check if reaction is a :x: emoji
     if payload.emoji.name != "x":
         return
+
+    # FIXME implement :?: (question) reaction that would pause the proposal execution unless being removed
+
     # Check if the reaction was made to the original grant proposal message or the confirmation message
     # If the reaction was made to the confirmation message, we need to get the original grant proposal message
     original_message_id = payload.message_id
@@ -60,9 +63,8 @@ async def on_raw_reaction_add(client, payload):
     original_message = await guild.get_channel(payload.channel_id).fetch_message(
         original_message_id
     )
-    await original_message.channel.send(
+    await original_message.reply(
         f"Proposal was cancelled by {member.mention} (friendly reminder: please make sure to explain why it was cancelled).",
-        reply_to_message_id=original_message.id,
     )
     logger.info(
         "Confirmed cancellation of grant proposal in chat. message_id=%d", original_message_id

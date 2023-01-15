@@ -1,7 +1,10 @@
 import asyncio
 import logging
 
+
 from discord.ext import commands
+
+from grant import grant
 
 from utils.const import *
 import utils.db_utils
@@ -10,6 +13,7 @@ from utils import db_utils
 from utils.logging_config import log_handler
 from utils.validation import validate_roles, validate_grant_message
 from utils.bot_utils import get_discord_client
+from utils.formatting_utils import get_discord_timestamp_plus_delta
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -19,7 +23,7 @@ conn = db_utils.connect_db()
 client = get_discord_client()
 
 
-async def approve_grant_proposal(message_id, channel_id, mention, amount, description):
+async def approve_grant_proposal(message_id):
     """
     Loop until the timer reaches GRANT_PROPOSAL_TIMER_SECONDS days. Every minute, the timer is incremented by 60 seconds and updated in the database. If the timer ends, the grant proposal is approved and the entry is removed from the dictionary and database.
     """
@@ -28,31 +32,33 @@ async def approve_grant_proposal(message_id, channel_id, mention, amount, descri
     except ValueError as e:
         logger.error(f"Error while getting grant proposal: {e}")
         return
-    while grant_proposal["timer"] < utils.GRANT_PROPOSAL_TIMER_SECONDS:
-        await asyncio.sleep(utils.GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
-        grant_proposal["timer"] += utils.GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
+    while grant_proposal["timer"] < GRANT_PROPOSAL_TIMER_SECONDS:
+        await asyncio.sleep(GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
+        grant_proposal["timer"] += GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
         conn.execute(
             "UPDATE grant_proposals SET timer = ? WHERE id = ?",
             (grant_proposal["timer"], message_id),
         )
         conn.commit()
     try:
-        await grant(channel_id, message_id, mention, amount, description=description)
+        await grant(message_id)
         remove_grant_proposal(message_id)
     except ValueError as e:
         logger.error(f"Error while removing grant proposal: {e}")
 
 
 @client.command(name=GRANT_PROPOSAL_COMMAND_NAME)
-async def grant_proposal(ctx, mention=None, amount=None, description=None):
+async def grant_proposal(ctx, mention=None, amount=None, *description):
     """
     Submit a grant proposal to the Discord channel. The proposal will be approved after GRANT_PROPOSAL_TIMER_SECONDS unless a L3 member reacts with a :x: emoji to the original message or the confirmation message.
     Parameters:
         ctx (commands.Context): The context in which the command was called.
         mention (str): The mention of the user the grant is being proposed to.
         amount (str): The amount of the grant being proposed.
-        description (str, optional): The description of the grant being proposed.
+        description (str): The description of the grant being proposed.
     """
+    description = ' '.join(description)
+
     try:
         original_message = await ctx.fetch_message(ctx.message.id)
 
@@ -67,16 +73,17 @@ async def grant_proposal(ctx, mention=None, amount=None, description=None):
             )
             return
         if not await validate_grant_message(original_message, amount, description):
-            # FIXME: add SQL injection validation
             return
+        # FIXME check for duplicate grants in DB before adding (all fields must be the same), and then send error that says you must cancel the previous grant first
 
         # Add grant proposal to dictionary and database
+        amount = int(amount)
         add_grant_proposal(
             ctx.message.id, ctx.message.channel.id, mention, amount, description, timer=0
         )
         conn.execute(
-            "INSERT INTO grant_proposals (message_id, mention, amount, description, timer, channel_id) VALUES (?, ?, ?, ?, ?, ?)",
-            (ctx.message.id, mention, amount, description, 0, ctx.message.channel.id),
+            "INSERT INTO grant_proposals (message_id, channel_id, mention, amount, description, timer) VALUES (?, ?, ?, ?, ?, ?)",
+            (ctx.message.id, ctx.message.channel.id, mention, amount, description, 0),
         )
         conn.commit()
         logger.info(
@@ -90,16 +97,17 @@ async def grant_proposal(ctx, mention=None, amount=None, description=None):
         )
         # TODO backup DB somewhere remote after inserting or deleting any grant proposal, so if it gets lots then no proposals would be lost (if the timer will reset it's not a big deal compared to wasting proposals themselves)
 
-        client.loop.create_task(
-            approve_grant_proposal(
-                ctx.message.id, ctx.message.channel.id, mention, amount, description
-            )
-        )
+        client.loop.create_task(approve_grant_proposal(ctx.message.id))
 
         # Send confirmation message
-        await original_message.channel.send(
-            f"{ctx.message.author.mention}, your grant proposal has been accepted. If any L3 member disagrees, they can react with the :x: emoji to this message or the original message.",
-            reply=original_message,
+        await original_message.reply(
+            PROPOSAL_ACCEPTED_RESPONSE.format(
+                author=mention,
+                time_hours=int(
+                    GRANT_PROPOSAL_TIMER_SECONDS / 60 / 60,
+                ),
+                date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
+            )
         )
         logger.info(
             "Sent confirmation message for grant proposal with message_id=%d", ctx.message.id
