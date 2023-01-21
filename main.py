@@ -40,14 +40,14 @@ def main():
         logger.info(
             "Loaded %d pending grant proposal(s) from database", get_grant_proposals_count()
         )
-        # Enabling setup hook to start proposal approving coroutines in the background after the client will be initialised
+        # Enabling setup hook to start proposal approving coroutines after the client will be initialised
+        # client.run call is required before approve_grant_proposal, because it starts Discord event loop
         client.setup_hook = start_proposals_coroutines
 
-        # Read token from file and start the bot
+        # Read token from the file and start the bot
         with open("token", "r") as f:
             token = f.read().strip()
         logger.info("Starting the bot...")
-        # client.run is required before starting approve_grant_proposal coroutines, because it starts Discord event loop
         client.run(token)
 
     except Exception as e:
