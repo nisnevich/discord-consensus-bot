@@ -33,10 +33,10 @@ async def grant(message_id):
         logger.error("Grant proposal not found. message_id=%d", message_id)
         return
 
-    mention = grant_proposal["mention"]
-    amount = grant_proposal["amount"]
-    description = grant_proposal["description"]
-    channel_id = grant_proposal["channel_id"]
+    mention = grant_proposal.mention
+    amount = grant_proposal.amount
+    description = grant_proposal.description
+    channel_id = grant_proposal.channel_id
 
     original_message = await client.get_channel(channel_id).fetch_message(message_id)
 
