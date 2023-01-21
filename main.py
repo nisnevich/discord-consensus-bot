@@ -1,7 +1,6 @@
 import logging
 import sys
 import traceback
-import asyncio
 
 from grant_proposal import approve_grant_proposal
 from utils.db_utils import DBUtil
@@ -16,33 +15,41 @@ logger.addHandler(console_handler)
 
 
 def main():
-    db = DBUtil()
-    # Initialise the database, only needed to call once
-    # Later the session object will be shared across coroutines using asyncronous awaits
-    db.connect_db()
-
-    try:
-        # Create required tables that don't exist
-        db.create_all_tables()
-        # Create bot client
-        client = get_discord_client()
-        # Load pending proposals from database
-        pending_grant_proposals = db.load_pending_grant_proposals()
-        for proposal in pending_grant_proposals:
-            add_grant_proposal(proposal)
-        logger.info("Loaded %d pending grant proposals from database", get_grant_proposals_count())
-
-        # Read token from file and start the bot
-        with open("token", "r") as f:
-            token = f.read().strip()
-        logger.info("Running the bot...")
-        # client.run is required before starting approve_grant_proposal coroutines, because it starts Discord event loop
-        client.run(token)
-
+    # A function to run after the client will be initialised
+    async def start_proposals_coroutines():
+        logger.info("Running approval of the proposals...")
         # Start background tasks to approve pending proposals
         for proposal in pending_grant_proposals:
             client.loop.create_task(approve_grant_proposal(proposal.id))
             logger.info("Added task to event loop to approve message_id=%d", ctx.message.id)
+
+    try:
+        db = DBUtil()
+        # Initialise the database, only needed to call once
+        # Later the ORM session object will be shared across coroutines using asyncronous awaits
+        db.connect_db()
+        # Create required tables that don't exist
+        db.create_all_tables()
+        # Create bot client
+        client = get_discord_client()
+
+        # Load pending proposals from database
+        pending_grant_proposals = db.load_pending_grant_proposals()
+        for proposal in pending_grant_proposals:
+            add_grant_proposal(proposal)
+        logger.info(
+            "Loaded %d pending grant proposal(s) from database", get_grant_proposals_count()
+        )
+        # Enabling setup hook to start proposal approving coroutines in the background after the client will be initialised
+        client.setup_hook = start_proposals_coroutines
+
+        # Read token from file and start the bot
+        with open("token", "r") as f:
+            token = f.read().strip()
+        logger.info("Starting the bot...")
+        # client.run is required before starting approve_grant_proposal coroutines, because it starts Discord event loop
+        client.run(token)
+
     except Exception as e:
         logger.error("An error occurred in main(): %s", e)
         raise
