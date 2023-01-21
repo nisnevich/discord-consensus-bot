@@ -44,7 +44,7 @@ chmod 600 token # You should make it only readable by you
 - [npm](https://www.npmjs.com)
 - [PM2](https://pm2.io)
 - [Python 3.6](https://www.python.org/downloads/release/python-360/) or higher
-- [sqlite3](https://www.sqlite.org)
+- [SQLAlchemy](https://www.sqlalchemy.org/)
 
 ## Contributing
 Contributions are welcome! Feel free to create pull requests or reach out. Also you can [buy me a coffee](https://www.buymeacoffee.com/a.nisnevich).

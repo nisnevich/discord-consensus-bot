@@ -10,8 +10,8 @@ if ! command -v python3 &> /dev/null; then
 fi
 # Check if python is available in path, or drop error otherwise
 if ! command -v python3 &> /dev/null; then
-    echo "ERROR: Python3 not found in PATH!"
-    exit 1
+  echo "ERROR: Python3 not found in PATH!"
+  exit 1
 fi
 if ! command -v pip3 &> /dev/null; then
   echo "Installing pip3..."
@@ -21,9 +21,9 @@ fi
 
 # Check if npm is installed
 if ! command -v npm &> /dev/null; then
-    # Install npm
-    curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+  # Install npm
+  curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+  sudo apt-get install -y nodejs
 fi
 
 # Install pm2 if it is not already installed
@@ -34,24 +34,25 @@ fi
 
 # Check if requirements.txt packages are installed before installing them
 if [ ! -f /requirements.txt ]; then 
-    echo "Checking if required python packages are installed..."
-    for package in $(cat requirements.txt); do
-        if ! pip freeze | grep -q "$package"; then
-            echo "Installing required python package: $package"
-            pip3 install "$package"
-        fi
-    done
+  echo "Checking if required python packages are installed..."
+  for package in $(cat requirements.txt); do
+    if ! pip freeze | grep -q "$package"; then
+      echo "Installing required python package: $package"
+      pip3 install "$package"
+    fi
+  done
 fi
 
 echo "Running unit tests..."
 # Run unit tests
-output=$(python3 -m unittest discover -s tests -p test_*.py -v)
+output=$(python3 -m unittest discover -s tests -p test_*.py -v || exit 1)
 # Check if any test failed
-if echo "$output" | grep "FAILED"
-then
-    echo "Error: Unit tests failed."
-    echo "$output"
-    exit 1
+if echo "$output" | grep -q "FAILED"; then
+  echo "Error: Unit tests failed."
+  echo "$output"
+  exit 1
+else
+  echo "Unit tests passed successfully!"
 fi
 
 # Check if "pm2 startup" was already set up before running it

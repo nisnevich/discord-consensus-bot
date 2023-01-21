@@ -35,15 +35,11 @@ async def approve_grant_proposal(message_id):
     except ValueError as e:
         logger.error(f"Error while getting grant proposal: {e}")
         return
+    session.add(grant_proposal)
     while grant_proposal.timer < utils.GRANT_PROPOSAL_TIMER_SECONDS:
         await asyncio.sleep(utils.GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
         grant_proposal.timer += utils.GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
         session.commit()
-        # conn.execute(
-        #     "UPDATE grant_proposals SET timer = ? WHERE id = ?",
-        #     (grant_proposal["timer"], message_id),
-        # )
-        # conn.commit()
     try:
         await grant(message_id)
         remove_grant_proposal(message_id)
@@ -82,22 +78,16 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
 
         # Add grant proposal to dictionary and database
         new_grant_proposal = GrantProposals(
-            id=ctx.message.id,
+            message_id=ctx.message.id,
+            channel_id=ctx.message.channel.id,
             mention=mention,
             amount=amount,
             description=description,
             timer=0,
-            channel_id=ctx.message.channel.id
         )
         add_grant_proposal(new_grant_proposal)
         session.add(new_grant_proposal)
         session.commit()
-
-        # conn.execute(
-        #     "INSERT INTO grant_proposals (message_id, mention, amount, description, timer, channel_id) VALUES (?, ?, ?, ?, ?, ?)",
-        #     (ctx.message.id, mention, amount, description, 0, ctx.message.channel.id),
-        # )
-        # conn.commit()
 
         logger.info(
             "Inserted data: message_id=%d, mention=%s, amount=%d, description=%s, timer=%d, channel_id=%d",

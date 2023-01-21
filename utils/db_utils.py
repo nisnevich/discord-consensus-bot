@@ -1,40 +1,28 @@
-
 from utils import const
-
-from schemas.grant_proposals import Base, GrantProposals
 from sqlalchemy.orm import sessionmaker
-
-import sqlalchemy
+from sqlalchemy.orm import Query
+from sqlalchemy import create_engine
+from schemas.grant_proposals import Base, GrantProposals
 
 
 class DBUtil:
-
     def __init__(self):
         self.engine = None
-
-        # Connect to the database
+        self.session = None
         self.connect_db()
 
-        # Create the Session
-        Session = sessionmaker(bind=self.engine)
-        self.session = Session()
-
     def connect_db(self):
-        if self.engine is None:
-            self.engine = sqlalchemy.create_engine(f'sqlite:///{const.DB_NAME}')
-    
+        self.engine = create_engine(f'sqlite:///{const.DB_NAME}')
+        self.session = sessionmaker(bind=self.engine)()
+
     def create_all_tables(self):
-        Base.metadata.create_all(self.engine)
+        if "grant_proposals" not in Base.metadata.tables:
+            Base.metadata.create_all(self.engine)
+        else:
+            print("Tables already exist.")
 
     def close_db(self):
-        self.engine.close_db()
+        self.engine.dispose()
 
-    def load_pending_grant_proposals(self):
+    def load_pending_grant_proposals(self) -> Query:
         return self.session.query(GrantProposals)
-
-    def query(self):
-        """
-        Do ORM querying here, or we can also create standalone methods to
-        run different queries for different purposes.
-        """
-        pass

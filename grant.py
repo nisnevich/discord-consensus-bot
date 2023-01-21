@@ -1,4 +1,5 @@
 import logging
+import time
 
 import discord
 from discord import client
@@ -13,7 +14,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
-# conn = db_utils.connect_db()
 session = DBUtil().session
 client = get_discord_client()
 
@@ -55,6 +55,8 @@ async def grant(message_id):
             break
         except Exception:
             logger.critical("An error occurred while sending grant message", exc_info=True)
+            # Waiting 5 seconds before retry
+            time.sleep(5)
             pass
 
     # Send error message if grant message could not be sent
@@ -75,6 +77,4 @@ async def grant(message_id):
         return
     session.delete(grant_proposal)
     session.commit()
-    # conn.execute("DELETE FROM grant_proposals WHERE id = ?", (message_id,))
-    # conn.commit()
     logger.info("Successfully applied grant. message_id=%d", message_id)

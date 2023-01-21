@@ -25,10 +25,8 @@ def remove_grant_proposal(message_id):
         raise ValueError(f"Invalid message ID: {message_id}")
 
 
-def add_grant_proposal(
-    new_grant_proposal: GrantProposals
-):
-    if not isinstance(new_grant_proposal.id, int):
+def add_grant_proposal(new_grant_proposal: GrantProposals):
+    if not isinstance(new_grant_proposal.message_id, int):
         raise ValueError("message_id should be an int")
     if not isinstance(new_grant_proposal.channel_id, int):
         raise ValueError("channel_id should be an int")
@@ -41,4 +39,4 @@ def add_grant_proposal(
     if not isinstance(new_grant_proposal.timer, int):
         raise ValueError("timer should be an int")
 
-    grant_proposals[new_grant_proposal.id] = new_grant_proposal
+    grant_proposals[new_grant_proposal.message_id] = new_grant_proposal

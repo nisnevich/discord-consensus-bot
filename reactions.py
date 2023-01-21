@@ -4,6 +4,7 @@ import discord
 from discord import client
 
 from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
+from utils.db_utils import DBUtil
 from utils import db_utils
 from utils.logging_config import log_handler
 from utils.validation import validate_roles
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
-conn = db_utils.connect_db()
+session = DBUtil().session
 client = get_discord_client()
 
 
@@ -29,7 +30,7 @@ async def on_raw_reaction_add(client, payload):
     if payload.emoji.name != "x":
         return
 
-    # FIXME implement :?: (question) reaction that would pause the proposal execution unless being removed
+    # TODO implement :?: (question) reaction that would pause the proposal
 
     # Check if the reaction was made to the original grant proposal message or the confirmation message
     # If the reaction was made to the confirmation message, we need to get the original grant proposal message
@@ -47,6 +48,7 @@ async def on_raw_reaction_add(client, payload):
     if not validate_roles(member):
         return
 
+    # Remove the object checking if it exists
     try:
         remove_grant_proposal(original_message_id)
     except ValueError as e:
@@ -54,9 +56,9 @@ async def on_raw_reaction_add(client, payload):
             f"A cancel emoji was added to the response of the bot, but the original grant proposal message couldn't be found in the list of active proposals: {e}"
         )
         return
-
-    conn.execute("DELETE FROM grant_proposals WHERE id = ?", (original_message_id,))
-    conn.commit()
+    # Removing from DB
+    session.delete(grant_proposal)
+    session.commit()
     logger.info("Cancelled grant proposal. message_id=%d", original_message_id)
 
     # Confirm that the grant proposal was cancelled in chat
