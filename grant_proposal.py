@@ -11,7 +11,7 @@ from utils.const import *
 import utils.db_utils
 from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
 from utils.db_utils import DBUtil
-from utils.logging_config import log_handler
+from utils.logging_config import log_handler, console_handler
 from utils.validation import validate_roles, validate_grant_message
 from utils.bot_utils import get_discord_client
 from utils.formatting_utils import get_discord_timestamp_plus_delta
@@ -21,6 +21,7 @@ from schemas.grant_proposals import GrantProposals
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
+logger.addHandler(console_handler)
 
 session = DBUtil().session
 client = get_discord_client()
@@ -36,9 +37,9 @@ async def approve_grant_proposal(message_id):
         logger.error(f"Error while getting grant proposal: {e}")
         return
     session.add(grant_proposal)
-    while grant_proposal.timer < utils.GRANT_PROPOSAL_TIMER_SECONDS:
-        await asyncio.sleep(utils.GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
-        grant_proposal.timer += utils.GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
+    while grant_proposal.timer < GRANT_PROPOSAL_TIMER_SECONDS:
+        await asyncio.sleep(GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
+        grant_proposal.timer += GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
         session.commit()
     try:
         await grant(message_id)
@@ -74,6 +75,8 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
             return
         if not await validate_grant_message(original_message, amount, description):
             return
+        # If validation succeeded, cast 'amount' from string to integer
+        amount = int(amount)
         # FIXME check for duplicate grants in DB before adding (all fields must be the same), and then send error that says you must cancel the previous grant first
 
         # Add grant proposal to dictionary and database
@@ -101,6 +104,7 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         # TODO backup DB somewhere remote after inserting or deleting any grant proposal, so if it gets lots then no proposals would be lost (if the timer will reset it's not a big deal compared to wasting proposals themselves)
 
         client.loop.create_task(approve_grant_proposal(ctx.message.id))
+        logger.info("Added task to event loop to approve message_id=%d", ctx.message.id)
 
         # Send confirmation message
         await original_message.reply(
@@ -119,7 +123,7 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
 
     except Exception as e:
         await ctx.send(
-            "Error: An unexpected error occurred, proposal wasn't added. cc " + RESPONSIBLE_MENTION,
-            reply=ctx.message,
+            "An unexpected error occurred, proposal wasn't added. cc " + RESPONSIBLE_MENTION
         )
-        logger.critical("An error occurred", exc_info=True)
+        logger.critical("Unexpected error in %s", __name__, exc_info=True)
+        traceback.print_exc()

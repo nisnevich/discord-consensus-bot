@@ -1,11 +1,13 @@
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String
 
+from utils.const import GRANT_PROPOSALS_TABLE_NAME
+
 Base = declarative_base()
 
 
 class GrantProposals(Base):
-    __tablename__ = "grant_proposals"
+    __tablename__ = GRANT_PROPOSALS_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
     message_id = Column(Integer)

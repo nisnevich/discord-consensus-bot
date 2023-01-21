@@ -12,11 +12,13 @@ GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 1
 LOG_PATH = "logs/lazy-consensus-bot.log"
 TESTS_PATH = "tests/"
 LOG_FILE_SIZE = 1024 * 1024 * 10
+
 DB_NAME = "lazy-consensus-bot.db"
+GRANT_PROPOSALS_TABLE_NAME = "grant_proposals"
 
 DISCORD_COMMAND_PREFIX = "!"
 # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
-RESPONSIBLE_MENTION = "@yulston#0081"
+RESPONSIBLE_MENTION = "<@703574259401883728>"
 
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
 COMMAND_FORMAT_RESPONSE = """

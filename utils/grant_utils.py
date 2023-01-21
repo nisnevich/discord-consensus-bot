@@ -27,16 +27,32 @@ def remove_grant_proposal(message_id):
 
 def add_grant_proposal(new_grant_proposal: GrantProposals):
     if not isinstance(new_grant_proposal.message_id, int):
-        raise ValueError("message_id should be an int")
+        raise ValueError(
+            f"message_id should be an int, got {type(new_grant_proposal.message_id)} instead: {new_grant_proposal.message_id}"
+        )
     if not isinstance(new_grant_proposal.channel_id, int):
-        raise ValueError("channel_id should be an int")
+        raise ValueError(
+            f"channel_id should be an int, got {type(new_grant_proposal.channel_id)} instead: {new_grant_proposal.channel_id}"
+        )
     if not isinstance(new_grant_proposal.mention, (discord.User, str)):
-        raise ValueError("mention should be discord.User or str")
+        raise ValueError(
+            f"mention should be discord.User or str, got {type(new_grant_proposal.mention)} instead: {new_grant_proposal.mention}"
+        )
     if not isinstance(new_grant_proposal.amount, int):
-        raise ValueError("amount should be an int")
+        raise ValueError(
+            f"amount should be an int, got {type(new_grant_proposal.amount)} instead: {new_grant_proposal.amount}"
+        )
+    #  if not new_grant_proposal.isdigit():
+    #      raise ValueError(
+    #          f"amount can't be casted to digit, got {type(new_grant_proposal.amount)}: {new_grant_proposal.amount}"
+    #      )
     if not isinstance(new_grant_proposal.description, str):
-        raise ValueError("description should be a string")
+        raise ValueError(
+            f"description should be a string, got {type(new_grant_proposal.description)} instead: {new_grant_proposal.description}"
+        )
     if not isinstance(new_grant_proposal.timer, int):
-        raise ValueError("timer should be an int")
+        raise ValueError(
+            f"timer should be an int, got {type(new_grant_proposal.timer)} instead: {new_grant_proposal.timer}"
+        )
 
     grant_proposals[new_grant_proposal.message_id] = new_grant_proposal
