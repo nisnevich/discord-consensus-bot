@@ -17,6 +17,10 @@ logger.addHandler(console_handler)
 
 def main():
     db = DBUtil()
+    # Initialise the database, only needed to call once
+    # Later the session object will be shared across coroutines using asyncronous awaits
+    db.connect_db()
+
     try:
         # Create required tables that don't exist
         db.create_all_tables()
@@ -32,7 +36,7 @@ def main():
         with open("token", "r") as f:
             token = f.read().strip()
         logger.info("Running the bot...")
-        # client.run is required before running approve_grant_proposal coroutines, because it starts Discord event loop
+        # client.run is required before starting approve_grant_proposal coroutines, because it starts Discord event loop
         client.run(token)
 
         # Start background tasks to approve pending proposals

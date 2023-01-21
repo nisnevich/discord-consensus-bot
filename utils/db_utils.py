@@ -1,5 +1,6 @@
 import atexit
 import logging
+import asyncio
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Query
 from sqlalchemy import create_engine
@@ -15,25 +16,38 @@ logger.addHandler(console_handler)
 
 
 class DBUtil:
-    def __init__(self):
-        self.engine = None
-        self.session = None
-        self.connect_db()
+    engine = None
+    session = None
+    session_lock = asyncio.Lock()
 
     def connect_db(self):
-        self.engine = create_engine(f'sqlite:///{DB_NAME}')
-        self.session = sessionmaker(bind=self.engine)()
-        # run close_db once execution finishes
+        if DBUtil.engine is None:
+            DBUtil.engine = create_engine(f'sqlite:///{DB_NAME}')
+        if DBUtil.session is None:
+            DBUtil.session = sessionmaker(bind=DBUtil.engine)()
+        # run close_db once the main thread exits
         atexit.register(self.close_db)
 
+    def close_db(self):
+        DBUtil.engine.dispose()
+
     def create_all_tables(self):
-        if not self.engine.has_table(GRANT_PROPOSALS_TABLE_NAME):
-            Base.metadata.create_all(self.engine)
+        if not DBUtil.engine.has_table(GRANT_PROPOSALS_TABLE_NAME):
+            Base.metadata.create_all(DBUtil.engine)
         else:
             logger.info("Tables already exist: %s", GRANT_PROPOSALS_TABLE_NAME)
 
-    def close_db(self):
-        self.engine.dispose()
-
     def load_pending_grant_proposals(self) -> Query:
-        return self.session.query(GrantProposals)
+        return DBUtil.session.query(GrantProposals)
+
+    async def add(self, orm_object):
+        async with DBUtil.session_lock:
+            DBUtil.session.add(orm_object)
+
+    async def delete(self, orm_object):
+        async with DBUtil.session_lock:
+            DBUtil.session.delete(orm_object)
+
+    async def commit(self):
+        async with DBUtil.session_lock:
+            DBUtil.session.commit()

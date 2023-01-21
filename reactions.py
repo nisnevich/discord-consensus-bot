@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
-session = DBUtil().session
+db = DBUtil()
 client = get_discord_client()
 
 
@@ -57,8 +57,7 @@ async def on_raw_reaction_add(client, payload):
         )
         return
     # Removing from DB
-    session.delete(grant_proposal)
-    session.commit()
+    await db.delete(grant_proposal)
     logger.info("Cancelled grant proposal. message_id=%d", original_message_id)
 
     # Confirm that the grant proposal was cancelled in chat

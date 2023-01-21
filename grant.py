@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
-session = DBUtil().session
+db = DBUtil()
 client = get_discord_client()
 
 
@@ -75,6 +75,5 @@ async def grant(message_id):
     except ValueError as e:
         logger.critical(f"Error while removing grant proposal: {e}")
         return
-    session.delete(grant_proposal)
-    session.commit()
+    await db.delete(grant_proposal)
     logger.info("Successfully applied grant. message_id=%d", message_id)

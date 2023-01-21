@@ -23,7 +23,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
-session = DBUtil().session
+db = DBUtil()
 client = get_discord_client()
 
 
@@ -36,14 +36,13 @@ async def approve_grant_proposal(message_id):
     except ValueError as e:
         logger.error(f"Error while getting grant proposal: {e}")
         return
-    session.add(grant_proposal)
+    await db.add(grant_proposal)
     while grant_proposal.timer < GRANT_PROPOSAL_TIMER_SECONDS:
         await asyncio.sleep(GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
         grant_proposal.timer += GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
-        session.commit()
+        await db.commit()
     try:
         await grant(message_id)
-        remove_grant_proposal(message_id)
     except ValueError as e:
         logger.error(f"Error while removing grant proposal: {e}")
 
@@ -89,8 +88,7 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
             timer=0,
         )
         add_grant_proposal(new_grant_proposal)
-        session.add(new_grant_proposal)
-        session.commit()
+        await db.add(new_grant_proposal)
 
         logger.info(
             "Inserted data: message_id=%d, mention=%s, amount=%d, description=%s, timer=%d, channel_id=%d",
