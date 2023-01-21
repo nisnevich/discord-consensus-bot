@@ -4,7 +4,7 @@ import discord
 from discord import client
 
 from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
-from utils import db_utils
+from utils.db_utils import DBUtil
 from utils.const import RESPONSIBLE_MENTION
 from utils.logging_config import log_handler
 from utils.bot_utils import get_discord_client
@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
 
-conn = db_utils.connect_db()
+# conn = db_utils.connect_db()
+session = DBUtil().session
 client = get_discord_client()
 
 
@@ -67,10 +68,13 @@ async def grant(message_id):
 
     # Remove grant proposal from dictionary and database
     try:
+        grant_proposal = get_grant_proposal(message_id)
         remove_grant_proposal(message_id)
     except ValueError as e:
         logger.critical(f"Error while removing grant proposal: {e}")
         return
-    conn.execute("DELETE FROM grant_proposals WHERE id = ?", (message_id,))
-    conn.commit()
+    session.delete(grant_proposal)
+    session.commit()
+    # conn.execute("DELETE FROM grant_proposals WHERE id = ?", (message_id,))
+    # conn.commit()
     logger.info("Successfully applied grant. message_id=%d", message_id)

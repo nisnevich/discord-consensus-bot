@@ -2,6 +2,8 @@ import discord
 from typing import Union
 from typing import Optional
 
+from schemas.grant_proposals import GrantProposals
+
 grant_proposals = {}
 
 
@@ -24,31 +26,19 @@ def remove_grant_proposal(message_id):
 
 
 def add_grant_proposal(
-    message_id: int,
-    channel_id: int,
-    mention: Union[discord.User, str],
-    amount: int,
-    description: str,
-    timer: Optional[int] = 0,
+    new_grant_proposal: GrantProposals
 ):
-    if not isinstance(message_id, int):
+    if not isinstance(new_grant_proposal.id, int):
         raise ValueError("message_id should be an int")
-    if not isinstance(channel_id, int):
+    if not isinstance(new_grant_proposal.channel_id, int):
         raise ValueError("channel_id should be an int")
-    if not isinstance(mention, (discord.User, str)):
+    if not isinstance(new_grant_proposal.mention, (discord.User, str)):
         raise ValueError("mention should be discord.User or str")
-    if not isinstance(amount, int):
+    if not isinstance(new_grant_proposal.amount, int):
         raise ValueError("amount should be an int")
-    if not isinstance(description, str):
+    if not isinstance(new_grant_proposal.description, str):
         raise ValueError("description should be a string")
-    if not isinstance(timer, int):
+    if not isinstance(new_grant_proposal.timer, int):
         raise ValueError("timer should be an int")
 
-    grant_proposals[message_id] = {
-        "mention": mention,
-        "amount": amount,
-        "description": description,
-        "timer": timer,
-        "message_id": message_id,
-        "channel_id": channel_id,
-    }
+    grant_proposals[new_grant_proposal.id] = new_grant_proposal
