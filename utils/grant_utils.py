@@ -42,10 +42,6 @@ def add_grant_proposal(new_grant_proposal: GrantProposals):
         raise ValueError(
             f"amount should be an int, got {type(new_grant_proposal.amount)} instead: {new_grant_proposal.amount}"
         )
-    #  if not new_grant_proposal.isdigit():
-    #      raise ValueError(
-    #          f"amount can't be casted to digit, got {type(new_grant_proposal.amount)}: {new_grant_proposal.amount}"
-    #      )
     if not isinstance(new_grant_proposal.description, str):
         raise ValueError(
             f"description should be a string, got {type(new_grant_proposal.description)} instead: {new_grant_proposal.description}"

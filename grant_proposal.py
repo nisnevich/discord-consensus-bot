@@ -36,7 +36,6 @@ async def approve_grant_proposal(message_id):
     except ValueError as e:
         logger.error(f"Error while getting grant proposal: {e}")
         return
-    await db.add(grant_proposal)
     while grant_proposal.timer < GRANT_PROPOSAL_TIMER_SECONDS:
         await asyncio.sleep(GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
         grant_proposal.timer += GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
@@ -53,9 +52,9 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
     Submit a grant proposal to the Discord channel. The proposal will be approved after GRANT_PROPOSAL_TIMER_SECONDS unless a L3 member reacts with a :x: emoji to the original message or the confirmation message.
     Parameters:
         ctx (commands.Context): The context in which the command was called.
-        mention (str): The mention of the user the grant is being proposed to.
-        amount (str): The amount of the grant being proposed.
-        description (str): The description of the grant being proposed.
+        mention: The mention of the user the grant is being proposed to.
+        amount: The amount of the grant being proposed.
+        description: The description of the grant being proposed.
     """
     description = ' '.join(description)
 

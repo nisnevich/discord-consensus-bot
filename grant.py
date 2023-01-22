@@ -69,12 +69,12 @@ async def grant(message_id):
         # TODO: add extra handling if grant message wasn't delivered for some reason, such as email
         return
 
-    # Remove grant proposal from dictionary and database
+    # Remove grant proposal from dictionary
     try:
-        grant_proposal = get_grant_proposal(message_id)
         remove_grant_proposal(message_id)
     except ValueError as e:
         logger.critical(f"Error while removing grant proposal: {e}")
         return
+    # Remove from database
     await db.delete(grant_proposal)
     logger.info("Successfully applied grant. message_id=%d", message_id)
