@@ -40,13 +40,23 @@ class DBUtil:
     def load_pending_grant_proposals(self) -> Query:
         return DBUtil.session.query(GrantProposals)
 
+    def log_pending_grant_proposals(self) -> Query:
+        # Load pending proposals from database
+        pending_grant_proposals = self.load_pending_grant_proposals()
+        logger.info("Logging pending proposals in DB on request")
+        logger.info("Total: %d", pending_grant_proposals.count())
+        for proposal in pending_grant_proposals:
+            logger.info(proposal)
+
     async def add(self, orm_object):
         async with DBUtil.session_lock:
             DBUtil.session.add(orm_object)
+            DBUtil.session.commit()
 
     async def delete(self, orm_object):
         async with DBUtil.session_lock:
             DBUtil.session.delete(orm_object)
+            DBUtil.session.commit()
 
     async def commit(self):
         async with DBUtil.session_lock:

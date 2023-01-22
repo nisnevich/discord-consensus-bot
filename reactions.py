@@ -6,13 +6,14 @@ from discord import client
 from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
 from utils.db_utils import DBUtil
 from utils import db_utils
-from utils.logging_config import log_handler
+from utils.logging_config import log_handler, console_handler
 from utils.validation import validate_roles
 from utils.bot_utils import get_discord_client
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(log_handler)
+logger.addHandler(console_handler)
 
 db = DBUtil()
 client = get_discord_client()
@@ -25,12 +26,11 @@ async def on_raw_reaction_add(client, payload):
     Parameters:
         payload (discord.RawReactionActionEvent): The event containing data about the reaction.
     """
+    logger.info("Reaction!")
 
     # Check if reaction is a :x: emoji
     if payload.emoji.name != "x":
         return
-
-    # TODO implement :?: (question) reaction that would pause the proposal
 
     # Check if the reaction was made to the original grant proposal message or the confirmation message
     # If the reaction was made to the confirmation message, we need to get the original grant proposal message
