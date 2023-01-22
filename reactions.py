@@ -3,7 +3,12 @@ import logging
 import discord
 from discord import client
 
-from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
+from utils.grant_utils import (
+    get_grant_proposal,
+    add_grant_proposal,
+    remove_grant_proposal,
+    is_relevant_grant_proposal,
+)
 from utils.db_utils import DBUtil
 from utils import db_utils
 from utils.logging_config import log_handler, console_handler
@@ -20,24 +25,28 @@ client = get_discord_client()
 
 
 @client.event
-async def on_raw_reaction_add(client, payload):
+async def on_raw_reaction_add(payload):
     """
     Cancel a grant proposal if a L3 member reacts with a :x: emoji to the original message or the confirmation message.
     Parameters:
         payload (discord.RawReactionActionEvent): The event containing data about the reaction.
     """
     logger.info("Reaction!")
+    logger.info(payload)
+    logger.info(payload.emoji.name)
 
-    # Check if reaction is a :x: emoji
-    if payload.emoji.name != "x":
+    # Check if reaction is ❌ (:x: emoji)
+    if payload.emoji.name != "\U0000274C":
         return
 
     # Check if the reaction was made to the original grant proposal message or the confirmation message
     # If the reaction was made to the confirmation message, we need to get the original grant proposal message
     original_message_id = payload.message_id
+    if not is_relevant_grant_proposal(original_message_id):
+        return
     try:
-        proposal = get_grant_proposal(payload.message_id)
-        original_message_id = proposal["message_id"]
+        proposal = get_grant_proposal(original_message_id)
+        original_message_id = proposal.message_id
     except ValueError as e:
         logger.critical(f"Error while getting grant proposal: {e}")
         return
@@ -57,7 +66,7 @@ async def on_raw_reaction_add(client, payload):
         )
         return
     # Removing from DB
-    await db.delete(grant_proposal)
+    await db.delete(proposal)
     logger.info("Cancelled grant proposal. message_id=%d", original_message_id)
 
     # Confirm that the grant proposal was cancelled in chat

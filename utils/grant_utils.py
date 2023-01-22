@@ -14,6 +14,10 @@ def get_grant_proposal(message_id):
         raise ValueError(f"Invalid message ID: {message_id}")
 
 
+def is_relevant_grant_proposal(message_id):
+    return message_id in grant_proposals
+
+
 def get_grant_proposals_count():
     return len(grant_proposals)
 
