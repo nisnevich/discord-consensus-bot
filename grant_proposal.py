@@ -9,7 +9,12 @@ from grant import grant
 
 from utils.const import *
 import utils.db_utils
-from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
+from utils.grant_utils import (
+    get_grant_proposal,
+    add_grant_proposal,
+    remove_grant_proposal,
+    is_relevant_grant_proposal,
+)
 from utils.db_utils import DBUtil
 from utils.logging_config import log_handler, console_handler
 from utils.validation import validate_roles, validate_grant_message
@@ -37,10 +42,16 @@ async def approve_grant_proposal(message_id):
         logger.error(f"Error while getting grant proposal: {e}")
         return
     while grant_proposal.timer < GRANT_PROPOSAL_TIMER_SECONDS:
+        # If proposal was cancelled, it will be removed from dictionary (see on_raw_reaction_add)
+        if not is_relevant_grant_proposal(message_id):
+            return
         await asyncio.sleep(GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
         grant_proposal.timer += GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
         await db.commit()
     try:
+        # Double check to make sure proposal wasn't cancelled
+        if not is_relevant_grant_proposal(message_id):
+            return
         await grant(message_id)
     except ValueError as e:
         logger.error(f"Error while removing grant proposal: {e}")

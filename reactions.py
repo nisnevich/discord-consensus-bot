@@ -14,6 +14,7 @@ from utils import db_utils
 from utils.logging_config import log_handler, console_handler
 from utils.validation import validate_roles
 from utils.bot_utils import get_discord_client
+from utils.const import REACTION_ON_BOT_MENTION
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -25,15 +26,21 @@ client = get_discord_client()
 
 
 @client.event
+async def on_message(message):
+    """
+    React with greetings emoji to any message where bot is mentioned.
+    """
+    if client.user in message.mentions:
+        await message.add_reaction(REACTION_ON_BOT_MENTION)
+
+
+@client.event
 async def on_raw_reaction_add(payload):
     """
     Cancel a grant proposal if a L3 member reacts with a :x: emoji to the original message or the confirmation message.
     Parameters:
         payload (discord.RawReactionActionEvent): The event containing data about the reaction.
     """
-    logger.info("Reaction!")
-    logger.info(payload)
-    logger.info(payload.emoji.name)
 
     # Check if reaction is ❌ (:x: emoji)
     if payload.emoji.name != "\U0000274C":
@@ -54,10 +61,10 @@ async def on_raw_reaction_add(payload):
     # Get member object and validate roles
     guild = client.get_guild(payload.guild_id)
     member = guild.get_member(payload.user_id)
-    if not validate_roles(member):
+    if not await validate_roles(member):
         return
 
-    # Remove the object checking if it exists
+    # Remove the proposal from dictionary
     try:
         remove_grant_proposal(original_message_id)
     except ValueError as e:
