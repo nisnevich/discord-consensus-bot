@@ -76,7 +76,6 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
             return
         # If validation succeeded, cast 'amount' from string to integer
         amount = int(amount)
-        # FIXME check for duplicate grants in DB before adding (all fields must be the same), and then send error that says you must cancel the previous grant first
 
         # Add grant proposal to dictionary and database
         new_grant_proposal = GrantProposals(
@@ -91,15 +90,14 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         await db.add(new_grant_proposal)
 
         logger.info(
-            "Inserted data: message_id=%d, mention=%s, amount=%d, description=%s, timer=%d, channel_id=%d",
+            "Inserted data: message_id=%d, channel_id=%d, mention=%s, amount=%d, description=%s, timer=%d",
             ctx.message.id,
+            ctx.message.channel.id,
             mention,
             amount,
             description,
             0,
-            ctx.message.channel.id,
         )
-        # TODO backup DB somewhere remote after inserting or deleting any grant proposal, so if it gets lots then no proposals would be lost (if the timer will reset it's not a big deal compared to wasting proposals themselves)
 
         client.loop.create_task(approve_grant_proposal(ctx.message.id))
         logger.info("Added task to event loop to approve message_id=%d", ctx.message.id)

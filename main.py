@@ -20,8 +20,8 @@ def main():
         logger.info("Running approval of the proposals...")
         # Start background tasks to approve pending proposals
         for proposal in pending_grant_proposals:
-            client.loop.create_task(approve_grant_proposal(proposal.id))
-            logger.info("Added task to event loop to approve message_id=%d", ctx.message.id)
+            client.loop.create_task(approve_grant_proposal(proposal.message_id))
+            logger.info("Added task to event loop to approve message_id=%d", proposal.message_id)
 
     try:
         db = DBUtil()

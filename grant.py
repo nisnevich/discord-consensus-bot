@@ -38,7 +38,8 @@ async def grant(message_id):
     description = grant_proposal.description
     channel_id = grant_proposal.channel_id
 
-    original_message = await client.get_channel(channel_id).fetch_message(message_id)
+    channel = client.get_channel(channel_id)
+    original_message = await channel.fetch_message(message_id)
 
     # Construct the grant message
     grant_message = f"!grant {mention} {amount}"
