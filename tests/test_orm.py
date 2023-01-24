@@ -45,6 +45,35 @@ class TestGrantProposals(unittest.TestCase):
     def tearDown(self):
         Base.metadata.drop_all(self.engine)
 
+    def test_cleanup_grant_proposal_and_votes():
+        # Create a new grant proposal and associated votes
+        grant_proposal = GrantProposals(
+            message_id=1,
+            channel_id=1,
+            mention="test_user",
+            amount=100,
+            description="test_description",
+            timer=60,
+        )
+        voters = [Voters(user_id=i, grant_proposal=grant_proposal) for i in range(5)]
+        session.add(grant_proposal)
+        session.add_all(voters)
+        session.commit()
+        proposal_id = grant_proposal.id
+        vote_ids = [vote.id for vote in voters]
+
+        # Check that the grant proposal and associated votes were added to the database
+        assert session.query(GrantProposals).filter_by(id=proposal_id).count() == 1
+        assert session.query(Voters).filter(Voters.id.in_(vote_ids)).count() == 5
+
+        # Delete the grant proposal
+        session.delete(grant_proposal)
+        session.commit()
+
+        # Check that the grant proposal and associated votes were removed from the database
+        assert session.query(GrantProposals).filter_by(id=proposal_id).count() == 0
+        assert session.query(Voters).filter(Voters.id.in_(vote_ids)).count() == 0
+
 
 if __name__ == '__main__':
     unittest.main()
