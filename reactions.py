@@ -14,7 +14,7 @@ from utils import db_utils
 from utils.logging_config import log_handler, console_handler
 from utils.validation import validate_roles
 from utils.bot_utils import get_discord_client
-from utils.const import REACTION_ON_BOT_MENTION
+from utils.const import REACTION_ON_BOT_MENTION, CANCEL_EMOJI_UNICODE
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -42,8 +42,8 @@ async def on_raw_reaction_add(payload):
         payload (discord.RawReactionActionEvent): The event containing data about the reaction.
     """
 
-    # Check if reaction is ❌ (:x: emoji)
-    if payload.emoji.name != "\U0000274C":
+    # Check for cancel reaction
+    if payload.emoji.name != CANCEL_EMOJI_UNICODE:
         return
 
     # Check if the reaction was made to the original grant proposal message or the confirmation message

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Query
 from sqlalchemy import create_engine
 from schemas.grant_proposals import Base, GrantProposals
 
-from utils.const import DB_NAME, GRANT_PROPOSALS_TABLE_NAME
+from utils.const import DB_NAME, GRANT_PROPOSALS_TABLE_NAME, VOTERS_TABLE_NAME
 from utils.logging_config import log_handler, console_handler
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,11 @@ class DBUtil:
         if not DBUtil.engine.has_table(GRANT_PROPOSALS_TABLE_NAME):
             Base.metadata.create_all(DBUtil.engine)
         else:
-            logger.info("Tables already exist: %s", GRANT_PROPOSALS_TABLE_NAME)
+            logger.info("Table already exist: %s", GRANT_PROPOSALS_TABLE_NAME)
+        if not DBUtil.engine.has_table(VOTERS_TABLE_NAME):
+            Base.metadata.create_all(DBUtil.engine)
+        else:
+            logger.info("Table already exist: %s", VOTERS_TABLE_NAME)
 
     def load_pending_grant_proposals(self) -> Query:
         return DBUtil.session.query(GrantProposals)

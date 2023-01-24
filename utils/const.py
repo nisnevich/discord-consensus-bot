@@ -23,6 +23,7 @@ RESPONSIBLE_MENTION = "<@703574259401883728>"
 REACTION_ON_BOT_MENTION = "👋"  # wave
 
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
+CANCEL_EMOJI_UNICODE = "\U0000274C"  # ❌ (:x: emoji)
 
 COMMAND_FORMAT_RESPONSE = """
 Hi {author}! This command should look like:
