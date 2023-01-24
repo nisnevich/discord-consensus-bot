@@ -12,6 +12,7 @@ class GrantProposals(Base):
     id = Column(Integer, primary_key=True)
     message_id = Column(Integer)
     channel_id = Column(Integer)
+    voting_message_id = Column(Integer)
     mention = Column(String)
     amount = Column(Integer)
     description = Column(String)

@@ -38,6 +38,10 @@ def add_grant_proposal(new_grant_proposal: GrantProposals):
         raise ValueError(
             f"channel_id should be an int, got {type(new_grant_proposal.channel_id)} instead: {new_grant_proposal.channel_id}"
         )
+    if not isinstance(new_grant_proposal.voting_message_id, int):
+        raise ValueError(
+            f"voting_message_id should be an int, got {type(new_grant_proposal.voting_message_id)} instead: {new_grant_proposal.voting_message_id}"
+        )
     if not isinstance(new_grant_proposal.mention, (discord.User, str)):
         raise ValueError(
             f"mention should be discord.User or str, got {type(new_grant_proposal.mention)} instead: {new_grant_proposal.mention}"

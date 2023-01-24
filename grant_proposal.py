@@ -36,6 +36,7 @@ async def approve_grant_proposal(message_id):
     """
     Loop until the timer reaches GRANT_PROPOSAL_TIMER_SECONDS days. Every minute, the timer is incremented by 60 seconds and updated in the database. If the timer ends, the grant proposal is approved and the entry is removed from the dictionary and database.
     """
+    logger.info("Running approval coroutine for message_id=%d", message.id)
     try:
         grant_proposal = get_grant_proposal(message_id)
     except ValueError as e:
@@ -87,10 +88,15 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         # If validation succeeded, cast 'amount' from string to integer
         amount = int(amount)
 
+        # Add proposal to the voting channel
+        channel = client.get_channel(CHANNEL_VOTING)
+        voting_message = await channel.send(NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE)
+
         # Add grant proposal to dictionary and database
         new_grant_proposal = GrantProposals(
             message_id=ctx.message.id,
             channel_id=ctx.message.channel.id,
+            voting_message_id=voting_message.id,
             mention=mention,
             amount=amount,
             description=description,
@@ -98,33 +104,38 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         )
         add_grant_proposal(new_grant_proposal)
         await db.add(new_grant_proposal)
-
         logger.info(
-            "Inserted data: message_id=%d, channel_id=%d, mention=%s, amount=%d, description=%s, timer=%d",
+            "Inserted data: message_id=%d, channel_id=%d, voting_message_id=%s, mention=%s, amount=%d, description=%s, timer=%d",
             ctx.message.id,
             ctx.message.channel.id,
+            voting_message.id,
             mention,
             amount,
             description,
             0,
         )
 
+        # Run the approval coroutine
         client.loop.create_task(approve_grant_proposal(ctx.message.id))
-        logger.info("Added task to event loop to approve message_id=%d", ctx.message.id)
+        logger.info("Added task to event loop to approve message_id=%d", message.id)
 
-        # Send confirmation message
+        # Reply to the proposer
         await original_message.reply(
-            PROPOSAL_ACCEPTED_RESPONSE.format(
+            NEW_PROPOSAL_SAME_CHANNEL_RESPONSE.format(
                 author=ctx.message.author.mention,
-                time_hours=int(
-                    GRANT_PROPOSAL_TIMER_SECONDS / 60 / 60,
-                ),
-                date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
                 mention=mention,
+                amount=amount,
+                #  time_hours=int(
+                #      GRANT_PROPOSAL_TIMER_SECONDS / 60 / 60,
+                #  ),
+                #  date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
+                threshold=LAZY_CONSENSUS_THRESHOLD,
+                reaction=CANCEL_EMOJI_UNICODE,
+                voting_link=voting_message.jump_url,
             )
         )
         logger.info(
-            "Sent confirmation message for grant proposal with message_id=%d", ctx.message.id
+            "Sent confirmation messages for grant proposal with message_id=%d", ctx.message.id
         )
 
     except Exception as e:
