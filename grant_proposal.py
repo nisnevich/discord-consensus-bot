@@ -89,10 +89,10 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         amount = int(amount)
 
         # Add proposal to the voting channel
-        channel = client.get_channel(CHANNEL_VOTING)
+        channel = client.get_channel(VOTING_CHANNEL_ID)
         voting_message = await channel.send(NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE)
 
-        # Add grant proposal to dictionary and database
+        # Add grant proposal to dictionary and database, including the message id in the voting channel sent above
         new_grant_proposal = GrantProposals(
             message_id=ctx.message.id,
             channel_id=ctx.message.channel.id,

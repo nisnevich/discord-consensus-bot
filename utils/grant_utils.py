@@ -59,4 +59,4 @@ def add_grant_proposal(new_grant_proposal: GrantProposals):
             f"timer should be an int, got {type(new_grant_proposal.timer)} instead: {new_grant_proposal.timer}"
         )
 
-    grant_proposals[new_grant_proposal.message_id] = new_grant_proposal
+    grant_proposals[new_grant_proposal.voting_message_id] = new_grant_proposal
