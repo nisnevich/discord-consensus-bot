@@ -16,6 +16,12 @@ class GrantProposals(Base):
     amount = Column(Integer)
     description = Column(String)
     timer = Column(Integer)
+    """
+    In the next line, back_populates creates a bidirectional relationship between the two classes.
+    cascade specifies what should happen to the related voters when the grant proposal is deleted.
+    "all" means that all actions, such as deletion, will be cascaded to the related voters.
+    "delete-orphan" means that any voters that no longer have a related grant proposal will be deleted from the database.
+    """
     voters = relationship("Voters", back_populates="grant_proposal", cascade="all, delete-orphan")
 
     def __init__(self, **kwargs):
@@ -27,6 +33,10 @@ class GrantProposals(Base):
 
 
 class Voters(Base):
+    """
+    The Voters class represents a voter in a grant proposal. It is used to store user_id and grant_proposal_id in the 'voters' table in the database. The grant_proposal_id is a foreign key referencing the 'grant_proposals' table, and is used to establish a relationship between a voter and the grant proposal they voted against. This relationship is defined using SQLAlchemy's relationship feature, and allows for easy retrieval of all voters for a specific grant proposal.
+    """
+
     __tablename__ = "voters"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer)
