@@ -15,6 +15,7 @@ LOG_FILE_SIZE = 1024 * 1024 * 10
 
 DB_NAME = "lazy-consensus-bot.db"
 GRANT_PROPOSALS_TABLE_NAME = "grant_proposals"
+VOTERS_TABLE_NAME = "voters"
 
 DISCORD_COMMAND_PREFIX = "!"
 # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
@@ -22,6 +23,7 @@ RESPONSIBLE_MENTION = "<@703574259401883728>"
 REACTION_ON_BOT_MENTION = "👋"  # wave
 
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
+
 COMMAND_FORMAT_RESPONSE = """
 Hi {author}! This command should look like:
 
