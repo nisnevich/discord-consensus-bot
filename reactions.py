@@ -70,11 +70,20 @@ async def on_raw_reaction_add(payload):
     if not is_relevant_grant_proposal(reaction_message_id):
         return
 
-    # Check whether the voter is the proposer himself
-    # FIXME
+    #  Check whether the voter is the proposer himself
+    if proposal.author_id == payload.user_id:
+        # reply in original channel to the original proposal message with PROPOSAL_RESULT_PROPOSER_RESPONSE["CancelledByProposer"]
+        # edit the message where reaction was made to PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE with PROPOSAL_RESULT_VOTING_CHANNEL["CancelledByProposer"]
+        # remove from DB
+        return
 
     # Check if the threshold is reached
-    # FIXME
+    # if it's not:
+    # 1) add the person who voted to voters list and save it to DB
+    # if it's reached:
+    # 1) reply in original channel to the original proposal message with PROPOSAL_RESULT_PROPOSER_RESPONSE["CancelledByReachingThreshold"]
+    # 2) edit the message where reaction was made to PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE with PROPOSAL_RESULT_VOTING_CHANNEL["CancelledByReachingThreshold"]
+    # 3) remove from DB
 
     # Remove the proposal from dictionary
     try:
@@ -84,8 +93,6 @@ async def on_raw_reaction_add(payload):
             f"A cancel emoji was added to the response of the bot, but the original grant proposal message couldn't be found in the list of active proposals: {e}"
         )
         return
-    # Removing from DB
-    await db.delete(proposal)
     logger.info("Cancelled grant proposal. message_id=%d", original_message_id)
 
     # Confirm that the grant proposal was cancelled in chat

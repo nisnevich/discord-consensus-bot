@@ -76,7 +76,4 @@ async def grant(message_id):
     except ValueError as e:
         logger.critical(f"Error while removing grant proposal: {e}")
         return
-
-    # Remove from database
-    await db.delete(grant_proposal)
     logger.info("Successfully applied grant. message_id=%d", message_id)

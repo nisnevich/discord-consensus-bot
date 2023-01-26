@@ -18,6 +18,7 @@ logger.addHandler(console_handler)
 class DBUtil:
     engine = None
     session = None
+    # The lock is used to prevent concurrency errors when updating DB from event loop coroutines
     session_lock = asyncio.Lock()
 
     def connect_db(self):

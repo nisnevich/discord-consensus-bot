@@ -12,6 +12,7 @@ class GrantProposals(Base):
     id = Column(Integer, primary_key=True)
     message_id = Column(Integer)
     channel_id = Column(Integer)
+    author_id = Column(Integer)
     voting_message_id = Column(Integer)
     mention = Column(String)
     amount = Column(Integer)
@@ -32,7 +33,7 @@ class GrantProposals(Base):
         self.voters = []
 
     def __repr__(self) -> str:
-        return f"<GrantProposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, mention={self.mention}, amount={self.amount}, description={self.description}, timer={self.timer}, voters={self.voters}>"
+        return f"<GrantProposal(id={self.id}, message_id={self.message_id}, author_id={self.author_id}, channel_id={self.channel_id}, mention={self.mention}, amount={self.amount}, description={self.description}, timer={self.timer}, voters={self.voters}>"
 
 
 class Voters(Base):

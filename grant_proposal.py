@@ -96,6 +96,7 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         new_grant_proposal = GrantProposals(
             message_id=ctx.message.id,
             channel_id=ctx.message.channel.id,
+            author_id=ctx.message.author.id,
             voting_message_id=voting_message.id,
             mention=mention,
             amount=amount,
@@ -103,17 +104,6 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
             timer=0,
         )
         add_grant_proposal(new_grant_proposal)
-        await db.add(new_grant_proposal)
-        logger.info(
-            "Inserted data: message_id=%d, channel_id=%d, voting_message_id=%s, mention=%s, amount=%d, description=%s, timer=%d",
-            ctx.message.id,
-            ctx.message.channel.id,
-            voting_message.id,
-            mention,
-            amount,
-            description,
-            0,
-        )
 
         # Run the approval coroutine
         client.loop.create_task(approve_grant_proposal(ctx.message.id))

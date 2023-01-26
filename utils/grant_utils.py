@@ -3,6 +3,7 @@ from typing import Union
 from typing import Optional
 
 from schemas.grant_proposals import GrantProposals
+from utils.db_utils import DBUtil
 
 grant_proposals = {}
 
@@ -22,14 +23,17 @@ def get_grant_proposals_count():
     return len(grant_proposals)
 
 
-def remove_grant_proposal(message_id):
+async def remove_grant_proposal(message_id, db: DBUtil):
     if message_id in grant_proposals:
         del grant_proposals[message_id]
+        # Removing from DB
+        await db.delete(proposal)
+        logger.info("Removed data: %s", proposal)
     else:
         raise ValueError(f"Invalid message ID: {message_id}")
 
 
-def add_grant_proposal(new_grant_proposal: GrantProposals):
+async def add_grant_proposal(new_grant_proposal: GrantProposals, db: DBUtil):
     if not isinstance(new_grant_proposal.message_id, int):
         raise ValueError(
             f"message_id should be an int, got {type(new_grant_proposal.message_id)} instead: {new_grant_proposal.message_id}"
@@ -37,6 +41,10 @@ def add_grant_proposal(new_grant_proposal: GrantProposals):
     if not isinstance(new_grant_proposal.channel_id, int):
         raise ValueError(
             f"channel_id should be an int, got {type(new_grant_proposal.channel_id)} instead: {new_grant_proposal.channel_id}"
+        )
+    if not isinstance(new_grant_proposal.author_id, int):
+        raise ValueError(
+            f"author_id should be an int, got {type(new_grant_proposal.author_id)} instead: {new_grant_proposal.author_id}"
         )
     if not isinstance(new_grant_proposal.voting_message_id, int):
         raise ValueError(
@@ -60,3 +68,6 @@ def add_grant_proposal(new_grant_proposal: GrantProposals):
         )
 
     grant_proposals[new_grant_proposal.voting_message_id] = new_grant_proposal
+    # Saving to DB
+    await db.add(new_grant_proposal)
+    logger.info("Inserted data: %s", new_grant_proposal)
