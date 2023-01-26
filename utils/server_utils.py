@@ -10,3 +10,8 @@ async def get_members_count_with_role(client: discord.Client, role_id: int):
     members_with_role = [member for member in guild.members if role in member.roles]
     # Return the length of the list of members with the role
     return len(members_with_role)
+
+
+async def get_message(client: discord.Client, channel_id: int, message_id: int):
+    channel = client.get_channel(channel_id)
+    return await channel.fetch_message(message_id)

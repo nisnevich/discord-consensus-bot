@@ -96,7 +96,7 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         new_grant_proposal = GrantProposals(
             message_id=ctx.message.id,
             channel_id=ctx.message.channel.id,
-            author_id=ctx.message.author.id,
+            author=ctx.message.author.mention,
             voting_message_id=voting_message.id,
             mention=mention,
             amount=amount,

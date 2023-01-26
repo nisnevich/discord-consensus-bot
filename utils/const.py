@@ -79,13 +79,12 @@ Goal: {description}
 The original proposal: {link_to_original_message}
 """
 PROPOSAL_RESULT_VOTING_CHANNEL = {
-    "Accepted": "The grant has been given!",
-    "CancelledByReachingThreshold": "The proposal has been cancelled due to opposition from {threshold} members: {voters_list}",
-    "CancelledByProposer": "The proposal has been cancelled by the proposer.",
+    ProposalResult.ACCEPTED: "The grant has been given!",
+    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "The proposal has been cancelled due to opposition from {threshold} members: {voters_list}",
+    ProposalResult.CANCELLED_BY_PROPOSER: "The proposal has been cancelled by the proposer.",
 }
 PROPOSAL_RESULT_PROPOSER_RESPONSE = {
-    "Accepted": "Hooray! The grant has been given and {mention} is now richer by {amount} points!",
-    "CancelledByReachingThreshold": "Sorry, {author}, but it looks like {threshold} members
-    weren't on board with your proposal: {voting_link}",
-    "CancelledByProposer": "Oh well, {author} has cancelled the proposal.",
+    ProposalResult.ACCEPTED: "Hooray! The grant has been given and {mention} is now richer by {amount} points!",
+    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}",
+    ProposalResult.CANCELLED_BY_PROPOSER: "Oh well, {author} has cancelled the proposal.",
 }

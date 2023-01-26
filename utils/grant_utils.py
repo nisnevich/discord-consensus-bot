@@ -12,7 +12,10 @@ def get_grant_proposal(message_id):
     if message_id in grant_proposals:
         return grant_proposals[message_id]
     else:
-        raise ValueError(f"Invalid message ID: {message_id}")
+        logger.critical(
+            f"Unable to get the proposal {message_id} - it couldn't be found in the list of active proposals."
+        )
+        raise ValueError(f"Invalid proposal ID: {message_id}")
 
 
 def is_relevant_grant_proposal(message_id):
@@ -30,7 +33,10 @@ async def remove_grant_proposal(message_id, db: DBUtil):
         await db.delete(proposal)
         logger.info("Removed data: %s", proposal)
     else:
-        raise ValueError(f"Invalid message ID: {message_id}")
+        logger.critical(
+            f"Unable to remove the proposal {message_id} - it couldn't be found in the list of active proposals."
+        )
+        raise ValueError(f"Invalid proposal ID: {message_id}")
 
 
 async def add_grant_proposal(new_grant_proposal: GrantProposals, db: DBUtil):
@@ -42,9 +48,9 @@ async def add_grant_proposal(new_grant_proposal: GrantProposals, db: DBUtil):
         raise ValueError(
             f"channel_id should be an int, got {type(new_grant_proposal.channel_id)} instead: {new_grant_proposal.channel_id}"
         )
-    if not isinstance(new_grant_proposal.author_id, int):
+    if not isinstance(new_grant_proposal.author, (discord.User, str)):
         raise ValueError(
-            f"author_id should be an int, got {type(new_grant_proposal.author_id)} instead: {new_grant_proposal.author_id}"
+            f"author should be discord.User or str, got {type(new_grant_proposal.author)} instead: {new_grant_proposal.author}"
         )
     if not isinstance(new_grant_proposal.voting_message_id, int):
         raise ValueError(
