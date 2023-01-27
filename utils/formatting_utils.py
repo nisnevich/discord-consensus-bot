@@ -1,7 +1,7 @@
-import datetime
+from datetime import datetime
 
 
-def get_discord_timestamp_plus_delta(delta_seconds: int, timestamp_string=f"<t:{timestamp}>"):
+def get_discord_timestamp_plus_delta(delta_seconds: int, timestamp_string="<t:{timestamp}>"):
     # TODO add docs and validation
     # Get the current date and time in UTC
     now = datetime.datetime.now()
@@ -10,9 +10,9 @@ def get_discord_timestamp_plus_delta(delta_seconds: int, timestamp_string=f"<t:{
     # Convert the datetime object to a timestamp
     timestamp = int(three_days_later.timestamp())
 
-    return timestamp_string
+    return timestamp_string.format(timestamp=timestamp)
 
 
 def get_discord_countdown_plus_delta(delta_seconds: int):
-    timestamp_countdown = f"<t:{timestamp}:R>"
+    timestamp_countdown = "<t:{timestamp}:R>"
     return get_discord_timestamp_plus_delta(delta_seconds, timestamp_string=timestamp_countdown)

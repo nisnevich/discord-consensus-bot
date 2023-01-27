@@ -1,5 +1,5 @@
-from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy import Column, Integer, String, ForeignKey
 
 from utils.const import GRANT_PROPOSALS_TABLE_NAME, VOTERS_TABLE_NAME
 
