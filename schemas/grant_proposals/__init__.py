@@ -24,9 +24,7 @@ class GrantProposals(Base):
     "all" means that all actions, such as deletion, will be cascaded to the related voters.
     "delete-orphan" means that any voters that no longer have a related grant proposal will be deleted from the database.
     """
-    voters = relationship(
-        "Voters", back_populates=GRANT_PROPOSALS_TABLE_NAME, cascade="all, delete-orphan"
-    )
+    voters = relationship("Voters", back_populates="grant_proposal", cascade="all, delete-orphan")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -46,7 +44,7 @@ class Voters(Base):
     user_id = Column(Integer)
     grant_proposal_id = Column(Integer, ForeignKey("grant_proposals.id"))
 
-    grant_proposal = relationship("GrantProposals", back_populates=VOTERS_TABLE_NAME)
+    grant_proposal = relationship("GrantProposals", back_populates="voters")
 
     def __repr__(self) -> str:
         return f"<Voter(id={self.id}, user_id={self.user_id}, grant_proposal_id={self.grant_proposal_id}>"
