@@ -8,35 +8,35 @@ from utils.db_utils import DBUtil
 grant_proposals = {}
 
 
-def get_grant_proposal(message_id):
-    if message_id in grant_proposals:
-        return grant_proposals[message_id]
+def get_grant_proposal(voting_message_id):
+    if voting_message_id in grant_proposals:
+        return grant_proposals[voting_message_id]
     else:
         logger.critical(
-            f"Unable to get the proposal {message_id} - it couldn't be found in the list of active proposals."
+            f"Unable to get the proposal {voting_message_id} - it couldn't be found in the list of active proposals."
         )
-        raise ValueError(f"Invalid proposal ID: {message_id}")
+        raise ValueError(f"Invalid proposal ID: {voting_message_id}")
 
 
-def is_relevant_grant_proposal(message_id):
-    return message_id in grant_proposals
+def is_relevant_grant_proposal(voting_message_id):
+    return voting_message_id in grant_proposals
 
 
 def get_grant_proposals_count():
     return len(grant_proposals)
 
 
-async def remove_grant_proposal(message_id, db: DBUtil):
-    if message_id in grant_proposals:
-        del grant_proposals[message_id]
+async def remove_grant_proposal(voting_message_id, db: DBUtil):
+    if voting_message_id in grant_proposals:
+        del grant_proposals[voting_message_id]
         # Removing from DB; the delete-orphan cascade will clean up the Voters table with the associated data
         await db.delete(proposal)
         logger.info("Removed data: %s", proposal)
     else:
         logger.critical(
-            f"Unable to remove the proposal {message_id} - it couldn't be found in the list of active proposals."
+            f"Unable to remove the proposal {voting_message_id} - it couldn't be found in the list of active proposals."
         )
-        raise ValueError(f"Invalid proposal ID: {message_id}")
+        raise ValueError(f"Invalid proposal ID: {voting_message_id}")
 
 
 async def add_grant_proposal(new_grant_proposal: GrantProposals, db=None):
@@ -47,6 +47,7 @@ async def add_grant_proposal(new_grant_proposal: GrantProposals, db=None):
     db (optional): The DBUtil object used to save a proposal. If this parameter is not specified,proposal will only be added to in-memory dict (use case: when restoring data from DB).
     """
 
+    # Some extra validation; it's helpful when the values of the ORM object were changed after it was created, and for debugging as it provides detailed error messages
     if not isinstance(new_grant_proposal.message_id, int):
         raise ValueError(
             f"message_id should be an int, got {type(new_grant_proposal.message_id)} instead: {new_grant_proposal.message_id}"
@@ -78,6 +79,10 @@ async def add_grant_proposal(new_grant_proposal: GrantProposals, db=None):
     if not isinstance(new_grant_proposal.timer, int):
         raise ValueError(
             f"timer should be an int, got {type(new_grant_proposal.timer)} instead: {new_grant_proposal.timer}"
+        )
+    if not isinstance(new_grant_proposal.bot_response_message_id, int):
+        raise ValueError(
+            f"bot_response_message_id should be an int, got {type(new_grant_proposal.bot_response_message_id)} instead: {new_grant_proposal.bot_response_message_id}"
         )
 
     # Saving to DB if DBUtil parameter was specified

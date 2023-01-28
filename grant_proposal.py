@@ -92,25 +92,8 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         channel = client.get_channel(VOTING_CHANNEL_ID)
         voting_message = await channel.send(NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE)
 
-        # Add grant proposal to dictionary and database, including the message id in the voting channel sent above
-        new_grant_proposal = GrantProposals(
-            message_id=ctx.message.id,
-            channel_id=ctx.message.channel.id,
-            author=ctx.message.author.mention,
-            voting_message_id=voting_message.id,
-            mention=mention,
-            amount=amount,
-            description=description,
-            timer=0,
-        )
-        add_grant_proposal(new_grant_proposal)
-
-        # Run the approval coroutine
-        client.loop.create_task(approve_grant_proposal(ctx.message.id))
-        logger.info("Added task to event loop to approve message_id=%d", message.id)
-
         # Reply to the proposer
-        await original_message.reply(
+        bot_response_message = await original_message.reply(
             NEW_PROPOSAL_SAME_CHANNEL_RESPONSE.format(
                 author=ctx.message.author.mention,
                 mention=mention,
@@ -127,6 +110,24 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         logger.info(
             "Sent confirmation messages for grant proposal with message_id=%d", ctx.message.id
         )
+
+        # Add grant proposal to dictionary and database, including the message id in the voting channel sent above
+        new_grant_proposal = GrantProposals(
+            message_id=ctx.message.id,
+            channel_id=ctx.message.channel.id,
+            author=ctx.message.author.mention,
+            voting_message_id=voting_message.id,
+            mention=mention,
+            amount=amount,
+            description=description,
+            timer=0,
+            bot_response_message_id=bot_response_message.id,
+        )
+        add_grant_proposal(new_grant_proposal)
+
+        # Run the approval coroutine
+        client.loop.create_task(approve_grant_proposal(ctx.message.id))
+        logger.info("Added task to event loop to approve message_id=%d", message.id)
 
     except Exception as e:
         try:

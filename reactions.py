@@ -27,6 +27,15 @@ db = DBUtil()
 client = get_discord_client()
 
 
+@client.event
+async def on_message(message):
+    """
+    React with greetings emoji to any message where bot is mentioned.
+    """
+    if client.user in message.mentions:
+        await message.add_reaction(REACTION_ON_BOT_MENTION)
+
+
 async def is_valid_voting_reaction(payload):
     # Check if the reaction matches
     if payload.emoji.name != CANCEL_EMOJI_UNICODE:
@@ -38,11 +47,29 @@ async def is_valid_voting_reaction(payload):
     if not await validate_roles(member):
         return False
 
-    # Check if the channel matches
+    # Check if this is a voting channel
     reaction_channel = guild.get_channel(payload.channel_id)
     if reaction_channel.id != VOTING_CHANNEL_ID:
-        reaction_message_id = payload.message_id
-        # TODO feature: check if reaction was made to a wrong message - either to bot reply or original proposer message, remove the reaction, and send user private message in channel explaining where he should add reaction
+        # Check if the user has attempted to vote on a wrong message - either the original proposer message, or the bots reply to it
+        incorrect_reaction_message = GrantProposals.query.filter(
+            GrantProposals.message_id == payload.message_id
+            or GrantProposals.bot_response_message_id == payload.message_id
+        ).first()
+        if incorrect_reaction_message:
+            # Remove reaction from the message, in order not to confuse other members
+            await reaction_channel.fetch_message(payload.message_id).remove_reaction(
+                payload.emoji, member
+            )
+            # Retrieve the relevant voting message to send link to the user
+            voting_channel = guild.get_channel(VOTING_CHANNEL_ID)
+            voting_message = await voting_channel.fetch_message(
+                incorrect_reaction_message.voting_message_id
+            )
+            # send private message to user
+            dm_channel = await member.create_dm()
+            await dm_channel.send(
+                f'Please add reactions to the voting message in {VOTING_CHANNEL_ID}'
+            )
         return False
 
     # Check if the reaction message is a relevant lazy consensus voting
@@ -52,22 +79,14 @@ async def is_valid_voting_reaction(payload):
 
 
 @client.event
-async def on_message(message):
-    """
-    React with greetings emoji to any message where bot is mentioned.
-    """
-    if client.user in message.mentions:
-        await message.add_reaction(REACTION_ON_BOT_MENTION)
-
-
-@client.event
 async def on_raw_reaction_remove(payload):
     try:
         # Check if the reaction was made by valid user to a valid voting message
         if not is_valid_voting_reaction(payload):
             return
 
-        proposal = get_grant_proposal(reaction_message_id)
+        # Get the proposal (it was already validated that it exists)
+        proposal = get_grant_proposal(payload.message_id)
 
         # Error handling - retrieve the voter object from the DB
         voter = Voters.query.filter(
@@ -84,11 +103,8 @@ async def on_raw_reaction_remove(payload):
             return
 
         # Remove the voter from the list of voters for the grant proposal
-        grant_proposal = GrantProposals.query.filter_by(
-            voting_message_id=payload.message_id
-        ).first()
-        grant_proposal.voters.remove(voter)
-        # Remove voter from Voters table; this method calls session.commit(), so the previous line changes will be saved as well
+        proposal.voters.remove(voter)
+        # Remove the voter from Voters table; this method invokes session.commit(), so the previous line changes will be saved as well
         db.delete(voter)
 
     except Exception as e:

@@ -18,6 +18,9 @@ class GrantProposals(Base):
     amount = Column(Integer)
     description = Column(String)
     timer = Column(Integer)
+    # This is only needed for some error handling, though very helpful for onboarding new users
+    bot_response_message_id = Column(Integer)
+
     """
     In the next line, back_populates creates a bidirectional relationship between the two classes.
     cascade specifies what should happen to the related voters when the grant proposal is deleted.
