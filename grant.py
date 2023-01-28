@@ -29,51 +29,72 @@ async def grant(message_id):
     description (str): The optional description of the grant.
     """
     try:
-        grant_proposal = get_grant_proposal(message_id)
-    except ValueError as e:
-        logger.error("Grant proposal not found. message_id=%d", message_id)
-        return
-
-    mention = grant_proposal.mention
-    amount = grant_proposal.amount
-    description = grant_proposal.description
-    channel_id = grant_proposal.channel_id
-
-    channel = client.get_channel(channel_id)
-    original_message = await channel.fetch_message(message_id)
-
-    # Construct the grant message
-    grant_message = f"!grant {mention} {amount}"
-    if description:
-        grant_message += f" {description}"
-
-    # Try sending the grant message up to 2 times
-    success = False
-    for i in range(2):
         try:
-            await original_message.reply(grant_message)
-            success = True
-            # TODO add "green tick" reaction to the original grant proposal message when succeed
-            break
-        except Exception:
-            logger.critical("An error occurred while sending grant message", exc_info=True)
-            # Waiting 5 seconds before retry
-            time.sleep(5)
-            pass
+            grant_proposal = get_grant_proposal(message_id)
+        except ValueError as e:
+            logger.error("Grant proposal not found. message_id=%d", message_id)
+            return
 
-    # Send error message if grant message could not be sent
-    if not success:
-        await original_message.reply(
-            f"Error: could not apply grant for {mention}. cc " + RESPONSIBLE_MENTION,
+        mention = grant_proposal.mention
+        amount = grant_proposal.amount
+        description = grant_proposal.description
+        channel_id = grant_proposal.channel_id
+
+        channel = client.get_channel(channel_id)
+        original_message = await channel.fetch_message(message_id)
+
+        # Construct the grant message
+        grant_message = f"!grant {mention} {amount}"
+        if description:
+            grant_message += f" {description}"
+
+        # Try sending the grant message up to 2 times
+        success = False
+        for i in range(2):
+            try:
+                await original_message.reply(grant_message)
+                success = True
+                # TODO add "green tick" reaction to the original grant proposal message when succeed
+                break
+            except Exception:
+                logger.critical("An error occurred while sending grant message", exc_info=True)
+                # Waiting 5 seconds before retry
+                time.sleep(5)
+                pass
+
+        # Send error message if grant message could not be sent
+        if not success:
+            await original_message.reply(
+                f"Error: could not apply grant for {mention}. cc " + RESPONSIBLE_MENTION,
+            )
+            logger.error("Could not apply grant. message_id=%d", message_id)
+            # TODO: add extra handling if grant message wasn't delivered for some reason, such as email
+            return
+
+        # Remove grant proposal from dictionary
+        try:
+            remove_grant_proposal(message_id)
+        except ValueError as e:
+            logger.critical(f"Error while removing grant proposal: {e}")
+            return
+        logger.info("Successfully applied grant. message_id=%d", message_id)
+
+    except Exception as e:
+        try:
+            grant_proposal = get_grant_proposal(message_id)
+            channel = client.get_channel(grant_proposal.channel_id)
+            original_message = await channel.fetch_message(message_id)
+
+            await original_message.reply(
+                "An unexpected error occurred when approving the grant. cc " + RESPONSIBLE_MENTION
+            )
+        except Exception as e:
+            logger.critical("Unable to reply in the chat that a critical error has occurred.")
+
+        logger.critical(
+            "Unexpected error in %s while approving the grant, voting_message_id=%s",
+            __name__,
+            message_id,
+            exc_info=True,
         )
-        logger.error("Could not apply grant. message_id=%d", message_id)
-        # TODO: add extra handling if grant message wasn't delivered for some reason, such as email
-        return
-
-    # Remove grant proposal from dictionary
-    try:
-        remove_grant_proposal(message_id)
-    except ValueError as e:
-        logger.critical(f"Error while removing grant proposal: {e}")
-        return
-    logger.info("Successfully applied grant. message_id=%d", message_id)
+        traceback.print_exc()

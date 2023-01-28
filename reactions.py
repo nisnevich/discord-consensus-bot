@@ -69,11 +69,10 @@ async def on_raw_reaction_remove(payload):
 
         proposal = get_grant_proposal(reaction_message_id)
 
-        # Retrieve the voter object from the DB
+        # Error handling - retrieve the voter object from the DB
         voter = Voters.query.filter(
             Voters.user_id == payload.user_id, Voters.voting_message_id == payload.message_id
         ).first()
-        # Error handling
         if not voter:
             logger.warning(
                 "Warning: Unable to find in the DB a user whose voting reaction was presented on active proposal. channel=%s, message=%s, user=%s, proposal=%s",
@@ -91,14 +90,20 @@ async def on_raw_reaction_remove(payload):
         grant_proposal.voters.remove(voter)
         # Remove voter from Voters table; this method calls session.commit(), so the previous line changes will be saved as well
         db.delete(voter)
+
     except Exception as e:
-        channel = client.get_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
-        await message.reply(
-            "An unexpected error occurred when handling reaction removal. cc " + RESPONSIBLE_MENTION
-        )
+        try:
+            channel = client.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            await message.reply(
+                "An unexpected error occurred when handling reaction removal. cc "
+                + RESPONSIBLE_MENTION
+            )
+        except Exception as e:
+            logger.critical("Unable to reply in the chat that a critical error has occurred.")
+
         logger.critical(
-            "Unexpected error in %s while removing reaction, channel=%s, message=%s, user=%s",
+            "Unexpected error in %s while removing vote (reaction), channel=%s, message=%s, user=%s",
             __name__,
             payload.channel_id,
             payload.message_id,
@@ -173,11 +178,10 @@ async def on_raw_reaction_add(payload):
             await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
             return
 
-        # Check if the user has already voted for this proposal
+        # Error/fraud handling - check if the user has already voted for this proposal
         voter = Voters.query.filter(
             Voters.user_id == payload.user_id, Voters.voting_message_id == payload.message_id
         ).first()
-        # Error handling
         if voter:
             logger.warning(
                 "Warning: Somehow the user has managed to vote twice on the same proposal. channel=%s, message=%s, user=%s, proposal=%s",
@@ -194,20 +198,24 @@ async def on_raw_reaction_add(payload):
                 Voters(user_id=payload.user_id, voting_message_id=proposal.voting_message_id)
             )
             db.session.commit()
-            return
         else:
             await cancel_proposal(
                 proposal, ProposalResult.CANCELLED_BY_REACHING_THRESHOLD, voting_message
             )
-            return
+
     except Exception as e:
-        channel = client.get_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
-        await message.reply(
-            "An unexpected error occurred when handling reaction adding. cc " + RESPONSIBLE_MENTION
-        )
+        try:
+            channel = client.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+            await message.reply(
+                "An unexpected error occurred when handling reaction adding. cc "
+                + RESPONSIBLE_MENTION
+            )
+        except Exception as e:
+            logger.critical("Unable to reply in the chat that a critical error has occurred.")
+
         logger.critical(
-            "Unexpected error in %s while adding reaction, channel=%s, message=%s, user=%s",
+            "Unexpected error in %s while voting (adding reaction), channel=%s, message=%s, user=%s",
             __name__,
             payload.channel_id,
             payload.message_id,

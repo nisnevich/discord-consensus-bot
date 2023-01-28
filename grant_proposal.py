@@ -129,8 +129,19 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         )
 
     except Exception as e:
-        await ctx.send(
-            "An unexpected error occurred, proposal wasn't added. cc " + RESPONSIBLE_MENTION
+        try:
+            await ctx.message.reply(
+                "An unexpected error occurred when adding proposal. cc " + RESPONSIBLE_MENTION
+            )
+        except Exception as e:
+            logger.critical("Unable to reply in the chat that a critical error has occurred.")
+
+        logger.critical(
+            "Unexpected error in %s while adding proposal, channel=%s, message=%s, user=%s",
+            __name__,
+            ctx.message.channel.id,
+            ctx.message.id,
+            ctx.message.author.mention,
+            exc_info=True,
         )
-        logger.critical("Unexpected error in %s", __name__, exc_info=True)
         traceback.print_exc()
