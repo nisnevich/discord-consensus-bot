@@ -40,6 +40,7 @@ def main():
         # Load pending proposals from database
         pending_grant_proposals = db.load_pending_grant_proposals()
         for proposal in pending_grant_proposals:
+            # Adding proposal without db parameter to only keep it in primary memory (as it's already in db)
             add_grant_proposal(proposal)
         logger.info(
             "Loaded %d pending grant proposal(s) from database", get_grant_proposals_count()

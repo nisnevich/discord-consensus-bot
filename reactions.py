@@ -27,6 +27,30 @@ db = DBUtil()
 client = get_discord_client()
 
 
+async def is_valid_voting_reaction(payload):
+    # Check if the reaction matches
+    if payload.emoji.name != CANCEL_EMOJI_UNICODE:
+        return False
+
+    # Check if the user role matches
+    guild = client.get_guild(payload.guild_id)
+    member = guild.get_member(payload.user_id)
+    if not await validate_roles(member):
+        return False
+
+    # Check if the channel matches
+    reaction_channel = guild.get_channel(payload.channel_id)
+    if reaction_channel.id != VOTING_CHANNEL_ID:
+        reaction_message_id = payload.message_id
+        # TODO feature: check if reaction was made to a wrong message - either to bot reply or original proposer message, remove the reaction, and send user private message in channel explaining where he should add reaction
+        return False
+
+    # Check if the reaction message is a relevant lazy consensus voting
+    if not is_relevant_grant_proposal(reaction_message_id):
+        return False
+    return True
+
+
 @client.event
 async def on_message(message):
     """
@@ -36,7 +60,52 @@ async def on_message(message):
         await message.add_reaction(REACTION_ON_BOT_MENTION)
 
 
-# FIXME implement on_raw_reaction_remove that would remove the voters from the list
+@client.event
+async def on_raw_reaction_remove(payload):
+    try:
+        # Check if the reaction was made by valid user to a valid voting message
+        if not is_valid_voting_reaction(payload):
+            return
+
+        proposal = get_grant_proposal(reaction_message_id)
+
+        # Retrieve the voter object from the DB
+        voter = Voters.query.filter(
+            Voters.user_id == payload.user_id, Voters.voting_message_id == payload.message_id
+        ).first()
+        # Error handling
+        if not voter:
+            logger.warning(
+                "Warning: Unable to find in the DB a user whose voting reaction was presented on active proposal. channel=%s, message=%s, user=%s, proposal=%s",
+                payload.channel_id,
+                payload.message_id,
+                payload.user_id,
+                proposal,
+            )
+            return
+
+        # Remove the voter from the list of voters for the grant proposal
+        grant_proposal = GrantProposals.query.filter_by(
+            voting_message_id=payload.message_id
+        ).first()
+        grant_proposal.voters.remove(voter)
+        # Remove voter from Voters table; this method calls session.commit(), so the previous line changes will be saved as well
+        db.delete(voter)
+    except Exception as e:
+        channel = client.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        await message.reply(
+            "An unexpected error occurred when handling reaction removal. cc " + RESPONSIBLE_MENTION
+        )
+        logger.critical(
+            "Unexpected error in %s while removing reaction, channel=%s, message=%s, user=%s",
+            __name__,
+            payload.channel_id,
+            payload.message_id,
+            payload.user_id,
+            exc_info=True,
+        )
+        traceback.print_exc()
 
 
 @client.event
@@ -90,46 +159,59 @@ async def on_raw_reaction_add(payload):
         remove_grant_proposal(proposal.id)
         logger.info("Cancelled grant proposal %s. id=%d", log_message, proposal.id)
 
-    # Check if the reaction matches
-    if payload.emoji.name != CANCEL_EMOJI_UNICODE:
-        return
+    try:
+        if not is_valid_voting_reaction(payload):
+            return
 
-    # Check if the user role matches
-    guild = client.get_guild(payload.guild_id)
-    member = guild.get_member(payload.user_id)
-    if not await validate_roles(member):
-        return
+        proposal = get_grant_proposal(reaction_message_id)
 
-    # Check if the channel matches
-    reaction_channel = guild.get_channel(payload.channel_id)
-    if reaction_channel.id != VOTING_CHANNEL_ID:
-        reaction_message_id = payload.message_id
-        # TODO feature: check if reaction was made to a wrong message - either to bot reply or original
-        # proposer message, and send user private message in channel explaining where he should add
-        # reaction
-        return
+        # The voting message is needed to format the replies of the bot later
+        reaction_channel = guild.get_channel(payload.channel_id)
+        voting_message = await reaction_channel.get_message(payload.message_id)
+        #  Check whether the voter is the proposer himself, and then cancel the proposal
+        if proposal.author_id == payload.user_id:
+            await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
+            return
 
-    # Check if the reaction message is a relevant lazy consensus voting
-    if not is_relevant_grant_proposal(reaction_message_id):
-        return
-    proposal = get_grant_proposal(reaction_message_id)
+        # Check if the user has already voted for this proposal
+        voter = Voters.query.filter(
+            Voters.user_id == payload.user_id, Voters.voting_message_id == payload.message_id
+        ).first()
+        # Error handling
+        if voter:
+            logger.warning(
+                "Warning: Somehow the user has managed to vote twice on the same proposal. channel=%s, message=%s, user=%s, proposal=%s",
+                payload.channel_id,
+                payload.message_id,
+                payload.user_id,
+                proposal,
+            )
+            return
 
-    # The voting message is needed to format the replies of the bot later
-    voting_message = await reaction_channel.get_message(payload.message_id)
-    #  Check whether the voter is the proposer himself, and then cancel the proposal
-    if proposal.author_id == payload.user_id:
-        await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
-        return
-
-    # Check if the threshold is reached
-    if len(proposal.voters) < LAZY_CONSENSUS_THRESHOLD:
-        proposal.voters.append(
-            Voters(user_id=payload.user_id, grant_proposal_id=proposal.voting_message_id)
+        # Check if the threshold is reached
+        if len(proposal.voters) < LAZY_CONSENSUS_THRESHOLD:
+            proposal.voters.append(
+                Voters(user_id=payload.user_id, voting_message_id=proposal.voting_message_id)
+            )
+            db.session.commit()
+            return
+        else:
+            await cancel_proposal(
+                proposal, ProposalResult.CANCELLED_BY_REACHING_THRESHOLD, voting_message
+            )
+            return
+    except Exception as e:
+        channel = client.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        await message.reply(
+            "An unexpected error occurred when handling reaction adding. cc " + RESPONSIBLE_MENTION
         )
-        db.session.commit()
-        return
-    else:
-        await cancel_proposal(
-            proposal, ProposalResult.CANCELLED_BY_REACHING_THRESHOLD, voting_message
+        logger.critical(
+            "Unexpected error in %s while adding reaction, channel=%s, message=%s, user=%s",
+            __name__,
+            payload.channel_id,
+            payload.message_id,
+            payload.user_id,
+            exc_info=True,
         )
-        return
+        traceback.print_exc()

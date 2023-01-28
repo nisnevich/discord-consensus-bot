@@ -29,7 +29,7 @@ def get_grant_proposals_count():
 async def remove_grant_proposal(message_id, db: DBUtil):
     if message_id in grant_proposals:
         del grant_proposals[message_id]
-        # Removing from DB
+        # Removing from DB; the delete-orphan cascade will clean up the Voters table with the associated data
         await db.delete(proposal)
         logger.info("Removed data: %s", proposal)
     else:
@@ -39,7 +39,14 @@ async def remove_grant_proposal(message_id, db: DBUtil):
         raise ValueError(f"Invalid proposal ID: {message_id}")
 
 
-async def add_grant_proposal(new_grant_proposal: GrantProposals, db: DBUtil):
+async def add_grant_proposal(new_grant_proposal: GrantProposals, db=None):
+    """
+    Add a new grant proposal to the database and to a dictionary.
+    Parameters:
+    new_grant_proposal (GrantProposals): The new grant proposal object to be added.
+    db (optional): The DBUtil object used to save a proposal. If this parameter is not specified,proposal will only be added to in-memory dict (use case: when restoring data from DB).
+    """
+
     if not isinstance(new_grant_proposal.message_id, int):
         raise ValueError(
             f"message_id should be an int, got {type(new_grant_proposal.message_id)} instead: {new_grant_proposal.message_id}"
@@ -73,7 +80,11 @@ async def add_grant_proposal(new_grant_proposal: GrantProposals, db: DBUtil):
             f"timer should be an int, got {type(new_grant_proposal.timer)} instead: {new_grant_proposal.timer}"
         )
 
+    # Saving to DB if DBUtil parameter was specified
+    if db:
+        await db.add(new_grant_proposal)
+        logger.info("Inserted proposal into DB: %s", new_grant_proposal)
+
+    # Adding to dict
     grant_proposals[new_grant_proposal.voting_message_id] = new_grant_proposal
-    # Saving to DB
-    await db.add(new_grant_proposal)
-    logger.info("Inserted data: %s", new_grant_proposal)
+    logger.info("Added proposal with voting_message_id=%s", new_grant_proposal.voting_message_id)

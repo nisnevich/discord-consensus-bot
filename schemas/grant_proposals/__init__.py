@@ -42,6 +42,7 @@ class Voters(Base):
     __tablename__ = VOTERS_TABLE_NAME
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer)
+    voting_message_id = Column(Integer)
     grant_proposal_id = Column(Integer, ForeignKey("grant_proposals.id"))
 
     grant_proposal = relationship("GrantProposals", back_populates="voters")
