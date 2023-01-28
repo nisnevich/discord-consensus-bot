@@ -129,4 +129,3 @@ async def grant(voting_message_id):
             voting_message_id,
             exc_info=True,
         )
-        traceback.print_exc()

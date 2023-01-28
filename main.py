@@ -8,7 +8,7 @@ from utils.grant_utils import add_grant_proposal, get_grant_proposals_count
 from utils.bot_utils import get_discord_client
 
 # imports below are needed to make discord client aware of decorated methods
-from grant_proposal import approve_grant_proposal
+from grant_proposal import grant_proposal, approve_grant_proposal
 from voting import on_raw_reaction_add
 from helpers import CustomHelpCommand
 

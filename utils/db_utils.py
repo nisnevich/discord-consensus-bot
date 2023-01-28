@@ -53,6 +53,11 @@ class DBUtil:
         for proposal in pending_grant_proposals:
             logger.info(proposal)
 
+    async def filter(self, table, condition):
+        async with DBUtil.session_lock:
+            query = DBUtil.session.query(table)
+            return query.filter(condition).first()
+
     async def add(self, orm_object):
         async with DBUtil.session_lock:
             DBUtil.session.add(orm_object)

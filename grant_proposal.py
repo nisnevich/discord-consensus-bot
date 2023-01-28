@@ -69,6 +69,7 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         description: The description of the grant being proposed.
     """
     description = ' '.join(description)
+    print("I see command!")
 
     try:
         original_message = await ctx.fetch_message(ctx.message.id)
@@ -146,4 +147,3 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
             ctx.message.author.mention,
             exc_info=True,
         )
-        traceback.print_exc()

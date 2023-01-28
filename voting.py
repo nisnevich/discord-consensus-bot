@@ -16,7 +16,7 @@ from utils.validation import validate_roles
 from utils.bot_utils import get_discord_client
 from utils.server_utils import get_message
 from utils.const import *
-from schemas.grant_proposals import Voters
+from schemas.grant_proposals import Voters, GrantProposals
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -28,6 +28,8 @@ client = get_discord_client()
 
 
 async def is_valid_voting_reaction(payload):
+    print("Verifying the reaction...")
+
     # Check if the reaction matches
     if payload.emoji.name != CANCEL_EMOJI_UNICODE:
         return False
@@ -39,13 +41,15 @@ async def is_valid_voting_reaction(payload):
         return False
 
     # Check if this is a voting channel
+    # TODO this check occurs on every reaction added to server, and it is really consuming so it's worth disabling after a short period of time when most users will be onboarded
     reaction_channel = guild.get_channel(payload.channel_id)
     if reaction_channel.id != VOTING_CHANNEL_ID:
         # Check if the user has attempted to vote on a wrong message - either the original proposer message, or the bots reply to it
-        incorrect_reaction_message = GrantProposals.query.filter(
+        incorrect_reaction_message = await db.filter(
+            GrantProposals,
             GrantProposals.message_id == payload.message_id
-            or GrantProposals.bot_response_message_id == payload.message_id
-        ).first()
+            or GrantProposals.bot_response_message_id == payload.message_id,
+        )
         if incorrect_reaction_message:
             # Remove reaction from the message, in order not to confuse other members
             await reaction_channel.fetch_message(payload.message_id).remove_reaction(
@@ -64,7 +68,7 @@ async def is_valid_voting_reaction(payload):
         return False
 
     # Check if the reaction message is a relevant lazy consensus voting
-    if not is_relevant_grant_proposal(reaction_message_id):
+    if not is_relevant_grant_proposal(payload.message_id):
         return False
     return True
 
@@ -73,16 +77,16 @@ async def is_valid_voting_reaction(payload):
 async def on_raw_reaction_remove(payload):
     try:
         # Check if the reaction was made by valid user to a valid voting message
-        if not is_valid_voting_reaction(payload):
+        if not await is_valid_voting_reaction(payload):
             return
 
         # Get the proposal (it was already validated that it exists)
         proposal = get_grant_proposal(payload.message_id)
 
         # Error handling - retrieve the voter object from the DB
-        voter = Voters.query.filter(
+        voter = await db.filter(
             Voters.user_id == payload.user_id, Voters.voting_message_id == payload.message_id
-        ).first()
+        )
         if not voter:
             logger.warning(
                 "Warning: Unable to find in the DB a user whose voting reaction was presented on active proposal. channel=%s, message=%s, user=%s, proposal=%s",
@@ -117,7 +121,6 @@ async def on_raw_reaction_remove(payload):
             payload.user_id,
             exc_info=True,
         )
-        traceback.print_exc()
 
 
 @client.event
@@ -172,7 +175,7 @@ async def on_raw_reaction_add(payload):
         logger.info("Cancelled grant proposal %s. id=%d", log_message, proposal.id)
 
     try:
-        if not is_valid_voting_reaction(payload):
+        if not await is_valid_voting_reaction(payload):
             return
 
         proposal = get_grant_proposal(reaction_message_id)
@@ -186,9 +189,9 @@ async def on_raw_reaction_add(payload):
             return
 
         # Error/fraud handling - check if the user has already voted for this proposal
-        voter = Voters.query.filter(
+        voter = await db.filter(
             Voters.user_id == payload.user_id, Voters.voting_message_id == payload.message_id
-        ).first()
+        )
         if voter:
             logger.warning(
                 "Warning: Somehow the user has managed to vote twice on the same proposal. channel=%s, message=%s, user=%s, proposal=%s",
@@ -229,4 +232,3 @@ async def on_raw_reaction_add(payload):
             payload.user_id,
             exc_info=True,
         )
-        traceback.print_exc()
