@@ -1,31 +1,41 @@
 from enum import Enum
 
+# Log
 LOG_PATH = "logs/lazy-consensus-bot.log"
 TESTS_PATH = "tests/"
 LOG_FILE_SIZE = 1024 * 1024 * 10
 
+# Database
 DB_NAME = "lazy-consensus-bot.db"
 GRANT_PROPOSALS_TABLE_NAME = "grant_proposals"
 VOTERS_TABLE_NAME = "voters"
+
+# =====================
+# Bot related constants
+# =====================
 
 # FIXME change values back after testing
 GRANT_PROPOSAL_TIMER_SECONDS = 20
 GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 1
 #  GRANT_PROPOSAL_TIMER_SECONDS = 259200  # 3 days
 #  GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 60  # 1 minute
+LAZY_CONSENSUS_THRESHOLD = 8
 
 # L3 or Eco role
 # FIXME: change roles back to Eco Discord when testing is done
 ROLE_IDS_ALLOWED = (1063903240925749389,)
 # ROLE_IDS_ALLOWED = (812675567438659624, 1038497110754086913)
+VOTING_CHANNEL_ID = "1067119414731886645"
+GRANT_APPLY_CHANNEL_ID = "1063886828052160522"
 
 DISCORD_COMMAND_PREFIX = "!"
-RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
-REACTION_ON_BOT_MENTION = "👋"  # wave
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
-CANCEL_EMOJI_UNICODE = "\U0000274C"  # ❌ (:x: emoji)
-VOTING_CHANNEL_ID = "1067119414731886645"
-LAZY_CONSENSUS_THRESHOLD = 8
+GRANT_APPLY_COMMAND_NAME = 'grant'
+REACTION_ON_BOT_MENTION = "👋"  # wave
+# When the proposal is accepted, the bot will
+REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
+CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
+RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 
 
 class ProposalResult(Enum):
@@ -37,6 +47,7 @@ class ProposalResult(Enum):
 # ==============
 # Messages texts
 # ==============
+
 COMMAND_FORMAT_RESPONSE = """
 Hi {author}! This command should look like:
 
@@ -76,7 +87,7 @@ Goal: {description}
 PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
 The {amount} point proposal for {mention} by {author} has come to a close. {result}
 Goal: {description}
-The original proposal: {link_to_original_message}
+The message where it was proposed: {link_to_original_message}
 """
 PROPOSAL_RESULT_VOTING_CHANNEL = {
     ProposalResult.ACCEPTED: "The grant has been given!",

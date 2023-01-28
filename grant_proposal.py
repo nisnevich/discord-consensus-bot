@@ -130,8 +130,9 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
 
     except Exception as e:
         try:
+            # Try replying in Discord
             await ctx.message.reply(
-                "An unexpected error occurred when adding proposal. cc " + RESPONSIBLE_MENTION
+                f"An unexpected error occurred when adding proposal. cc {RESPONSIBLE_MENTION}"
             )
         except Exception as e:
             logger.critical("Unable to reply in the chat that a critical error has occurred.")
