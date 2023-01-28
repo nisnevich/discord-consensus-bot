@@ -27,15 +27,6 @@ db = DBUtil()
 client = get_discord_client()
 
 
-@client.event
-async def on_message(message):
-    """
-    React with greetings emoji to any message where bot is mentioned.
-    """
-    if client.user in message.mentions:
-        await message.add_reaction(REACTION_ON_BOT_MENTION)
-
-
 async def is_valid_voting_reaction(payload):
     # Check if the reaction matches
     if payload.emoji.name != CANCEL_EMOJI_UNICODE:
