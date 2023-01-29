@@ -40,9 +40,14 @@ async def grant(voting_message_id):
         voting_message = await voting_channel.fetch_message(grant_proposal.voting_message_id)
 
         # Construct the grant message
-        grant_message = f"{DISCORD_COMMAND_PREFIX}{GRANT_APPLY_COMMAND_NAME} {mention} {amount}"
-        if description:
-            grant_message += f" {description}"
+        grant_message = GRANT_COMMAND_MESSAGE.format(
+            prefix=DISCORD_COMMAND_PREFIX,
+            grant_command=GRANT_PROPOSAL_COMMAND_NAME,
+            mention=grant_proposal.mention,
+            amount=grant_proposal.amount,
+            description=grant_proposal.description,
+            voting_url=voting_message.jump_url,
+        )
 
         # Apply the grant
         try:
@@ -50,9 +55,10 @@ async def grant(voting_message_id):
             await channel.send(grant_message)
             # Add "accepted" reactions to all messages
             if original_message:
-                original_message.add_reaction(REACTION_ON_PROPOSAL_ACCEPTED)
+                await original_message.add_reaction(REACTION_ON_PROPOSAL_ACCEPTED)
             if voting_message:
-                voting_message.add_reaction(REACTION_ON_PROPOSAL_ACCEPTED)
+                await voting_message.add_reaction(REACTION_ON_PROPOSAL_ACCEPTED)
+                await voting_message.add_reaction(EMOJI_HOORAY)
         except Exception as e:
             await voting_channel.send(
                 f"Could not apply grant for {grant_proposal.mention}. cc {RESPONSIBLE_MENTION}",

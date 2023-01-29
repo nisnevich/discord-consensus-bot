@@ -31,7 +31,7 @@ LAZY_CONSENSUS_THRESHOLD = 1
 ROLE_IDS_ALLOWED = (1063903240925749389,)
 # ROLE_IDS_ALLOWED = (812675567438659624, 1038497110754086913)
 VOTING_CHANNEL_ID = 1067119414731886645
-GRANT_APPLY_CHANNEL_ID = 1063886828052160522
+GRANT_APPLY_CHANNEL_ID = 1067127829654937692
 
 DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
@@ -56,6 +56,9 @@ class ProposalResult(Enum):
 # ==============
 
 # Validation error messages
+GRANT_COMMAND_MESSAGE = """
+{prefix}{grant_command} {mention} {amount} {description}. Voting: {voting_url}
+"""
 COMMAND_FORMAT_RESPONSE = """
 Hey there, {author}! It looks like you're trying to use the !propose command, but something's not quite right with the syntax. No worries though, I've got you covered.
 
@@ -119,8 +122,8 @@ Alright, let's make this happen! You're proposing to give {mention} {amount} poi
 Let your new idea sparkle like a diamond in the Eco-system! Wishing you all the best! :eco_angel:
 """
 NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:eco_kyep: :eco_rocket:
-{countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message.
+:eco_kyep: :eco_rocket: **Active voting!**
+{countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message (if you need help, type *!lazy-help*).
 `Proposed by:` {author}
 `Goal:` {description}
 """  # Another version: {author} proposed giving {amount} points to {mention}. {threshold} votes against will cancel it. Use {reaction} to vote before {date_finish}.
@@ -128,7 +131,7 @@ PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
 The {amount} points proposal for {mention} by {author} has come to a close.
 {result}
 Goal: {description}
-The message where it was proposed: {link_to_original_message}
+It was proposed here: {link_to_original_message}
 """
 PROPOSAL_RESULT_VOTING_CHANNEL = {
     ProposalResult.ACCEPTED: "The grant has been given! :tada:",
