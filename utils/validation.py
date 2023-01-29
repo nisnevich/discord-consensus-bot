@@ -56,8 +56,14 @@ async def validate_grant_message(original_message, amount: int, description: str
         )
         return False
 
-    # Check if amount is a digit
-    if not amount.isdigit():
+    # Check if amount is set
+    if not amount:
+        await original_message.reply(ERROR_MESSAGE_EMPTY_AMOUNT)
+        logger.info("Amount not set. message_id=%d, invalid value=%s", original_message.id, amount)
+        return False
+
+    # Check if amount is int
+    if not isinstance(amount, int):
         await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
         logger.info("Invalid amount. message_id=%d, invalid value=%s", original_message.id, amount)
         return False
@@ -79,8 +85,9 @@ async def validate_grant_message(original_message, amount: int, description: str
             "Invalid description. message_id=%d, invalid value=%s", original_message.id, description
         )
         return False
+
     # check if the description is less than a certain amount of characters
-    if len(description):
+    if len(description) > MAX_DESCRIPTION_LENGTH:
         await original_message.reply(ERROR_MESSAGE_LENGTHY_DESCRIPTION)
         logger.info(
             "Too long description, exceeds the limit of %s. message_id=%d, invalid value=%s",

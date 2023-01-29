@@ -79,15 +79,16 @@ ERROR_MESSAGE_NO_MENTIONS = (
     "No mentions found. Please mention the user you want to propose the grant to."
 )
 ERROR_MESSAGE_INVALID_COMMAND_FORMAT = (
-    "The mention must follow after `!propose `. Example: `!propose @mention`."
+    "The mention must follow after `!propose `. Example: `!propose @mention 100 for all good`."
 )
 ERROR_MESSAGE_INVALID_USER = "Unable to resolve username. Is the user on this Discord server?"
+ERROR_MESSAGE_EMPTY_AMOUNT = "The amount must follow after `!propose @mention`. Example: `!propose @mention 100 for all good`."
 ERROR_MESSAGE_INVALID_AMOUNT = (
-    "The amount must be a positive integer. Example: `!propose @mention 100`."
+    "The amount must be a positive integer. Example: `!propose @mention 100 for all good`."
 )
 ERROR_MESSAGE_NEGATIVE_AMOUNT = "The amount must be a positive integer: {amount}"
 ERROR_MESSAGE_INVALID_DESCRIPTION = (
-    "Please provide a description of the grant, like this: `!propose @mention amount description`."
+    "Please provide a description of the grant, like this: `!propose @mention 100 for all good`."
 )
 ERROR_MESSAGE_LENGTHY_DESCRIPTION = (
     f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters."

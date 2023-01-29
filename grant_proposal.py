@@ -1,12 +1,10 @@
 import asyncio
 import logging
-
-
+import typing
+import discord
 from discord.ext import commands
-from grant import grant
 
 from grant import grant
-
 from utils.const import *
 import utils.db_utils
 from utils.grant_utils import (
@@ -23,7 +21,6 @@ from utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
     get_discord_countdown_plus_delta,
 )
-
 from schemas.grant_proposals import GrantProposals
 
 logger = logging.getLogger(__name__)
@@ -62,7 +59,14 @@ async def approve_grant_proposal(voting_message_id):
 
 
 @client.command(name=GRANT_PROPOSAL_COMMAND_NAME)
-async def grant_proposal(ctx, mention=None, amount=None, *, description):
+#  async def grant_proposal(ctx, mention=None, amount=None, *, description):
+async def grant_proposal(
+    ctx,
+    mention: typing.Union[discord.User, str, None] = None,
+    amount: typing.Union[int, None] = None,
+    *,
+    description: str = None,
+):
     f"""
     Submit a grant proposal. The proposal will be approved after
     {GRANT_PROPOSAL_TIMER_SECONDS} unless a Layer 3 member reacts with a :x: emoji to the original message or the confirmation message.
@@ -81,13 +85,14 @@ async def grant_proposal(ctx, mention=None, amount=None, *, description):
             await original_message.reply(ERROR_MESSAGE_INVALID_ROLE)
             logger.info("Unauthorized user. message_id=%d", original_message.id)
             return
+        if not await validate_grant_message(original_message, amount, description):
+            return
         if not mention or not amount or not description:
             await original_message.reply(
                 COMMAND_FORMAT_RESPONSE.format(author=ctx.message.author.mention)
             )
             return
-        if not await validate_grant_message(original_message, amount, description):
-            return
+
         # If validation succeeded, cast 'amount' from string to integer
         amount = int(amount)
 
@@ -131,7 +136,7 @@ async def grant_proposal(ctx, mention=None, amount=None, *, description):
             channel_id=ctx.message.channel.id,
             author=ctx.message.author.mention,
             voting_message_id=voting_message.id,
-            mention=mention,
+            mention=mention.mention,
             amount=amount,
             description=description,
             timer=0,
