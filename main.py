@@ -10,7 +10,7 @@ from utils.bot_utils import get_discord_client
 # imports below are needed to make discord client aware of decorated methods
 from grant_proposal import grant_proposal, approve_grant_proposal
 from voting import on_raw_reaction_add
-from helpers import CustomHelpCommand
+from helpers import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -36,7 +36,6 @@ def main():
         db.create_all_tables()
         # Create bot client
         client = get_discord_client()
-        #  client.help_command = CustomHelpCommand()
 
         # Load pending proposals from database
         pending_grant_proposals = db.load_pending_grant_proposals()

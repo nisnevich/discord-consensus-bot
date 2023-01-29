@@ -7,7 +7,9 @@ from utils.const import DISCORD_COMMAND_PREFIX
 client = None
 
 
-def get_discord_client(prefix: Optional[str] = DISCORD_COMMAND_PREFIX) -> commands.Bot:
+def get_discord_client(
+    prefix: Optional[str] = DISCORD_COMMAND_PREFIX, help_command=None
+) -> commands.Bot:
     """
     Initialize and return an instance of Discord bot client with the permissions that are needed for the application.
     """
@@ -19,7 +21,7 @@ def get_discord_client(prefix: Optional[str] = DISCORD_COMMAND_PREFIX) -> comman
         intents.message_content = True
         intents.members = True
 
-        client = commands.Bot(command_prefix=prefix, intents=intents)
+        client = commands.Bot(command_prefix=prefix, intents=intents, help_command=help_command)
 
     # Add validation for the client
     if not isinstance(client, commands.Bot):

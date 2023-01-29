@@ -10,9 +10,14 @@ DB_NAME = "lazy-consensus-bot.db"
 GRANT_PROPOSALS_TABLE_NAME = "grant_proposals"
 VOTERS_TABLE_NAME = "voters"
 
+GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bot"
+
 # =====================
 # Bot related constants
 # =====================
+
+# Invite link with required permissions
+# https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
 # FIXME change values back after testing
 GRANT_PROPOSAL_TIMER_SECONDS = 20
@@ -48,6 +53,7 @@ class ProposalResult(Enum):
 # Messages texts
 # ==============
 
+# Validation error messages
 COMMAND_FORMAT_RESPONSE = """
 Hi {author}! This command should look like:
 
@@ -61,7 +67,6 @@ Some examples:
 !propose {author} 100 for being awesome
 !propose {author} 100 for using Lazy Consensus bot
 """
-# validation.py error messages
 ERROR_MESSAGE_NO_MENTIONS = (
     "No mentions found. Please mention the user you want to propose the grant to."
 )
@@ -76,12 +81,38 @@ ERROR_MESSAGE_NEGATIVE_AMOUNT = "The amount must be a positive integer: {amount}
 ERROR_MESSAGE_INVALID_DESCRIPTION = (
     "Please provide a description of the grant, like this: `!propose @mention amount description`."
 )
+
+# Help messages
+HELP_MESSAGE_NON_AUTHORIZED_USER = f"""
+Listen up, my elite friend! This bot is for the exclusive use of the Layer 3 squad. It's like a secret handshake for making quick and easy decisions. Want to know more about it? Check out our top secret files on {GITHUB_PROJECT_URL}. But shhh, don't tell anyone else about it! 🤫
+"""
+HELP_MESSAGE_AUTHORIZED_USER = f"""
+Hey there, are you ready to shake things up? Look no further, because the !propose command is here to save the day! 🎆
+
+Here's how it works:
+
+- Type anywhere: `!propose @username amount reason`. For example:
+> !propose @JohnDoe 100 bucks for pizza party
+
+- Your proposal will be sent straight to the `#L3-Voting` channel for all to see. And don't worry, you don't have to lift a finger after that - just make sure you explained your proposal clearly and let the magic happen! 🦥
+
+- After {int(GRANT_PROPOSAL_TIMER_SECONDS / 60)} hours, if there's less than {LAZY_CONSENSUS_THRESHOLD} dissenters, BAM! The grant is automatically applied. 🚀 I will keep you all updated.
+
+- If you disagree to any proposal, add the {CANCEL_EMOJI_UNICODE} reaction to it in #L3-Voting. Don't worry, you can change your mind later (unless it's too late). Bonus points if you tell us why you're against it! ⏱️
+
+- Also, if you change your mind regarding your own proposal, just add {CANCEL_EMOJI_UNICODE} to it in #L3-Voting and poof! It's gone. Magic! 🎩
+
+So, don't be shy and get those creative juices flowing! Let's make Eco the best it can be with some fresh ideas! 🌟
+
+I'll just leave this here for contributors and the curious: {GITHUB_PROJECT_URL}
+"""
+
 # Proposal related public messages
 NEW_PROPOSAL_SAME_CHANNEL_RESPONSE = """
 Alright, let's make this happen! You're proposing to give {mention} {amount} points, but watch out! If {threshold} or more big wigs (Layer 3) vote against it, the deal's off. Anyone who objects can make their voices heard here: {voting_link}
 """
 NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:rocket: {countdown} will grant {amount} points to {mention} as proposed by {author}, unless {threshold} members react with {reaction} to this message before {date_finish}.
+🚀{countdown} will grant {amount} points to {mention} as proposed by {author}, unless {threshold} members react with {reaction} to this message before {date_finish}.
 Goal: {description}
 """  # Another version: {author} proposed giving {amount} points to {mention}. {threshold} votes against will cancel it. Use {reaction} to vote before {date_finish}.
 PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """

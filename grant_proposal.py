@@ -60,8 +60,9 @@ async def approve_grant_proposal(message_id):
 
 @client.command(name=GRANT_PROPOSAL_COMMAND_NAME)
 async def grant_proposal(ctx, mention=None, amount=None, *description):
-    """
-    Submit a grant proposal to the Discord channel. The proposal will be approved after GRANT_PROPOSAL_TIMER_SECONDS unless a L3 member reacts with a :x: emoji to the original message or the confirmation message.
+    f"""
+    Submit a grant proposal. The proposal will be approved after
+    {GRANT_PROPOSAL_TIMER_SECONDS} unless a Layer 3 member reacts with a :x: emoji to the original message or the confirmation message.
     Parameters:
         ctx (commands.Context): The context in which the command was called.
         mention: The mention of the user the grant is being proposed to.
