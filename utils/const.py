@@ -43,6 +43,7 @@ REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
 EMOJI_HOORAY = "🎉"
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
+MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 
 
 class ProposalResult(Enum):
@@ -87,6 +88,9 @@ ERROR_MESSAGE_INVALID_AMOUNT = (
 ERROR_MESSAGE_NEGATIVE_AMOUNT = "The amount must be a positive integer: {amount}"
 ERROR_MESSAGE_INVALID_DESCRIPTION = (
     "Please provide a description of the grant, like this: `!propose @mention amount description`."
+)
+ERROR_MESSAGE_LENGTHY_DESCRIPTION = (
+    f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters."
 )
 ERROR_MESSAGE_INVALID_ROLE = "It's only for Layer 3 members, but don't worry if you're not quite there yet! Getting the Layer 3 role is like reaching the top of a mountain, but the view from the top is oh-so-worth it! Plus, think of all the cool features you'll have access to once you get there. Keep climbing, Eco-warrior! :mountain: :eco_heart:"
 

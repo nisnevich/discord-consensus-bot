@@ -79,6 +79,16 @@ async def validate_grant_message(original_message, amount: int, description: str
             "Invalid description. message_id=%d, invalid value=%s", original_message.id, description
         )
         return False
+    # check if the description is less than a certain amount of characters
+    if len(description):
+        await original_message.reply(ERROR_MESSAGE_LENGTHY_DESCRIPTION)
+        logger.info(
+            "Too long description, exceeds the limit of %s. message_id=%d, invalid value=%s",
+            ERROR_MESSAGE_LENGTHY_DESCRIPTION,
+            original_message.id,
+            description,
+        )
+        return False
 
     return True
 

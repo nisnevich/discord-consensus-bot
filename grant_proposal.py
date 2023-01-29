@@ -62,7 +62,7 @@ async def approve_grant_proposal(voting_message_id):
 
 
 @client.command(name=GRANT_PROPOSAL_COMMAND_NAME)
-async def grant_proposal(ctx, mention=None, amount=None, *description):
+async def grant_proposal(ctx, mention=None, amount=None, *, description):
     f"""
     Submit a grant proposal. The proposal will be approved after
     {GRANT_PROPOSAL_TIMER_SECONDS} unless a Layer 3 member reacts with a :x: emoji to the original message or the confirmation message.
@@ -72,7 +72,6 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         amount: The amount of the grant being proposed.
         description: The description of the grant being proposed.
     """
-    description = ' '.join(description)
 
     try:
         original_message = await ctx.fetch_message(ctx.message.id)
@@ -91,6 +90,8 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
             return
         # If validation succeeded, cast 'amount' from string to integer
         amount = int(amount)
+
+        print(description)
 
         # Add proposal to the voting channel
         voting_channel = client.get_channel(VOTING_CHANNEL_ID)
