@@ -135,7 +135,7 @@ async def on_raw_reaction_add(payload):
         mention_receiver = proposal.mention
         amount_of_allocation = proposal.amount
         description_of_proposal = proposal.description
-        list_of_voters = proposal = proposal.voters
+        list_of_voters = proposal.voters
         original_message = await get_message(client, proposal.channel_id, proposal.message_id)
         link_to_voting_message = voting_message.jump_url
         link_to_initial_proposer_message = original_message.jump_url
@@ -145,7 +145,7 @@ async def on_raw_reaction_add(payload):
             response_to_proposer = PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
                 author=mention_author
             )
-            edit_in_voting_channel = PROPOSAL_RESULT_VOTING_CHANNEL[reason].format()
+            result_message = PROPOSAL_RESULT_VOTING_CHANNEL[reason].format()
             log_message = "(by the proposer)"
         elif reason == ProposalResult.CANCELLED_BY_REACHING_THRESHOLD:
             response_to_proposer = PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
@@ -153,23 +153,31 @@ async def on_raw_reaction_add(payload):
                 threshold=LAZY_CONSENSUS_THRESHOLD,
                 voting_link=link_to_voting_message,
             )
-            edit_in_voting_channel = PROPOSAL_RESULT_VOTING_CHANNEL[reason].format(
+            result_message = PROPOSAL_RESULT_VOTING_CHANNEL[reason].format(
                 threshold=LAZY_CONSENSUS_THRESHOLD, list_of_voters=list_of_voters
             )
             log_message = "(by reaching threshold)"
-
-        # Reply in the original channel
-        await original_message.channel.send(response_to_proposer)
-        # Edit the proposal in the voting channel
-        reaction_message = await reaction_channel_id.fetch_message(reaction_message_id)
-        await reaction_message.edit(
-            content=PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE.format(
-                result=edit_in_voting_channel
-            )
+        edit_in_voting_channel = PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE.format(
+            result=result_message,
+            amount=amount_of_allocation,
+            mention=mention_receiver,
+            author=mention_author,
+            description=description_of_proposal,
+            link_to_original_message=link_to_initial_proposer_message,
         )
+
+        # Reply in the original channel, unless it's not the voting channel itself (then not replying to avoid unnecessary spam)
+        if voting_message.channel.id != original_message.channel.id:
+            await original_message.reply(response_to_proposer)
+        # Edit the proposal in the voting channel
+        await voting_message.edit(content=edit_in_voting_channel)
         # Remove the proposal
-        await remove_grant_proposal(proposal.id, db)
-        logger.info("Cancelled grant proposal %s. id=%d", log_message, proposal.id)
+        await remove_grant_proposal(proposal.voting_message_id, db)
+        logger.info(
+            "Cancelled grant proposal %s. voting_message_id=%d",
+            log_message,
+            proposal.voting_message_id,
+        )
 
     try:
         if not await is_valid_voting_reaction(payload):
@@ -181,7 +189,7 @@ async def on_raw_reaction_add(payload):
         voting_message = await get_message(client, payload.channel_id, payload.message_id)
 
         #  Check whether the voter is the proposer himself, and then cancel the proposal
-        if proposal.author_id == payload.user_id:
+        if proposal.author == payload.member.mention:
             await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
             return
 

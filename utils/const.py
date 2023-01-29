@@ -135,11 +135,11 @@ It was proposed here: {link_to_original_message}
 """
 PROPOSAL_RESULT_VOTING_CHANNEL = {
     ProposalResult.ACCEPTED: "The grant has been given! :tada:",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "The proposal has been cancelled due to opposition from {threshold} members: {voters_list}",
-    ProposalResult.CANCELLED_BY_PROPOSER: "The proposal has been cancelled by the proposer.",
+    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "It has been cancelled due to opposition from {threshold} members: {voters_list}",
+    ProposalResult.CANCELLED_BY_PROPOSER: "It has been cancelled by the proposer. :leaves:",
 }
 PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given and {mention} is now richer by {amount} points!",
     ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}",
-    ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
+    ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal. :think:",
 }
