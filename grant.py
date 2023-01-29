@@ -79,7 +79,7 @@ async def grant(voting_message_id):
                     amount=grant_proposal.amount,
                 )
             )
-        else:
+        elif not original_message:
             logger.warning(
                 "Warning: Looks like the proposer has removed the original proposal message. message_id=%d",
                 grant_proposal.message_id,

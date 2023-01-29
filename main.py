@@ -13,7 +13,7 @@ from voting import on_raw_reaction_add
 from helpers import *
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
@@ -30,6 +30,7 @@ def main():
                 "Added task to event loop to approve voting_message_id=%d",
                 proposal.voting_message_id,
             )
+            logger.debug("The proposal added: %s", proposal)
 
     try:
         db = DBUtil()

@@ -59,8 +59,19 @@ class DBUtil:
             return query.filter(condition).first()
 
     async def add(self, orm_object):
+        """
+        Adds object to a set.
+        """
         async with DBUtil.session_lock:
             DBUtil.session.add(orm_object)
+            DBUtil.session.commit()
+
+    async def append(self, list, orm_object):
+        """
+        Appends object to a list.
+        """
+        async with DBUtil.session_lock:
+            list.append(orm_object)
             DBUtil.session.commit()
 
     async def delete(self, orm_object):

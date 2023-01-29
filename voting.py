@@ -18,7 +18,7 @@ from utils.const import *
 from schemas.grant_proposals import Voters, GrantProposals
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
@@ -27,17 +27,19 @@ client = get_discord_client()
 
 
 async def is_valid_voting_reaction(payload):
-    print("Verifying the reaction...")
+    logger.debug("Verifying the reaction...")
 
     # Check if the reaction matches
     if payload.emoji.name != CANCEL_EMOJI_UNICODE:
         return False
+    logger.debug("Emoji is correct")
 
     # Check if the user role matches
     guild = client.get_guild(payload.guild_id)
     member = guild.get_member(payload.user_id)
     if not await validate_roles(member):
         return False
+    logger.debug("Role is correct")
 
     # Check if this is a voting channel
     # TODO this check occurs on every reaction added to server, and it is really consuming so it's worth disabling after a short period of time when most users will be onboarded
@@ -64,10 +66,12 @@ async def is_valid_voting_reaction(payload):
                 f'Please add reactions to the voting message in {VOTING_CHANNEL_ID}'
             )
         return False
+    logger.debug("Channel is correct")
 
     # Check if the reaction message is a relevant lazy consensus voting
     if not is_relevant_grant_proposal(payload.message_id):
         return False
+    logger.debug("Proposal is correct")
     return True
 
 
@@ -135,7 +139,7 @@ async def on_raw_reaction_add(payload):
         mention_receiver = proposal.mention
         amount_of_allocation = proposal.amount
         description_of_proposal = proposal.description
-        list_of_voters = proposal.voters
+        list_of_voters = ",".join(f"<@{voter.user_id}>" for voter in proposal.voters)
         original_message = await get_message(client, proposal.channel_id, proposal.message_id)
         link_to_voting_message = voting_message.jump_url
         link_to_initial_proposer_message = original_message.jump_url
@@ -154,7 +158,7 @@ async def on_raw_reaction_add(payload):
                 voting_link=link_to_voting_message,
             )
             result_message = PROPOSAL_RESULT_VOTING_CHANNEL[reason].format(
-                threshold=LAZY_CONSENSUS_THRESHOLD, list_of_voters=list_of_voters
+                threshold=LAZY_CONSENSUS_THRESHOLD, voters_list=list_of_voters
             )
             log_message = "(by reaching threshold)"
         edit_in_voting_channel = PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE.format(
@@ -192,6 +196,7 @@ async def on_raw_reaction_add(payload):
         if proposal.author == payload.member.mention:
             await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
             return
+        logger.debug("Author is not the same")
 
         # Error/fraud handling - check if the user has already voted for this proposal
         voter = await db.filter(
@@ -206,14 +211,24 @@ async def on_raw_reaction_add(payload):
                 proposal,
             )
             return
+        logger.debug("User hasn't voted before")
 
         # Check if the threshold is reached
-        if len(proposal.voters) < LAZY_CONSENSUS_THRESHOLD:
-            proposal.voters.append(
-                Voters(user_id=payload.user_id, voting_message_id=proposal.voting_message_id)
-            )
-            db.session.commit()
-        else:
+        # FIXME use lock to add to db to avoid concurrency errors
+        proposal.voters.append(
+            Voters(user_id=payload.user_id, voting_message_id=proposal.voting_message_id)
+        )
+        db.append(
+            proposal.voters,
+            Voters(user_id=payload.user_id, voting_message_id=proposal.voting_message_id),
+        )
+        logger.info(
+            "Vote added, total %d voters against %d",
+            len(proposal.voters),
+            proposal.voting_message_id,
+        )
+        if len(proposal.voters) >= LAZY_CONSENSUS_THRESHOLD:
+            logger.debug("Threshold is reached, cancelling")
             await cancel_proposal(
                 proposal, ProposalResult.CANCELLED_BY_REACHING_THRESHOLD, voting_message
             )
