@@ -24,8 +24,12 @@ def main():
         logger.info("Running approval of the proposals...")
         # Start background tasks to approve pending proposals
         for proposal in pending_grant_proposals:
-            client.loop.create_task(approve_grant_proposal(proposal.message_id))
-            logger.info("Added task to event loop to approve message_id=%d", proposal.message_id)
+            # TODO in case of recovery, update the timer in the voting message accordingly; also use date object instead of incrementing timer, so that the timer would proceed even when the bot is down
+            client.loop.create_task(approve_grant_proposal(proposal.voting_message_id))
+            logger.info(
+                "Added task to event loop to approve voting_message_id=%d",
+                proposal.voting_message_id,
+            )
 
     try:
         db = DBUtil()

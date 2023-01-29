@@ -93,8 +93,8 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         amount = int(amount)
 
         # Add proposal to the voting channel
-        channel = client.get_channel(VOTING_CHANNEL_ID)
-        voting_message = await channel.send(
+        voting_channel = client.get_channel(VOTING_CHANNEL_ID)
+        voting_message = await voting_channel.send(
             NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
                 countdown=get_discord_countdown_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
                 date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
@@ -107,17 +107,19 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
             )
         )
 
-        # Reply to the proposer
-        bot_response_message = await original_message.reply(
-            NEW_PROPOSAL_SAME_CHANNEL_RESPONSE.format(
-                author=ctx.message.author.mention,
-                mention=mention,
-                amount=amount,
-                threshold=LAZY_CONSENSUS_THRESHOLD,
-                reaction=CANCEL_EMOJI_UNICODE,
-                voting_link=voting_message.jump_url,
+        # Reply to the proposer if the message is not send in the voting channel (to avoid unnecessary spam otherwise)
+        bot_response_message = None
+        if voting_channel.id != ctx.message.channel.id:
+            bot_response_message = await original_message.reply(
+                NEW_PROPOSAL_SAME_CHANNEL_RESPONSE.format(
+                    author=ctx.message.author.mention,
+                    mention=mention,
+                    amount=amount,
+                    threshold=LAZY_CONSENSUS_THRESHOLD,
+                    reaction=CANCEL_EMOJI_UNICODE,
+                    voting_link=voting_message.jump_url,
+                )
             )
-        )
         logger.info(
             "Sent confirmation messages for grant proposal with message_id=%d", ctx.message.id
         )
@@ -132,7 +134,7 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
             amount=amount,
             description=description,
             timer=0,
-            bot_response_message_id=bot_response_message.id,
+            bot_response_message_id=bot_response_message.id if bot_response_message else 0,
         )
         await add_grant_proposal(new_grant_proposal, db)
 

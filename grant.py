@@ -33,7 +33,7 @@ async def grant(voting_message_id):
         result = ProposalResult.ACCEPTED
 
         # Retrieve the original proposal message
-        original_channel = client.get_channel(channel_id)
+        original_channel = client.get_channel(grant_proposal.channel_id)
         original_message = await original_channel.fetch_message(grant_proposal.message_id)
         # Retrieve the voting message
         voting_channel = client.get_channel(VOTING_CHANNEL_ID)

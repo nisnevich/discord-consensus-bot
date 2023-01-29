@@ -20,7 +20,7 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
 # FIXME change values back after testing
-GRANT_PROPOSAL_TIMER_SECONDS = 10
+GRANT_PROPOSAL_TIMER_SECONDS = 20
 GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 1
 #  GRANT_PROPOSAL_TIMER_SECONDS = 259200  # 3 days
 #  GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 60  # 1 minute

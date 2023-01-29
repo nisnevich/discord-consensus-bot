@@ -55,9 +55,8 @@ async def is_valid_voting_reaction(payload):
                 payload.emoji, member
             )
             # Retrieve the relevant voting message to send link to the user
-            voting_channel = guild.get_channel(VOTING_CHANNEL_ID)
-            voting_message = await voting_channel.fetch_message(
-                incorrect_reaction_message.voting_message_id
+            voting_message = await get_message(
+                client, VOTING_CHANNEL_ID, incorrect_reaction_message.voting_message_id
             )
             # send private message to user
             dm_channel = await member.create_dm()
@@ -104,8 +103,7 @@ async def on_raw_reaction_remove(payload):
     except Exception as e:
         try:
             # Try replying in Discord
-            channel = client.get_channel(payload.channel_id)
-            message = await channel.fetch_message(payload.message_id)
+            message = await get_message(client, payload.channel_id, payload.message_id)
             await message.reply(
                 f"An unexpected error occurred when handling reaction removal. cc {RESPONSIBLE_MENTION}"
             )
@@ -177,11 +175,11 @@ async def on_raw_reaction_add(payload):
         if not await is_valid_voting_reaction(payload):
             return
 
-        proposal = get_grant_proposal(reaction_message_id)
+        proposal = get_grant_proposal(payload.message_id)
 
         # The voting message is needed to format the replies of the bot later
-        reaction_channel = guild.get_channel(payload.channel_id)
-        voting_message = await reaction_channel.get_message(payload.message_id)
+        voting_message = await get_message(client, payload.channel_id, payload.message_id)
+
         #  Check whether the voter is the proposer himself, and then cancel the proposal
         if proposal.author_id == payload.user_id:
             await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
@@ -215,8 +213,8 @@ async def on_raw_reaction_add(payload):
     except Exception as e:
         try:
             # Try replying in Discord
-            channel = client.get_channel(payload.channel_id)
-            message = await channel.fetch_message(payload.message_id)
+            message = await get_message(client, payload.channel_id, payload.message_id)
+
             await message.reply(
                 f"An unexpected error occurred when handling reaction adding. cc {RESPONSIBLE_MENTION}"
             )
