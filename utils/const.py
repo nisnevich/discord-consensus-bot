@@ -75,24 +75,22 @@ Here are some examples to get you started:
 
 Don't worry, we all make mistakes, just give it another try! To learn more in DM, type `!help-lazy`. And if you're still having trouble, feel free to reach out for help.
 """
-ERROR_MESSAGE_NO_MENTIONS = (
-    "No mentions found. Please mention the user you want to propose the grant to."
-)
+ERROR_MESSAGE_NO_MENTIONS = "Looking for someone to propose a grant to? Make sure to mention a user that you'd like to give a grant."
 ERROR_MESSAGE_INVALID_COMMAND_FORMAT = (
-    "The mention must follow after `!propose `. Example: `!propose @mention 100 for all good`."
+    "Whoops! Make sure the format is: `!propose @mention amount for a fun and exciting proposal.`"
 )
-ERROR_MESSAGE_INVALID_USER = "Unable to resolve username. Is the user on this Discord server?"
-ERROR_MESSAGE_EMPTY_AMOUNT = "The amount must follow after `!propose @mention`. Example: `!propose @mention 100 for all good`."
+ERROR_MESSAGE_INVALID_USER = (
+    "Can't find that user. Are they on this server? Double check the mention."
+)
+ERROR_MESSAGE_EMPTY_AMOUNT = (
+    "Hold on, you forgot the amount! Example: `!propose @mention 100 for a unicorn farm.`"
+)
 ERROR_MESSAGE_INVALID_AMOUNT = (
-    "The amount must be a positive integer. Example: `!propose @mention 100 for all good`."
+    "The amount must be a positive number. Example: `!propose @mention 100 for a giant robot.`"
 )
-ERROR_MESSAGE_NEGATIVE_AMOUNT = "The amount must be a positive integer: {amount}"
-ERROR_MESSAGE_INVALID_DESCRIPTION = (
-    "Please provide a description of the grant, like this: `!propose @mention 100 for all good`."
-)
-ERROR_MESSAGE_LENGTHY_DESCRIPTION = (
-    f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters."
-)
+ERROR_MESSAGE_NEGATIVE_AMOUNT = "Whoops, the amount must be a positive number, not {amount}"
+ERROR_MESSAGE_INVALID_DESCRIPTION = "Please provide a description of the grant, like this: `!propose @mention 100 for a giant robot.`"
+ERROR_MESSAGE_LENGTHY_DESCRIPTION = f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters. Like, who wants to read that much anyways?"
 ERROR_MESSAGE_INVALID_ROLE = "It's only for Layer 3 members, but don't worry if you're not quite there yet! Getting the Layer 3 role is like reaching the top of a mountain, but the view from the top is oh-so-worth it! Plus, think of all the cool features you'll have access to once you get there. Keep climbing, Eco-warrior! :mountain: :eco_heart:"
 
 # Help messages
