@@ -20,18 +20,18 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
 # FIXME change values back after testing
-GRANT_PROPOSAL_TIMER_SECONDS = 20
+GRANT_PROPOSAL_TIMER_SECONDS = 10
 GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 1
 #  GRANT_PROPOSAL_TIMER_SECONDS = 259200  # 3 days
 #  GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 60  # 1 minute
-LAZY_CONSENSUS_THRESHOLD = 8
+LAZY_CONSENSUS_THRESHOLD = 1
 
 # L3 or Eco role
 # FIXME: change roles back to Eco Discord when testing is done
 ROLE_IDS_ALLOWED = (1063903240925749389,)
 # ROLE_IDS_ALLOWED = (812675567438659624, 1038497110754086913)
-VOTING_CHANNEL_ID = "1067119414731886645"
-GRANT_APPLY_CHANNEL_ID = "1063886828052160522"
+VOTING_CHANNEL_ID = 1067119414731886645
+GRANT_APPLY_CHANNEL_ID = 1063886828052160522
 
 DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
@@ -41,6 +41,7 @@ REACTION_ON_BOT_MENTION = "👋"  # wave
 # When the proposal is accepted, the bot will
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
+EMOJI_HOORAY = "🎉"
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 
 
@@ -84,6 +85,7 @@ ERROR_MESSAGE_NEGATIVE_AMOUNT = "The amount must be a positive integer: {amount}
 ERROR_MESSAGE_INVALID_DESCRIPTION = (
     "Please provide a description of the grant, like this: `!propose @mention amount description`."
 )
+ERROR_MESSAGE_INVALID_ROLE = "It's only for Layer 3 members, but don't worry if you're not quite there yet! Getting the Layer 3 role is like reaching the top of a mountain, but the view from the top is oh-so-worth it! Plus, think of all the cool features you'll have access to once you get there. Keep climbing, Eco-warrior! :mountain: :eco_heart:"
 
 # Help messages
 HELP_MESSAGE_NON_AUTHORIZED_USER = f"""
@@ -112,24 +114,29 @@ I'll just leave this here for contributors and the curious: {GITHUB_PROJECT_URL}
 
 # Proposal related public messages
 NEW_PROPOSAL_SAME_CHANNEL_RESPONSE = """
-Alright, let's make this happen! You're proposing to give {mention} {amount} points, but watch out! If {threshold} or more big wigs (Layer 3) vote against it, the deal's off. Anyone who objects can make their voices heard here: {voting_link}
+Alright, let's make this happen! You're proposing to give {mention} {amount} points, but watch out! If {threshold} or more big wigs from Layer 3 vote against it, the deal's off. Anyone who objects can make their voices heard here: {voting_link}
+
+Let your new idea sparkle like a diamond in the Eco-system! Wishing you all the best! :eco_angel:
 """
 NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-🚀{countdown} will grant {amount} points to {mention} as proposed by {author}, unless {threshold} members react with {reaction} to this message before {date_finish}.
-Goal: {description}
+:eco_kyep: :eco_rocket:
+{countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message.
+`Proposed by:` {author}
+`Goal:` {description}
 """  # Another version: {author} proposed giving {amount} points to {mention}. {threshold} votes against will cancel it. Use {reaction} to vote before {date_finish}.
 PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
-The {amount} point proposal for {mention} by {author} has come to a close. {result}
+The {amount} points proposal for {mention} by {author} has come to a close.
+{result}
 Goal: {description}
 The message where it was proposed: {link_to_original_message}
 """
 PROPOSAL_RESULT_VOTING_CHANNEL = {
-    ProposalResult.ACCEPTED: "The grant has been given!",
+    ProposalResult.ACCEPTED: "The grant has been given! :tada:",
     ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "The proposal has been cancelled due to opposition from {threshold} members: {voters_list}",
     ProposalResult.CANCELLED_BY_PROPOSER: "The proposal has been cancelled by the proposer.",
 }
 PROPOSAL_RESULT_PROPOSER_RESPONSE = {
-    ProposalResult.ACCEPTED: "Hooray! The grant has been given and {mention} is now richer by {amount} points!",
+    ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given and {mention} is now richer by {amount} points!",
     ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
 }

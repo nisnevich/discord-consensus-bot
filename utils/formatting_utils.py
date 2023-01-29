@@ -1,12 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def get_discord_timestamp_plus_delta(delta_seconds: int, timestamp_string="<t:{timestamp}>"):
     # TODO add docs and validation
     # Get the current date and time in UTC
-    now = datetime.datetime.now()
+    now = datetime.now()
     # Add 3 days to the current date and time
-    three_days_later = now + datetime.timedelta(seconds=delta_seconds)
+    three_days_later = now + timedelta(seconds=delta_seconds)
     # Convert the datetime object to a timestamp
     timestamp = int(three_days_later.timestamp())
 

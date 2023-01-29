@@ -19,7 +19,10 @@ from utils.db_utils import DBUtil
 from utils.logging_config import log_handler, console_handler
 from utils.validation import validate_roles, validate_grant_message
 from utils.bot_utils import get_discord_client
-from utils.formatting_utils import get_discord_timestamp_plus_delta
+from utils.formatting_utils import (
+    get_discord_timestamp_plus_delta,
+    get_discord_countdown_plus_delta,
+)
 
 from schemas.grant_proposals import GrantProposals
 
@@ -32,28 +35,28 @@ db = DBUtil()
 client = get_discord_client()
 
 
-async def approve_grant_proposal(message_id):
+async def approve_grant_proposal(voting_message_id):
     """
     Loop until the timer reaches GRANT_PROPOSAL_TIMER_SECONDS days. Every minute, the timer is incremented by 60 seconds and updated in the database. If the timer ends, the grant proposal is approved and the entry is removed from the dictionary and database.
     """
-    logger.info("Running approval coroutine for message_id=%d", message.id)
+    logger.info("Running approval coroutine for voting_message_id=%d", voting_message_id)
     try:
-        grant_proposal = get_grant_proposal(message_id)
+        grant_proposal = get_grant_proposal(voting_message_id)
     except ValueError as e:
         logger.error(f"Error while getting grant proposal: {e}")
         return
     while grant_proposal.timer < GRANT_PROPOSAL_TIMER_SECONDS:
         # If proposal was cancelled, it will be removed from dictionary (see on_raw_reaction_add)
-        if not is_relevant_grant_proposal(message_id):
+        if not is_relevant_grant_proposal(voting_message_id):
             return
         await asyncio.sleep(GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
         grant_proposal.timer += GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
         await db.commit()
     try:
         # Double check to make sure proposal wasn't cancelled
-        if not is_relevant_grant_proposal(message_id):
+        if not is_relevant_grant_proposal(voting_message_id):
             return
-        await grant(message_id)
+        await grant(voting_message_id)
     except ValueError as e:
         logger.error(f"Error while removing grant proposal: {e}")
 
@@ -70,15 +73,14 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
         description: The description of the grant being proposed.
     """
     description = ' '.join(description)
-    print("I see command!")
 
     try:
         original_message = await ctx.fetch_message(ctx.message.id)
 
         # Validity checks
         if not await validate_roles(ctx.message.author):
-            await original_message.reply("Error: you must have Layer 3 role to use this command.")
-            logger.warning("Unauthorized user. message_id=%d", original_message.id)
+            await original_message.reply(ERROR_MESSAGE_INVALID_ROLE)
+            logger.info("Unauthorized user. message_id=%d", original_message.id)
             return
         if not mention or not amount or not description:
             await original_message.reply(
@@ -92,7 +94,18 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
 
         # Add proposal to the voting channel
         channel = client.get_channel(VOTING_CHANNEL_ID)
-        voting_message = await channel.send(NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE)
+        voting_message = await channel.send(
+            NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
+                countdown=get_discord_countdown_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
+                date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
+                amount=amount,
+                mention=mention,
+                author=ctx.message.author.mention,
+                threshold=LAZY_CONSENSUS_THRESHOLD,
+                reaction=CANCEL_EMOJI_UNICODE,
+                description=description,
+            )
+        )
 
         # Reply to the proposer
         bot_response_message = await original_message.reply(
@@ -100,10 +113,6 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
                 author=ctx.message.author.mention,
                 mention=mention,
                 amount=amount,
-                #  time_hours=int(
-                #      GRANT_PROPOSAL_TIMER_SECONDS / 60 / 60,
-                #  ),
-                #  date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
                 threshold=LAZY_CONSENSUS_THRESHOLD,
                 reaction=CANCEL_EMOJI_UNICODE,
                 voting_link=voting_message.jump_url,
@@ -125,11 +134,11 @@ async def grant_proposal(ctx, mention=None, amount=None, *description):
             timer=0,
             bot_response_message_id=bot_response_message.id,
         )
-        add_grant_proposal(new_grant_proposal)
+        await add_grant_proposal(new_grant_proposal, db)
 
         # Run the approval coroutine
-        client.loop.create_task(approve_grant_proposal(ctx.message.id))
-        logger.info("Added task to event loop to approve message_id=%d", message.id)
+        client.loop.create_task(approve_grant_proposal(voting_message.id))
+        logger.info("Added task to event loop to approve message_id=%d", voting_message.id)
 
     except Exception as e:
         try:

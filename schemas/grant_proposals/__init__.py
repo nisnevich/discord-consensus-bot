@@ -33,8 +33,8 @@ class GrantProposals(Base):
         super().__init__(**kwargs)
         self.voters = []
 
-    def __repr__(self) -> str:
-        return f"<GrantProposal(id={self.id}, message_id={self.message_id}, author={self.author}, channel_id={self.channel_id}, mention={self.mention}, amount={self.amount}, description={self.description}, timer={self.timer}, voters={self.voters}>"
+    def __repr__(self):
+        return f"<GrantProposals(id='{self.id}', message_id='{self.message_id}', channel_id='{self.channel_id}', author='{self.author}', voting_message_id='{self.voting_message_id}', mention='{self.mention}', amount='{self.amount}', description='{self.description}', timer='{self.timer}', bot_response_message_id='{self.bot_response_message_id}')>"
 
 
 class Voters(Base):
