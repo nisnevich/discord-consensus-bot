@@ -1,7 +1,6 @@
 import logging
 
 import discord
-from discord import client
 import discord.ext.commands as commands
 from utils.const import *
 from utils.db_utils import DBUtil

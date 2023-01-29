@@ -1,7 +1,6 @@
 import logging
 
 import discord
-from discord import client
 
 from utils.grant_utils import (
     get_grant_proposal,

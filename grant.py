@@ -2,7 +2,6 @@ import logging
 import time
 
 import discord
-from discord import client
 
 from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
 from utils.db_utils import DBUtil
