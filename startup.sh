@@ -51,8 +51,6 @@ if echo "$output" | grep -q "FAILED"; then
   echo "Error: Unit tests failed."
   echo "$output"
   exit 1
-else
-  echo "Unit tests passed successfully!"
 fi
 
 # Check if "pm2 startup" was already set up before running it
