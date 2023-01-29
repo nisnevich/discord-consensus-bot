@@ -1,5 +1,5 @@
 discord~=2.1.0
 asynctest
-sqlalchemy
+sqlalchemy~=1.4.46
 multipledispatch
 
