@@ -36,6 +36,7 @@ GRANT_APPLY_CHANNEL_ID = "1063886828052160522"
 DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
 GRANT_APPLY_COMMAND_NAME = 'grant'
+HELP_COMMAND_NAME = 'help-lazy'
 REACTION_ON_BOT_MENTION = "👋"  # wave
 # When the proposal is accepted, the bot will
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
@@ -55,17 +56,19 @@ class ProposalResult(Enum):
 
 # Validation error messages
 COMMAND_FORMAT_RESPONSE = """
-Hi {author}! This command should look like:
+Hey there, {author}! It looks like you're trying to use the !propose command, but something's not quite right with the syntax. No worries though, I've got you covered.
 
-`!propose @username amount description`
+Here's how the command should look: `!propose @username amount reason`
 
-> @username - the user you would like to reward.
-> amount - how many points you would like to give.
-> description - a text that should explain for others what the grant is given for (this is required). If the grant will be applied, I'll post this message.
+- `@username`: the person you'd like to reward with points.
+- `amount`: how many points you'd like to give.
+- `reason`: a short explanation of why you're giving the grant. This message will be posted if the grant is applied.
 
-Some examples:
-!propose {author} 100 for being awesome
-!propose {author} 100 for using Lazy Consensus bot
+Here are some examples to get you started:
+`!propose @Cinderella 100 for saving the kingdom from the dragon`
+`!propose @PrinceCharming 200 for taming the wild unicorn and bringing peace to the land`
+
+Don't worry, we all make mistakes, just give it another try! To learn more in DM, type `!help-lazy`. And if you're still having trouble, feel free to reach out for help.
 """
 ERROR_MESSAGE_NO_MENTIONS = (
     "No mentions found. Please mention the user you want to propose the grant to."
@@ -128,5 +131,5 @@ PROPOSAL_RESULT_VOTING_CHANNEL = {
 PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! The grant has been given and {mention} is now richer by {amount} points!",
     ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}",
-    ProposalResult.CANCELLED_BY_PROPOSER: "Oh well, {author} has cancelled the proposal.",
+    ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
 }

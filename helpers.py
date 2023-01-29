@@ -8,6 +8,7 @@ from utils.const import (
     HELP_MESSAGE_NON_AUTHORIZED_USER,
     HELP_MESSAGE_AUTHORIZED_USER,
     RESPONSIBLE_MENTION,
+    HELP_COMMAND_NAME,
 )
 from utils.logging_config import log_handler, console_handler
 from utils.bot_utils import get_discord_client
@@ -21,7 +22,7 @@ logger.addHandler(console_handler)
 client = get_discord_client()
 
 
-@client.command(name='help-lazy', help='Shows help for Lazy Consensus bot')
+@client.command(name=HELP_COMMAND_NAME)
 async def help(ctx):
     try:
         # Remove the help request message
