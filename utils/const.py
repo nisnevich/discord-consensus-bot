@@ -124,7 +124,7 @@ Alright, let's make this happen! You're proposing to give {mention} {amount} poi
 Let your new idea sparkle like a diamond in the Eco-system! Wishing you all the best! :eco_angel:
 """
 NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:eco_kyep: :eco_rocket: **Active voting!**
+:rocket: :man_running: **Active voting!** :fire:
 {countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message (if you need help, type *!help-lazy*).
 `Proposed by:` {author}
 `Goal:` {description}
