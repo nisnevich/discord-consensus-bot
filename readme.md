@@ -55,4 +55,12 @@ chmod 600 token # You should make it only readable by you
 - [SQLAlchemy](https://www.sqlalchemy.org/)
 
 ## Contributing
-Contributions are welcome! Feel free to create pull requests or reach out. Also you can [buy me a coffee](https://www.buymeacoffee.com/a.nisnevich).
+
+Looking to contribute? Check out [good first issues](https://github.com/nisnevich/eco-discord-lazy-consensus-bot/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22), or just [issues](https://github.com/nisnevich/eco-discord-lazy-consensus-bot/issues). Also you can [buy me a coffee](https://www.buymeacoffee.com/a.nisnevich). :)
+
+There are three primary branches (the main difference between them is some constants):
+- `main` is used for development
+- `beta` is for beta testing on Eco Discord Test Server
+- `prod` is for the main Eco server
+
+
