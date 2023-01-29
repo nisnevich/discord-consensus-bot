@@ -5,8 +5,7 @@ from enum import Enum
 LOG_PATH = "logs/lazy-consensus-bot.log"
 TESTS_PATH = "tests/"
 LOG_FILE_SIZE = 1024 * 1024 * 10
-# FIXME change for beta and prod
-DEFAULT_LOG_LEVEL = logging.DEBUG
+DEFAULT_LOG_LEVEL = logging.INFO
 
 # Database
 DB_NAME = "lazy-consensus-bot.db"
@@ -22,19 +21,13 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # Invite link with required permissions
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
-# FIXME change values back after testing
-GRANT_PROPOSAL_TIMER_SECONDS = 30
-GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 1
-#  GRANT_PROPOSAL_TIMER_SECONDS = 259200  # 3 days
-#  GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 60  # 1 minute
-LAZY_CONSENSUS_THRESHOLD = 2
+GRANT_PROPOSAL_TIMER_SECONDS = 259200  # 3 days
+GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 60  # 1 minute
+LAZY_CONSENSUS_THRESHOLD = 8
 
-# L3 or Eco role
-# FIXME: change roles back to Eco Discord when testing is done
-ROLE_IDS_ALLOWED = (1063903240925749389,)
-# ROLE_IDS_ALLOWED = (812675567438659624, 1038497110754086913)
-VOTING_CHANNEL_ID = 1067119414731886645
-GRANT_APPLY_CHANNEL_ID = 1067127829654937692
+ROLE_IDS_ALLOWED = (812675567438659624,)  # layer 3
+VOTING_CHANNEL_ID = 1060864279303172136
+GRANT_APPLY_CHANNEL_ID = 1066350422949908540
 
 DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
