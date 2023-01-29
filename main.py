@@ -13,7 +13,7 @@ from voting import on_raw_reaction_add
 from helpers import *
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
@@ -24,7 +24,6 @@ def main():
         logger.info("Running approval of the proposals...")
         # Start background tasks to approve pending proposals
         for proposal in pending_grant_proposals:
-            # TODO in case of recovery, update the timer in the voting message accordingly; also use date object instead of incrementing timer, so that the timer would proceed even when the bot is down; also it should check for any new cancel reactions on the messages while the bot was down, and handle them accordingly
             client.loop.create_task(approve_grant_proposal(proposal.voting_message_id))
             logger.info(
                 "Added task to event loop to approve voting_message_id=%d",

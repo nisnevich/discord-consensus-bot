@@ -10,7 +10,7 @@ from utils.logging_config import log_handler, console_handler
 from utils.bot_utils import get_discord_client
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
@@ -42,7 +42,7 @@ async def grant(voting_message_id):
         # Construct the grant message
         grant_message = GRANT_COMMAND_MESSAGE.format(
             prefix=DISCORD_COMMAND_PREFIX,
-            grant_command=GRANT_PROPOSAL_COMMAND_NAME,
+            grant_command=GRANT_APPLY_COMMAND_NAME,
             mention=grant_proposal.mention,
             amount=grant_proposal.amount,
             description=grant_proposal.description,
@@ -94,7 +94,10 @@ async def grant(voting_message_id):
                     author=grant_proposal.author,
                     result=PROPOSAL_RESULT_VOTING_CHANNEL[result],
                     description=grant_proposal.description,
-                    link_to_original_message=original_message.jump_url,
+                    # TODO#9 if original_message is None, message should be different
+                    link_to_original_message=(
+                        original_message.jump_url if original_message else None
+                    ),
                 )
             )
         else:

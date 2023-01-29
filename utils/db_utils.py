@@ -8,9 +8,10 @@ from schemas.grant_proposals import Base, GrantProposals
 
 from utils.const import DB_NAME, GRANT_PROPOSALS_TABLE_NAME, VOTERS_TABLE_NAME
 from utils.logging_config import log_handler, console_handler
+from utils.const import *
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
@@ -66,6 +67,11 @@ class DBUtil:
             DBUtil.session.add(orm_object)
             DBUtil.session.commit()
 
+    async def delete(self, orm_object):
+        async with DBUtil.session_lock:
+            DBUtil.session.delete(orm_object)
+            DBUtil.session.commit()
+
     async def append(self, list, orm_object):
         """
         Appends object to a list.
@@ -74,9 +80,12 @@ class DBUtil:
             list.append(orm_object)
             DBUtil.session.commit()
 
-    async def delete(self, orm_object):
+    async def remove(self, list, orm_object):
+        """
+        Remove object from a list.
+        """
         async with DBUtil.session_lock:
-            DBUtil.session.delete(orm_object)
+            list.remove(orm_object)
             DBUtil.session.commit()
 
     async def commit(self):

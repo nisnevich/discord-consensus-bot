@@ -9,13 +9,14 @@ from utils.const import (
     HELP_MESSAGE_AUTHORIZED_USER,
     RESPONSIBLE_MENTION,
     HELP_COMMAND_NAME,
+    DEFAULT_LOG_LEVEL,
 )
 from utils.logging_config import log_handler, console_handler
 from utils.bot_utils import get_discord_client
 from utils.validation import validate_roles
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 

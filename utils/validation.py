@@ -8,7 +8,7 @@ from utils.logging_config import log_handler
 from utils.const import *
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 
 

@@ -7,16 +7,43 @@ from typing import Optional
 from multipledispatch import dispatch
 
 from utils.logging_config import log_handler, console_handler
-from schemas.grant_proposals import GrantProposals
+from schemas.grant_proposals import GrantProposals, Voters
 from utils.db_utils import DBUtil
+from utils.const import DEFAULT_LOG_LEVEL
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
 
 grant_proposals = {}
+
+
+async def get_voter(user_id, voting_message_id, db):
+    query_results = await db.filter(
+        Voters.user_id == user_id, Voters.voting_message_id == voting_message_id
+    )
+    logger.debug("get_voter query result: %s", query_results)
+    return query_results if not query_results else query_results[0]
+
+
+async def add_voter(proposal, voter, db):
+    await db.add(voter)
+    await db.append(proposal.voters, voter)
+
+
+async def remove_voter(proposal, voter, db):
+    await db.remove(proposal.voters, voter)
+    await db.delete(voter)
+
+
+def is_relevant_grant_proposal(voting_message_id):
+    return voting_message_id in grant_proposals
+
+
+def get_grant_proposals_count():
+    return len(grant_proposals)
 
 
 def get_grant_proposal(voting_message_id):
@@ -27,14 +54,6 @@ def get_grant_proposal(voting_message_id):
             f"Unable to get the proposal {voting_message_id} - it couldn't be found in the list of active proposals."
         )
         raise ValueError(f"Invalid proposal ID: {voting_message_id}")
-
-
-def is_relevant_grant_proposal(voting_message_id):
-    return voting_message_id in grant_proposals
-
-
-def get_grant_proposals_count():
-    return len(grant_proposals)
 
 
 async def remove_grant_proposal(voting_message_id, db: DBUtil):
@@ -116,3 +135,15 @@ async def add_grant_proposal(new_grant_proposal, db):
         logger.info("Inserted proposal into DB: %s", new_grant_proposal)
     else:
         raise Exception("Incorrect DB identifier was given.")
+
+
+def get_proposal_initiated_by(message_id):
+    """
+    Returns a proposal that was either initiated by a message with the given id, or the bot has replied with a message of given id to the initial proposer message (bot_response_message_id).Use case: to cover users who have reacted to a wrong message (this is helpful during onboarding).
+    """
+    if not grant_proposals:
+        return None
+    for proposal in grant_proposals.values():
+        if proposal.message_id == message_id or proposal.bot_response_message_id == message_id:
+            return proposal
+    return None

@@ -7,6 +7,10 @@ from utils.grant_utils import (
     add_grant_proposal,
     remove_grant_proposal,
     is_relevant_grant_proposal,
+    add_voter,
+    remove_voter,
+    get_voter,
+    get_proposal_initiated_by,
 )
 from utils.db_utils import DBUtil
 from utils import db_utils
@@ -18,7 +22,7 @@ from utils.const import *
 from schemas.grant_proposals import Voters, GrantProposals
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
@@ -41,30 +45,28 @@ async def is_valid_voting_reaction(payload):
         return False
     logger.debug("Role is correct")
 
-    # Check if this is a voting channel
-    # TODO this check occurs on every reaction added to server, and it is really consuming so it's worth disabling after a short period of time when most users will be onboarded
     reaction_channel = guild.get_channel(payload.channel_id)
-    if reaction_channel.id != VOTING_CHANNEL_ID:
-        # Check if the user has attempted to vote on a wrong message - either the original proposer message, or the bots reply to it
-        incorrect_reaction_message = await db.filter(
-            GrantProposals,
-            GrantProposals.message_id == payload.message_id
-            or GrantProposals.bot_response_message_id == payload.message_id,
-        )
-        if incorrect_reaction_message:
+
+    # When adding reaction, check if the user has attempted to vote on a wrong message - either the original proposer message, or the bots reply to it, associated with an active proposal though (in order to help onboard new users)
+    if payload.event_type == "REACTION_ADD":
+        incorrect_reaction_proposal = get_proposal_initiated_by(payload.message_id)
+        if incorrect_reaction_proposal:
             # Remove reaction from the message, in order not to confuse other members
-            await reaction_channel.fetch_message(payload.message_id).remove_reaction(
-                payload.emoji, member
-            )
+            reaction_message = await reaction_channel.fetch_message(payload.message_id)
+            await reaction_message.remove_reaction(payload.emoji, member)
+
             # Retrieve the relevant voting message to send link to the user
             voting_message = await get_message(
-                client, VOTING_CHANNEL_ID, incorrect_reaction_message.voting_message_id
+                client, VOTING_CHANNEL_ID, incorrect_reaction_proposal.voting_message_id
             )
-            # send private message to user
+            # Send private message to user
             dm_channel = await member.create_dm()
             await dm_channel.send(
-                f'Please add reactions to the voting message in {VOTING_CHANNEL_ID}'
+                HELP_MESSAGE_VOTED_INCORRECTLY.format(voting_link=voting_message.jump_url)
             )
+
+    # Check if this is a voting channel
+    if reaction_channel.id != VOTING_CHANNEL_ID:
         return False
     logger.debug("Channel is correct")
 
@@ -77,6 +79,7 @@ async def is_valid_voting_reaction(payload):
 
 @client.event
 async def on_raw_reaction_remove(payload):
+    logger.debug("Removing a reaction: %s", payload.event_type)
     try:
         # Check if the reaction was made by valid user to a valid voting message
         if not await is_valid_voting_reaction(payload):
@@ -86,9 +89,7 @@ async def on_raw_reaction_remove(payload):
         proposal = get_grant_proposal(payload.message_id)
 
         # Error handling - retrieve the voter object from the DB
-        voter = await db.filter(
-            Voters.user_id == payload.user_id, Voters.voting_message_id == payload.message_id
-        )
+        voter = await get_voter(payload.user_id, payload.message_id, db)
         if not voter:
             logger.warning(
                 "Warning: Unable to find in the DB a user whose voting reaction was presented on active proposal. channel=%s, message=%s, user=%s, proposal=%s",
@@ -100,9 +101,7 @@ async def on_raw_reaction_remove(payload):
             return
 
         # Remove the voter from the list of voters for the grant proposal
-        proposal.voters.remove(voter)
-        # Remove the voter from Voters table; this method invokes session.commit(), so the previous line changes will be saved as well
-        db.delete(voter)
+        await remove_voter(proposal, voter, db)
 
     except Exception as e:
         try:
@@ -139,10 +138,12 @@ async def on_raw_reaction_add(payload):
         mention_receiver = proposal.mention
         amount_of_allocation = proposal.amount
         description_of_proposal = proposal.description
-        list_of_voters = ",".join(f"<@{voter.user_id}>" for voter in proposal.voters)
+        list_of_voters = VOTERS_LIST_SEPARATOR.join(
+            f"<@{voter.user_id}>" for voter in proposal.voters
+        )
         original_message = await get_message(client, proposal.channel_id, proposal.message_id)
         link_to_voting_message = voting_message.jump_url
-        link_to_initial_proposer_message = original_message.jump_url
+        link_to_initial_proposer_message = original_message.jump_url if original_message else None
 
         # Filling the messages
         if reason == ProposalResult.CANCELLED_BY_PROPOSER:
@@ -167,11 +168,14 @@ async def on_raw_reaction_add(payload):
             mention=mention_receiver,
             author=mention_author,
             description=description_of_proposal,
+            # TODO#9 if link_to_initial_proposer_message is None, message should be different
             link_to_original_message=link_to_initial_proposer_message,
         )
 
+        if original_message:
+            await original_message.add_reaction(REACTION_ON_PROPOSAL_CANCELLED)
         # Reply in the original channel, unless it's not the voting channel itself (then not replying to avoid unnecessary spam)
-        if voting_message.channel.id != original_message.channel.id:
+        if original_message and voting_message.channel.id != original_message.channel.id:
             await original_message.reply(response_to_proposer)
         # Edit the proposal in the voting channel
         await voting_message.edit(content=edit_in_voting_channel)
@@ -184,6 +188,8 @@ async def on_raw_reaction_add(payload):
         )
 
     try:
+        logger.debug("Adding a reaction: %s", payload.event_type)
+
         if not await is_valid_voting_reaction(payload):
             return
 
@@ -199,34 +205,33 @@ async def on_raw_reaction_add(payload):
         logger.debug("Author is not the same")
 
         # Error/fraud handling - check if the user has already voted for this proposal
-        voter = await db.filter(
-            Voters.user_id == payload.user_id, Voters.voting_message_id == payload.message_id
-        )
+        voter = await get_voter(payload.user_id, payload.message_id, db)
+        logger.debug("Voter: %s", voter)
         if voter:
             logger.warning(
-                "Warning: Somehow the user has managed to vote twice on the same proposal. channel=%s, message=%s, user=%s, proposal=%s",
+                "Warning: Somehow the same user has managed to vote twice on the same proposal: channel=%s, message=%s, user=%s, proposal=%s, voter=%s",
                 payload.channel_id,
                 payload.message_id,
                 payload.user_id,
                 proposal,
+                voter,
             )
             return
         logger.debug("User hasn't voted before")
 
-        # Check if the threshold is reached
-        # FIXME use lock to add to db to avoid concurrency errors
-        proposal.voters.append(
-            Voters(user_id=payload.user_id, voting_message_id=proposal.voting_message_id)
-        )
-        db.append(
-            proposal.voters,
+        # Add voter to DB and dict
+        await add_voter(
+            proposal,
             Voters(user_id=payload.user_id, voting_message_id=proposal.voting_message_id),
+            db,
         )
         logger.info(
-            "Vote added, total %d voters against %d",
+            "Added vote of user_id=%s, total %d voters against voting_message_id=%d",
+            payload.user_id,
             len(proposal.voters),
             proposal.voting_message_id,
         )
+        # Check if the threshold is reached
         if len(proposal.voters) >= LAZY_CONSENSUS_THRESHOLD:
             logger.debug("Threshold is reached, cancelling")
             await cancel_proposal(

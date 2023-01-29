@@ -1,9 +1,12 @@
+import logging
 from enum import Enum
 
 # Log
 LOG_PATH = "logs/lazy-consensus-bot.log"
 TESTS_PATH = "tests/"
 LOG_FILE_SIZE = 1024 * 1024 * 10
+# FIXME change for beta and prod
+DEFAULT_LOG_LEVEL = logging.DEBUG
 
 # Database
 DB_NAME = "lazy-consensus-bot.db"
@@ -20,11 +23,11 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
 # FIXME change values back after testing
-GRANT_PROPOSAL_TIMER_SECONDS = 20
+GRANT_PROPOSAL_TIMER_SECONDS = 30
 GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 1
 #  GRANT_PROPOSAL_TIMER_SECONDS = 259200  # 3 days
 #  GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 60  # 1 minute
-LAZY_CONSENSUS_THRESHOLD = 1
+LAZY_CONSENSUS_THRESHOLD = 2
 
 # L3 or Eco role
 # FIXME: change roles back to Eco Discord when testing is done
@@ -40,8 +43,10 @@ HELP_COMMAND_NAME = 'help-lazy'
 REACTION_ON_BOT_MENTION = "👋"  # wave
 # When the proposal is accepted, the bot will
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
+REACTION_ON_PROPOSAL_CANCELLED = "🍃"  # leaves
 CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
 EMOJI_HOORAY = "🎉"
+VOTERS_LIST_SEPARATOR = ", "
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 
@@ -117,6 +122,7 @@ So, don't be shy and get those creative juices flowing! Let's make Eco the best 
 
 I'll just leave this here for contributors and the curious: {GITHUB_PROJECT_URL}
 """
+HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, you're adding your vote to the wrong message! It's like trying to put a puzzle piece in the wrong spot, it just doesn't fit! 😕 To make your vote count, please head to the correct voting message: {voting_link}."
 
 # Proposal related public messages
 NEW_PROPOSAL_SAME_CHANNEL_RESPONSE = """
@@ -126,7 +132,7 @@ Let your new idea sparkle like a diamond in the Eco-system! Wishing you all the 
 """
 NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :eco_kyep: :eco_rocket: **Active voting!**
-{countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message (if you need help, type *!lazy-help*).
+{countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message (if you need help, type *!help-lazy*).
 `Proposed by:` {author}
 `Goal:` {description}
 """  # Another version: {author} proposed giving {amount} points to {mention}. {threshold} votes against will cancel it. Use {reaction} to vote before {date_finish}.

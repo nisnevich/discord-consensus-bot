@@ -24,7 +24,7 @@ from utils.formatting_utils import (
 from schemas.grant_proposals import GrantProposals
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
@@ -105,7 +105,7 @@ async def grant_proposal(
                 countdown=get_discord_countdown_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
                 date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
                 amount=amount,
-                mention=mention,
+                mention=mention.mention,
                 author=ctx.message.author.mention,
                 threshold=LAZY_CONSENSUS_THRESHOLD,
                 reaction=CANCEL_EMOJI_UNICODE,
@@ -119,7 +119,7 @@ async def grant_proposal(
             bot_response_message = await original_message.reply(
                 NEW_PROPOSAL_SAME_CHANNEL_RESPONSE.format(
                     author=ctx.message.author.mention,
-                    mention=mention,
+                    mention=mention.mention,
                     amount=amount,
                     threshold=LAZY_CONSENSUS_THRESHOLD,
                     reaction=CANCEL_EMOJI_UNICODE,
