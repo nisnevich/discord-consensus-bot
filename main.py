@@ -36,7 +36,7 @@ def main():
         db.create_all_tables()
         # Create bot client
         client = get_discord_client()
-        client.help_command = CustomHelpCommand()
+        #  client.help_command = CustomHelpCommand()
 
         # Load pending proposals from database
         pending_grant_proposals = db.load_pending_grant_proposals()
