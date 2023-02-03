@@ -49,6 +49,7 @@ EMOJI_HOORAY = "🎉"
 VOTERS_LIST_SEPARATOR = ", "
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
+MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
 
 
 class ProposalResult(Enum):
@@ -96,6 +97,7 @@ ERROR_MESSAGE_INVALID_AMOUNT = (
 ERROR_MESSAGE_NEGATIVE_AMOUNT = "Whoops, the amount must be a positive number, not {amount}"
 ERROR_MESSAGE_INVALID_DESCRIPTION = "Please provide a description of the grant, like this: `!propose @mention 100 for a giant robot.`"
 ERROR_MESSAGE_LENGTHY_DESCRIPTION = f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters. Like, who wants to read that much anyways?"
+ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Step right up, make sure your text starts off in English, at least {int(100 *  MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION)}% of the words should be in the Queen's language! If you want, you can sprinkle in some other languages afterwards, but make sure English takes the lead."
 ERROR_MESSAGE_INVALID_ROLE = "It's only for Layer 3 members, but don't worry if you're not quite there yet! Getting the Layer 3 role is like reaching the top of a mountain, but the view from the top is oh-so-worth it! Plus, think of all the cool features you'll have access to once you get there. Keep climbing, Eco-warrior! :mountain: :eco_heart:"
 
 # Help messages
