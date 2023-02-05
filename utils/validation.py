@@ -7,12 +7,13 @@ from discord.utils import find
 import nltk
 from nltk.corpus import words
 
-from utils.logging_config import log_handler
+from utils.logging_config import log_handler, console_handler
 from utils.const import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
+logger.addHandler(console_handler)
 
 nltk.download('words')
 # Saving set of words in lowercase to compare later
@@ -21,25 +22,20 @@ english_words = set(word.lower() for word in words.words())
 
 def is_valid_language(text, threshold=MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION) -> bool:
     """
-    Determines if the given text is in the English language and appears first in the text, based on the proportion of English words it contains.
+    Determines if the given text is in the English language, based on the proportion of English words it contains.
 
     :param text: The text to be evaluated.
     :param threshold: The minimum proportion of English words that the text must contain in order to be considered valid.
-    :return: True if the text is considered to be in the English language and appears first in the text, False otherwise.
+    :return: True if the text is considered to be in the English language, False otherwise.
     """
     if len(text) == 0:
         return False
 
     words = text.split()
     english_word_count = 0
-    non_english_word_count = 0
     for word in words:
         if word.lower() in english_words:
             english_word_count += 1
-        else:
-            non_english_word_count += 1
-            if non_english_word_count > 0 and english_word_count == 0:
-                return False
     result = english_word_count / float(len(words)) >= threshold
     logger.debug(
         "english_word_count=%d, len(words)=%d, result=%s", english_word_count, len(words), result
@@ -92,7 +88,7 @@ async def validate_grant_message(original_message, amount: int, description: str
         return False
 
     # Check if amount is set
-    if not amount:
+    if amount != 0 and not amount:
         await original_message.reply(ERROR_MESSAGE_EMPTY_AMOUNT)
         logger.info("Amount not set. message_id=%d, invalid value=%s", original_message.id, amount)
         return False
