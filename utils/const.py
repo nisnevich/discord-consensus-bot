@@ -81,23 +81,19 @@ Here are some examples to get you started:
 
 Don't worry, we all make mistakes, just give it another try! To learn more in DM, type `!help-lazy`. And if you're still having trouble, feel free to reach out for help.
 """
-ERROR_MESSAGE_NO_MENTIONS = "Looking for someone to propose a grant to? Make sure to mention a user that you'd like to give a grant."
-ERROR_MESSAGE_INVALID_COMMAND_FORMAT = (
-    "Whoops! Make sure the format is: `!propose @mention amount for a fun and exciting proposal.`"
-)
+ERROR_MESSAGE_NO_MENTIONS = "Where's the love?! You need to mention someone if you want to propose a grant! `!propose @mention 100 for a giant robot.`"
+ERROR_MESSAGE_INVALID_COMMAND_FORMAT = "Oopsie! The command format is as important as the ingredients in a cake. Make sure you got it right. `!propose @mention amount for a pet dragon.`"
 ERROR_MESSAGE_INVALID_USER = (
-    "Can't find that user. Are they on this server? Double check the mention."
-)
-ERROR_MESSAGE_EMPTY_AMOUNT = (
-    "Hold on, you forgot the amount! Example: `!propose @mention 100 for a unicorn farm.`"
+    "Hmmm, that user doesn't seem to be around here. Did you check under the couch?"
 )
 ERROR_MESSAGE_INVALID_AMOUNT = (
     "The amount must be a positive number. Example: `!propose @mention 100 for a giant robot.`"
 )
-ERROR_MESSAGE_NEGATIVE_AMOUNT = "Whoops, the amount must be a positive number, not {amount}"
-ERROR_MESSAGE_INVALID_DESCRIPTION = "Please provide a description of the grant, like this: `!propose @mention 100 for a giant robot.`"
+ERROR_MESSAGE_NEGATIVE_AMOUNT = "Hold on, {amount} is not enough to even buy a pack of gum. The amount has to be positive, my friend."
+ERROR_MESSAGE_EMPTY_AMOUNT = "The amount is like the cherry on top of a sundae, without it, your proposal just isn't sweet enough. `!propose @mention 100 for a unicorn farm.`"
+ERROR_MESSAGE_INVALID_DESCRIPTION = "You know what they say, if you don't describe your grant proposal, how will anyone know how awesome it is? `!propose @mention 100 for a giant robot.`"
 ERROR_MESSAGE_LENGTHY_DESCRIPTION = f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters. Like, who wants to read that much anyways?"
-ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Step right up, make sure your text starts off in English, at least {int(100 *  MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION)}% of the words should be in the Queen's language! If you want, you can sprinkle in some other languages afterwards, but make sure English takes the lead."
+ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Looks like your proposal needs a little more time in English class. Make sure at least {int(100 *  MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION)}% of the words are in the Queen's language."
 ERROR_MESSAGE_INVALID_ROLE = "It's only for Layer 3 members, but don't worry if you're not quite there yet! Getting the Layer 3 role is like reaching the top of a mountain, but the view from the top is oh-so-worth it! Plus, think of all the cool features you'll have access to once you get there. Keep climbing, Eco-warrior! :mountain: :eco_heart:"
 
 # Help messages

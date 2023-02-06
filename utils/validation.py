@@ -8,6 +8,7 @@ import nltk
 from nltk.corpus import words
 
 from utils.logging_config import log_handler, console_handler
+from utils.formatting_utils import get_amount_to_print
 from utils.const import *
 
 logger = logging.getLogger(__name__)
@@ -43,11 +44,11 @@ def is_valid_language(text, threshold=MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION) -
     return result
 
 
-async def validate_grant_message(original_message, amount: int, description: str) -> bool:
+async def validate_grant_message(original_message, amount: float, description: str) -> bool:
     """
     Validate grant message - mention, amount etc.
     Parameters:
-        amount (str): The amount of the grant being proposed.
+        amount: The amount of the grant being proposed.
 
     Returns:
         bool: True if the grant proposal message is valid, False otherwise.
@@ -93,17 +94,19 @@ async def validate_grant_message(original_message, amount: int, description: str
         logger.info("Amount not set. message_id=%d, invalid value=%s", original_message.id, amount)
         return False
 
-    # Check if amount is int
-    if not isinstance(amount, int):
+    # Check if amount is float
+    if not isinstance(amount, float):
         await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
         logger.info("Invalid amount. message_id=%d, invalid value=%s", original_message.id, amount)
         return False
 
-    # Check if amount is a positive integer
-    if int(amount) <= 0:
-        await original_message.reply(ERROR_MESSAGE_NEGATIVE_AMOUNT.format(amount=amount))
+    # Check if amount is a positive float
+    if float(amount) <= 0:
+        await original_message.reply(
+            ERROR_MESSAGE_NEGATIVE_AMOUNT.format(amount=get_amount_to_print(amount))
+        )
         logger.info(
-            "Invalid amount, should be positive integer. message_id=%d, invalid value=%s",
+            "Invalid amount, should be positive float. message_id=%d, invalid value=%s",
             original_message.id,
             amount,
         )

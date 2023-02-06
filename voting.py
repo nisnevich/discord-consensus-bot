@@ -19,6 +19,7 @@ from utils.validation import validate_roles
 from utils.bot_utils import get_discord_client
 from utils.server_utils import get_message
 from utils.const import *
+from utils.formatting_utils import get_amount_to_print
 from schemas.grant_proposals import Voters, GrantProposals
 
 logger = logging.getLogger(__name__)
@@ -136,7 +137,7 @@ async def on_raw_reaction_add(payload):
         # Don't remove unused variables because messages text may change
         mention_author = proposal.author
         mention_receiver = proposal.mention
-        amount_of_allocation = proposal.amount
+        amount_of_allocation = get_amount_to_print(proposal.amount)
         description_of_proposal = proposal.description
         list_of_voters = VOTERS_LIST_SEPARATOR.join(
             f"<@{voter.user_id}>" for voter in proposal.voters

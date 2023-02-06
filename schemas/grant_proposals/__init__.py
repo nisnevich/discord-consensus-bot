@@ -1,5 +1,5 @@
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Float
 
 from utils.const import GRANT_PROPOSALS_TABLE_NAME, VOTERS_TABLE_NAME
 
@@ -15,7 +15,7 @@ class GrantProposals(Base):
     author = Column(Integer)
     voting_message_id = Column(Integer)
     mention = Column(String)
-    amount = Column(Integer)
+    amount = Column(Float)
     description = Column(String)
     timer = Column(Integer)
     # This is only needed for some error handling, though very helpful for onboarding new users

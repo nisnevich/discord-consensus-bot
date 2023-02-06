@@ -33,3 +33,11 @@ def get_discord_timestamp_plus_delta(delta_seconds: int, timestamp_string="<t:{t
 def get_discord_countdown_plus_delta(delta_seconds: int):
     timestamp_countdown = "<t:{timestamp}:R>"
     return get_discord_timestamp_plus_delta(delta_seconds, timestamp_string=timestamp_countdown)
+
+
+def get_amount_to_print(amount):
+    """
+    Returns int if the number doesn't have a fractional part, or float otherwise. This is so not to
+    print amounts like 1.0.
+    """
+    return int(amount) if amount - int(amount) == 0 else float(amount)
