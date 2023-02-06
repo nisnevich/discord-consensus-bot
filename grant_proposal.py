@@ -20,6 +20,7 @@ from utils.bot_utils import get_discord_client
 from utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
     get_discord_countdown_plus_delta,
+    get_amount_to_print,
 )
 from schemas.grant_proposals import GrantProposals
 
@@ -63,7 +64,7 @@ async def approve_grant_proposal(voting_message_id):
 async def grant_proposal(
     ctx,
     mention: typing.Union[discord.User, str, None] = None,
-    amount: typing.Union[int, None] = None,
+    amount: typing.Union[float, None] = None,
     *,
     description: str = None,
 ):
@@ -93,18 +94,13 @@ async def grant_proposal(
             )
             return
 
-        # If validation succeeded, cast 'amount' from string to integer
-        amount = int(amount)
-
-        print(description)
-
         # Add proposal to the voting channel
         voting_channel = client.get_channel(VOTING_CHANNEL_ID)
         voting_message = await voting_channel.send(
             NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
                 countdown=get_discord_countdown_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
                 date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
-                amount=amount,
+                amount=get_amount_to_print(amount),
                 mention=mention.mention,
                 author=ctx.message.author.mention,
                 threshold=LAZY_CONSENSUS_THRESHOLD,
@@ -120,7 +116,7 @@ async def grant_proposal(
                 NEW_PROPOSAL_SAME_CHANNEL_RESPONSE.format(
                     author=ctx.message.author.mention,
                     mention=mention.mention,
-                    amount=amount,
+                    amount=get_amount_to_print(amount),
                     threshold=LAZY_CONSENSUS_THRESHOLD,
                     reaction=CANCEL_EMOJI_UNICODE,
                     voting_link=voting_message.jump_url,

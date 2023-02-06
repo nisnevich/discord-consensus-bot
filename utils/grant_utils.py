@@ -100,9 +100,9 @@ def add_grant_proposal(new_grant_proposal):
         raise ValueError(
             f"mention should be discord.User str, got {type(new_grant_proposal.mention)} instead: {new_grant_proposal.mention}"
         )
-    if not isinstance(new_grant_proposal.amount, int):
+    if not isinstance(new_grant_proposal.amount, (float, int)):
         raise ValueError(
-            f"amount should be an int, got {type(new_grant_proposal.amount)} instead: {new_grant_proposal.amount}"
+            f"amount should be a float or int, got {type(new_grant_proposal.amount)} instead: {new_grant_proposal.amount}"
         )
     if not isinstance(new_grant_proposal.description, str):
         raise ValueError(
