@@ -6,9 +6,16 @@ from discord.utils import find
 
 import nltk
 from nltk.corpus import words
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
 
 from utils.logging_config import log_handler, console_handler
-from utils.formatting_utils import get_amount_to_print
+from utils.dev_utils import measure_time
+from utils.formatting_utils import (
+    get_amount_to_print,
+    remove_special_symbols,
+    remove_discord_mentions,
+)
 from utils.const import *
 
 logger = logging.getLogger(__name__)
@@ -16,11 +23,17 @@ logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
+# Preparing ntlk to validate language of the proposal
+nltk.download('averaged_perceptron_tagger')
+nltk.download('punkt')
+nltk.download('wordnet')
 nltk.download('words')
 # Saving set of words in lowercase to compare later
 english_words = set(word.lower() for word in words.words())
+wordnet_lemmatizer = WordNetLemmatizer()
 
 
+@measure_time
 def is_valid_language(text, threshold=MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION) -> bool:
     """
     Determines if the given text is in the English language, based on the proportion of English words it contains.
@@ -32,11 +45,19 @@ def is_valid_language(text, threshold=MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION) -
     if len(text) == 0:
         return False
 
-    words = text.split()
+    # Count all discord mentions as valid words by simply removing them from the text
+    # Also removing all special symbols to avoid performance issues with nltk
+    text = remove_special_symbols(remove_discord_mentions(text))
+    logger.debug("Description without special characters and mentions: %s", text)
+    words = word_tokenize(text)
+    lemmatized_words = [wordnet_lemmatizer.lemmatize(word.lower()) for word in words]
     english_word_count = 0
-    for word in words:
-        if word.lower() in english_words:
+    for word in lemmatized_words:
+        if word.isalpha() and word in english_words:
             english_word_count += 1
+            logger.debug(f"{word} is English")
+        else:
+            logger.debug(f"{word} is not English")
     result = english_word_count / float(len(words)) >= threshold
     logger.debug(
         "english_word_count=%d, len(words)=%d, result=%s", english_word_count, len(words), result
@@ -53,6 +74,12 @@ async def validate_grant_message(original_message, amount: float, description: s
     Returns:
         bool: True if the grant proposal message is valid, False otherwise.
     """
+    logger.debug(
+        "Validation started.\nMentions: %s\nAmount: %s\nDescription: %s",
+        original_message.mentions,
+        amount,
+        description,
+    )
 
     # check if there are mentions in the message
     if not original_message.mentions:
@@ -160,3 +187,7 @@ async def validate_roles(user: User) -> bool:
     if role is None:
         return False
     return True
+
+
+# The first run of is_valid_language always takes a few seconds (supposedly because of loading data into main memory), so we make a stub run when starting the application to avoid latency for users
+is_valid_language("lorem ipsum")

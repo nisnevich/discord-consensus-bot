@@ -41,3 +41,14 @@ def get_amount_to_print(amount):
     print amounts like 1.0.
     """
     return int(amount) if amount - int(amount) == 0 else float(amount)
+
+
+def remove_special_symbols(text):
+    return re.sub(r'[^\w\s]', '', text)
+
+
+def remove_discord_mentions(text):
+    """
+    Removes all kinds of mentions (user, role etc) from the given text.
+    """
+    return re.sub(r'<@.+>', '', text)
