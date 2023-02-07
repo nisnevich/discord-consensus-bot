@@ -96,7 +96,11 @@ async def validate_grant_message(original_message, amount: float, description: s
     user = original_message.mentions[0]
     # check if the mention follows the "!propose" command
     command_and_mention = f"{DISCORD_COMMAND_PREFIX}{GRANT_PROPOSAL_COMMAND_NAME} {original_message.mentions[0].mention}"
-    if original_message.content[: len(command_and_mention)] != command_and_mention:
+    # comparing the message and how it should look like while removing all spaces (to avoid issues with multiple spaces)
+    stripped_content = original_message.content.replace(" ", "")
+    if stripped_content[: len(command_and_mention.replace(" ", ""))] != command_and_mention.replace(
+        " ", ""
+    ):
         await original_message.reply(ERROR_MESSAGE_INVALID_COMMAND_FORMAT)
         logger.info(
             "Invalid command format. message_id=%d, invalid value=%s",
