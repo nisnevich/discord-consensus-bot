@@ -86,7 +86,7 @@ ERROR_MESSAGE_NEGATIVE_AMOUNT = "Hold on, {amount} is not enough to even buy a p
 ERROR_MESSAGE_EMPTY_AMOUNT = "The amount is like the cherry on top of a sundae, without it, your proposal just isn't sweet enough. `!propose @mention 100 for a unicorn farm.`"
 ERROR_MESSAGE_INVALID_DESCRIPTION = "You know what they say, if you don't describe your grant proposal, how will anyone know how awesome it is? `!propose @mention 100 for a giant robot.`"
 ERROR_MESSAGE_LENGTHY_DESCRIPTION = f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters. Like, who wants to read that much anyways?"
-ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Looks like your proposal needs a little more time in English class. Make sure at least {int(100 *  MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION)}% of the words are in the Queen's language."
+ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Looks like your proposal needs a little more time in English class. Make sure you described all details in the Queen's language."
 ERROR_MESSAGE_INVALID_ROLE = "It's only for Layer 3 members, but don't worry if you're not quite there yet! Getting the Layer 3 role is like reaching the top of a mountain, but the view from the top is oh-so-worth it! Plus, think of all the cool features you'll have access to once you get there. Keep climbing, Eco-warrior! :mountain: :eco_heart:"
 
 # Help messages
