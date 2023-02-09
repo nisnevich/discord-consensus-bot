@@ -71,6 +71,12 @@ HEART_EMOJI_LIST = [
     "🫶",
     "❤️‍🔥",
     "😘",
+    ":eco_heart:",
+    ":hogan:",
+    ":eco_cheers~1:",
+    ":eco_love:",
+    ":i_love_eco:",
+    ":pandalove:",
 ]
 
 
