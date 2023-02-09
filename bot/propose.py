@@ -1,23 +1,26 @@
 import asyncio
+import logging
+import typing
+import discord
 from discord.ext import commands
 
-from grant import grant
-from utils.const import *
-from utils.proposal_utils import (
+from bot.grant import grant
+from bot.config.const import *
+from bot.utils.db_utils import DBUtil
+from bot.utils.proposal_utils import (
     get_proposal,
     add_proposal,
     is_relevant_proposal,
 )
-from utils.db_utils import DBUtil
-from utils.logging_config import log_handler, console_handler
-from utils.validation import validate_roles, validate_grant_message
-from utils.bot_utils import get_discord_client
-from utils.formatting_utils import (
+from bot.config.logging_config import log_handler, console_handler
+from bot.utils.validation import validate_roles, validate_grant_message
+from bot.utils.discord_utils import get_discord_client
+from bot.utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
     get_discord_countdown_plus_delta,
     get_amount_to_print,
 )
-from schemas import GrantProposals
+from bot.config.schemas import Proposals
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -104,7 +107,7 @@ async def proposal_with_grant(ctx, original_message, mention, args):
     logger.info("Sent confirmation messages for grant proposal with message_id=%d", ctx.message.id)
 
     # Add grant proposal to dictionary and database, including the message id in the voting channel sent above
-    new_grant_proposal = GrantProposals(
+    new_grant_proposal = Proposals(
         message_id=ctx.message.id,
         channel_id=ctx.message.channel.id,
         author=ctx.message.author.mention,

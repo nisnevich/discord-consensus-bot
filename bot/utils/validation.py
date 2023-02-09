@@ -1,7 +1,4 @@
-import logging
-
 from discord import User
-from discord.ext import commands
 from discord.utils import find
 
 import nltk
@@ -9,14 +6,15 @@ from nltk.corpus import words
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 
-from utils.logging_config import log_handler, console_handler
-from utils.dev_utils import measure_time
-from utils.formatting_utils import (
+from bot.config.logging_config import log_handler, console_handler
+from bot.config.const import *
+
+from bot.utils.dev_utils import measure_time
+from bot.utils.formatting_utils import (
     get_amount_to_print,
     remove_special_symbols,
     remove_discord_mentions,
 )
-from utils.const import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -24,10 +22,8 @@ logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
 # Preparing ntlk to validate language of the proposal
-nltk.download('averaged_perceptron_tagger')
-nltk.download('punkt')
-nltk.download('wordnet')
-nltk.download('words')
+for dataset in NLTK_DATASETS:
+    nltk.download(dataset, download_dir=NLTK_DATASETS_DIR)
 # Saving set of words in lowercase to compare later
 english_words = set(word.lower() for word in words.words())
 wordnet_lemmatizer = WordNetLemmatizer()
@@ -64,6 +60,7 @@ def is_valid_language(text, threshold=MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION) -
     )
     return result
 
+
 async def validate_roles(user: User) -> bool:
     """
     Validate roles of the user to check if user has the required role to use this command.
@@ -79,6 +76,7 @@ async def validate_roles(user: User) -> bool:
     if role is None:
         return False
     return True
+
 
 async def validate_grantless_message(original_message, description: str) -> bool:
     pass

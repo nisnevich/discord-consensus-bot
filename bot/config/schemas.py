@@ -1,12 +1,12 @@
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Float
 
-from utils.const import GRANT_PROPOSALS_TABLE_NAME, VOTERS_TABLE_NAME
+from bot.config.const import GRANT_PROPOSALS_TABLE_NAME, VOTERS_TABLE_NAME
 
 Base = declarative_base()
 
 
-class GrantProposals(Base):
+class Proposals(Base):
     __tablename__ = GRANT_PROPOSALS_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
@@ -35,7 +35,7 @@ class GrantProposals(Base):
         self.voters = []
 
     def __repr__(self):
-        return f"<GrantProposals(id='{self.id}', message_id='{self.message_id}', channel_id='{self.channel_id}', author='{self.author}', voting_message_id='{self.voting_message_id}', mention='{self.mention}', amount='{self.amount}', description='{self.description}', timer='{self.timer}', bot_response_message_id='{self.bot_response_message_id}')>"
+        return f"<Proposals(id='{self.id}', message_id='{self.message_id}', channel_id='{self.channel_id}', author='{self.author}', voting_message_id='{self.voting_message_id}', mention='{self.mention}', amount='{self.amount}', description='{self.description}', timer='{self.timer}', bot_response_message_id='{self.bot_response_message_id}')>"
 
 
 class Voters(Base):
@@ -49,7 +49,7 @@ class Voters(Base):
     voting_message_id = Column(Integer)
     grant_proposal_id = Column(Integer, ForeignKey("proposals.id"))
 
-    grant_proposal = relationship("GrantProposals", back_populates="voters")
+    grant_proposal = relationship("Proposals", back_populates="voters")
 
     def __repr__(self) -> str:
         return f"<Voter(id={self.id}, user_id={self.user_id}, grant_proposal_id={self.grant_proposal_id}>"

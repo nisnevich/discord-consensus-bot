@@ -64,17 +64,14 @@ fi
 # Run main.py with pm2 (and log any output of this command in a bright color to distinguish it easily)
 echo -e "\033[1;33m"
 # Even though --auto-restart isn't available in pm2 free vesion, testing showed that the bot actually gets restarted whenever it crashes with exception or just exits
-pm2 start main.py --interpreter python3 --name "eco-lazy-consensus-bot" 
+pm2 start main.py --interpreter python3 --name "eco-lazy-consensus-bot"
 echo -e "\033[0m"
-
-# Some pm2 commands for monitoring:
-#
-# pm2 show eco-lazy-consensus-bot # show general usage information
-# pm2 logs eco-lazy-consensus-bot [--lines 1000] # display logs
-# pm2 env 0 # display environment variables
-# pm2 monit # monitor CPU and Memory usage eco-lazy-consensus-bot
 
 # Save the current process list to run on startup
 pm2 save
 
-
+# Some pm2 commands for monitoring:
+# pm2 show eco-lazy-consensus-bot # show general usage information
+# pm2 logs eco-lazy-consensus-bot [--lines 1000] # display logs
+# pm2 env 0 # display environment variables
+# pm2 monit # monitor CPU and Memory usage eco-lazy-consensus-bot

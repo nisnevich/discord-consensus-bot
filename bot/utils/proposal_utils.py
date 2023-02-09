@@ -4,10 +4,11 @@ import logging
 # Function overloading
 from multipledispatch import dispatch
 
-from utils.logging_config import log_handler, console_handler
-from schemas import GrantProposals, Voters
-from utils.db_utils import DBUtil
-from utils.const import DEFAULT_LOG_LEVEL
+from bot.utils.db_utils import DBUtil
+
+from bot.config.logging_config import log_handler, console_handler
+from bot.config.schemas import Proposals, Voters
+from bot.config.const import DEFAULT_LOG_LEVEL
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -124,12 +125,12 @@ def validate_proposal_with_grant(new_grant_proposal):
         )
 
 
-@dispatch(GrantProposals)
+@dispatch(Proposals)
 def add_proposal(new_proposal):
     """
     Add a new grant proposal to the database and to a dictionary.
     Parameters:
-    new_proposal (GrantProposals): The new grant proposal object to be added.
+    new_proposal (Proposals): The new grant proposal object to be added.
     db (optional): The DBUtil object used to save a proposal. If this parameter is not specified,proposal will only be added to in-memory dict (use case: when restoring data from DB).
     """
 
@@ -143,7 +144,7 @@ def add_proposal(new_proposal):
     logger.info("Added proposal with voting_message_id=%s", new_proposal.voting_message_id)
 
 
-@dispatch(GrantProposals, DBUtil)
+@dispatch(Proposals, DBUtil)
 async def add_proposal(new_proposal, db):
     """
     Overloaded add_proposal that also saves to DB, with one extra parameter - the DBUtil object used to save a proposal.

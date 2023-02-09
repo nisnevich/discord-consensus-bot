@@ -1,12 +1,14 @@
 import atexit
 import asyncio
+import os
+
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Query
 from sqlalchemy import create_engine
-from schemas import Base, GrantProposals
 
-from utils.logging_config import log_handler, console_handler
-from utils.const import *
+from bot.config.schemas import Base, Proposals
+from bot.config.logging_config import log_handler, console_handler
+from bot.config.const import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -22,7 +24,7 @@ class DBUtil:
 
     def connect_db(self):
         if DBUtil.engine is None:
-            DBUtil.engine = create_engine(f'sqlite:///{DB_NAME}')
+            DBUtil.engine = create_engine(f"sqlite:///{DB_PATH}")
         if DBUtil.session is None:
             DBUtil.session = sessionmaker(bind=DBUtil.engine)()
         # run close_db once the main thread exits
@@ -42,7 +44,7 @@ class DBUtil:
             logger.info("Table already exist: %s", VOTERS_TABLE_NAME)
 
     def load_pending_grant_proposals(self) -> Query:
-        return DBUtil.session.query(GrantProposals)
+        return DBUtil.session.query(Proposals)
 
     def log_pending_grant_proposals(self) -> Query:
         # Load pending proposals from database

@@ -3,7 +3,7 @@ import unittest
 import nltk
 from nltk.corpus import words
 
-from utils.validation import is_valid_language
+from bot.utils.validation import is_valid_language
 
 
 class TestIsValidLanguage(unittest.TestCase):

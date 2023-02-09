@@ -2,7 +2,7 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 
-from utils.const import LOG_FILE_SIZE, LOG_PATH, DEFAULT_LOG_LEVEL
+from bot.config.const import LOG_FILE_SIZE, LOG_PATH, DEFAULT_LOG_LEVEL
 
 if not os.path.exists(LOG_PATH):
     os.makedirs(os.path.dirname(LOG_PATH))

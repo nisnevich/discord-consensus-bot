@@ -1,9 +1,8 @@
 import asynctest
-from asynctest import patch
 import unittest.mock as mock
 
-from proposing import validate_grant_message
-from utils.const import *
+from bot.propose import validate_grant_message
+from bot.config.const import *
 
 
 class TestValidateGrantMessage(asynctest.TestCase):

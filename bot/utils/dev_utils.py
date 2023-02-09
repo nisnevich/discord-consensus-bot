@@ -1,7 +1,8 @@
 import time
 import logging
-from utils.const import DEFAULT_LOG_LEVEL
-from utils.logging_config import log_handler, console_handler
+
+from bot.config.const import DEFAULT_LOG_LEVEL
+from bot.config.logging_config import log_handler, console_handler
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)

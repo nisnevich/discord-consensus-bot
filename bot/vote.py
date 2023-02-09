@@ -1,6 +1,10 @@
 import discord
 
-from utils.proposal_utils import (
+from bot.config.logging_config import log_handler, console_handler
+from bot.config.const import *
+from bot.config.schemas import Voters
+
+from bot.utils.proposal_utils import (
     get_proposal,
     remove_proposal,
     is_relevant_proposal,
@@ -9,14 +13,10 @@ from utils.proposal_utils import (
     get_voter,
     get_proposal_initiated_by,
 )
-from utils.db_utils import DBUtil
-from utils.logging_config import log_handler, console_handler
-from utils.validation import validate_roles
-from utils.bot_utils import get_discord_client
-from utils.server_utils import get_message
-from utils.const import *
-from utils.formatting_utils import get_amount_to_print
-from schemas import Voters
+from bot.utils.db_utils import DBUtil
+from bot.utils.validation import validate_roles
+from bot.utils.discord_utils import get_discord_client, get_message
+from bot.utils.formatting_utils import get_amount_to_print
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)

@@ -1,16 +1,16 @@
-import logging
 import sys
 import traceback
+import logging
 
-from utils.db_utils import DBUtil
-from utils.logging_config import log_handler, console_handler
-from utils.proposal_utils import add_proposal, get_proposals_count
-from utils.bot_utils import get_discord_client
+from bot.utils.db_utils import DBUtil
+from bot.config.logging_config import log_handler, console_handler, DEFAULT_LOG_LEVEL
+from bot.utils.proposal_utils import add_proposal, get_proposals_count
+from bot.utils.discord_utils import get_discord_client
 
 # imports below are needed to make discord client aware of decorated methods
-from proposing import propose_command, approve_proposal
-from voting import on_raw_reaction_add
-from helpers import *
+from bot.propose import approve_proposal, propose_command
+from bot.vote import on_raw_reaction_add
+from bot.help import help
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)

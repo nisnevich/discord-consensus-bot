@@ -1,19 +1,15 @@
 import logging
 
-import discord
-from discord.ext import commands
-
-from utils.const import (
-    GITHUB_PROJECT_URL,
+from bot.config.const import (
     HELP_MESSAGE_NON_AUTHORIZED_USER,
     HELP_MESSAGE_AUTHORIZED_USER,
     RESPONSIBLE_MENTION,
     HELP_COMMAND_NAME,
     DEFAULT_LOG_LEVEL,
 )
-from utils.logging_config import log_handler, console_handler
-from utils.bot_utils import get_discord_client
-from utils.validation import validate_roles
+from bot.config.logging_config import log_handler, console_handler
+from bot.utils.discord_utils import get_discord_client
+from bot.utils.validation import validate_roles
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)

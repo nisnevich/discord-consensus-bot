@@ -1,14 +1,9 @@
-import logging
-import time
-
-import discord
-
-from utils.proposal_utils import get_proposal, add_proposal, remove_proposal
-from utils.db_utils import DBUtil
-from utils.const import *
-from utils.logging_config import log_handler, console_handler
-from utils.bot_utils import get_discord_client
-from utils.formatting_utils import get_amount_to_print
+from bot.utils.proposal_utils import get_proposal, remove_proposal
+from bot.utils.db_utils import DBUtil
+from bot.config.const import *
+from bot.config.logging_config import log_handler, console_handler
+from bot.utils.discord_utils import get_discord_client
+from bot.utils.formatting_utils import get_amount_to_print
 
 
 logger = logging.getLogger(__name__)

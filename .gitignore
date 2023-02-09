@@ -6,5 +6,5 @@ logs/
 venv/
 .idea/
 lazy-consensus-bot.db
-nltk_data/
+nltk/
 

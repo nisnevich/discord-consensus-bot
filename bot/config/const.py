@@ -1,18 +1,25 @@
 import logging
+import os
+
 from enum import Enum
 
+PROJECT_ROOT = os.getcwd()
+
 # Log
-LOG_PATH = "logs/lazy-consensus-bot.log"
-TESTS_PATH = "tests/"
+LOG_PATH = os.path.join(PROJECT_ROOT, "logs/consensus-bot.log")
 LOG_FILE_SIZE = 1024 * 1024 * 10
-# FIXME change for beta and prod
 DEFAULT_LOG_LEVEL = logging.DEBUG
 
 # Database
-DB_NAME = "lazy-consensus-bot.db"
+DB_PATH = os.path.join(PROJECT_ROOT, "consensus-bot.db")
 GRANT_PROPOSALS_TABLE_NAME = "proposals"
 VOTERS_TABLE_NAME = "voters"
 
+# nltk datasets to download
+NLTK_DATASETS_DIR = f"{PROJECT_ROOT}/nltk"
+NLTK_DATASETS = ['averaged_perceptron_tagger', 'punkt', 'wordnet', 'words']
+
+# urls
 GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bot"
 
 # =====================

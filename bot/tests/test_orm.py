@@ -1,7 +1,9 @@
 import unittest
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from schemas import Base, GrantProposals, Voters
+
+from bot.config.schemas import Base, Proposals, Voters
 
 
 class TestGrantProposals(unittest.TestCase):
@@ -11,7 +13,7 @@ class TestGrantProposals(unittest.TestCase):
         self.session = sessionmaker(bind=self.engine)()
 
     def test_grant_proposals_init(self):
-        proposal = GrantProposals(
+        proposal = Proposals(
             message_id=1,
             channel_id=1,
             mention="@user",
@@ -28,7 +30,7 @@ class TestGrantProposals(unittest.TestCase):
         self.assertEqual(proposal.channel_id, 1)
 
     def test_grant_proposals_add_to_db(self):
-        proposal = GrantProposals(
+        proposal = Proposals(
             message_id=1,
             mention="@user",
             amount=100,
@@ -39,12 +41,12 @@ class TestGrantProposals(unittest.TestCase):
         self.session.add(proposal)
         self.session.commit()
 
-        result = self.session.query(GrantProposals).first()
+        result = self.session.query(Proposals).first()
         self.assertEqual(result, proposal)
 
     def test_cleanup_grant_proposal_and_votes(self):  # Fix indentation
         # Create a new grant proposal and associated votes
-        grant_proposal = GrantProposals(
+        grant_proposal = Proposals(
             message_id=1,
             channel_id=1,
             mention="test_user",
@@ -60,7 +62,7 @@ class TestGrantProposals(unittest.TestCase):
         vote_ids = [vote.id for vote in voters]
 
         # Check that the grant proposal and associated votes were added to the database
-        assert self.session.query(GrantProposals).filter_by(id=proposal_id).count() == 1
+        assert self.session.query(Proposals).filter_by(id=proposal_id).count() == 1
         assert self.session.query(Voters).filter(Voters.id.in_(vote_ids)).count() == 5
 
         # Delete the grant proposal
@@ -68,7 +70,7 @@ class TestGrantProposals(unittest.TestCase):
         self.session.commit()
 
         # Check that the grant proposal and associated votes were removed from the database
-        assert self.session.query(GrantProposals).filter_by(id=proposal_id).count() == 0
+        assert self.session.query(Proposals).filter_by(id=proposal_id).count() == 0
         assert self.session.query(Voters).filter(Voters.id.in_(vote_ids)).count() == 0
 
 
@@ -79,7 +81,7 @@ class TestVoters(unittest.TestCase):
         self.session = sessionmaker(bind=self.engine)()
 
     def test_voters_init(self):
-        grant_proposal = GrantProposals(
+        grant_proposal = Proposals(
             message_id=1,
             channel_id=1,
             mention="test_user",
@@ -93,7 +95,7 @@ class TestVoters(unittest.TestCase):
         self.assertEqual(voter.grant_proposal, grant_proposal)
 
     def test_voters_add_to_db(self):
-        grant_proposal = GrantProposals(
+        grant_proposal = Proposals(
             message_id=1,
             channel_id=1,
             mention="test_user",
@@ -110,7 +112,7 @@ class TestVoters(unittest.TestCase):
 
     def test_cleanup_voters(self):
         # Create a new grant proposal and associated votes
-        grant_proposal = GrantProposals(
+        grant_proposal = Proposals(
             message_id=1,
             channel_id=1,
             mention="test_user",
