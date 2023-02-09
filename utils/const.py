@@ -22,17 +22,11 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # Invite link with required permissions
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
-# FIXME change values back after testing
-GRANT_PROPOSAL_TIMER_SECONDS = 10
+GRANT_PROPOSAL_TIMER_SECONDS = 10  # 3 days is 259200
 GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 1
-#  GRANT_PROPOSAL_TIMER_SECONDS = 259200  # 3 days
-#  GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 60  # 1 minute
 LAZY_CONSENSUS_THRESHOLD = 2
 
-# L3 or Eco role
-# FIXME: change roles back to Eco Discord when testing is done
 ROLE_IDS_ALLOWED = (1063903240925749389,)
-# ROLE_IDS_ALLOWED = (812675567438659624, 1038497110754086913)
 VOTING_CHANNEL_ID = 1067119414731886645
 GRANT_APPLY_CHANNEL_ID = 1067127829654937692
 
@@ -40,16 +34,45 @@ DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
 GRANT_APPLY_COMMAND_NAME = 'grant'
 HELP_COMMAND_NAME = 'help-lazy'
+VOTERS_LIST_SEPARATOR = ", "
+RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
+MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
+MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
+
+# Emoji
 REACTION_ON_BOT_MENTION = "👋"  # wave
 # When the proposal is accepted, the bot will
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 REACTION_ON_PROPOSAL_CANCELLED = "🍃"  # leaves
 CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
 EMOJI_HOORAY = "🎉"
-VOTERS_LIST_SEPARATOR = ", "
-RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
-MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
-MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
+HEART_EMOJI_LIST = [
+    "❤️",
+    "♥️",
+    "🖤",
+    "💙",
+    "🤎",
+    "💝",
+    "💚",
+    "🧡",
+    "💜",
+    "💞",
+    "🥰",
+    "💖",
+    "💕",
+    "🤍",
+    "💛",
+    "💓",
+    "💗",
+    "💘",
+    "💌",
+    "😍",
+    "❣️",
+    "😻",
+    "🫶",
+    "❤️‍🔥",
+    "😘",
+]
 
 
 class ProposalResult(Enum):
