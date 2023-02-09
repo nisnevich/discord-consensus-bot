@@ -4,11 +4,11 @@ import traceback
 
 from utils.db_utils import DBUtil
 from utils.logging_config import log_handler, console_handler
-from utils.grant_utils import add_grant_proposal, get_grant_proposals_count
+from utils.proposal_utils import add_proposal, get_proposals_count
 from utils.bot_utils import get_discord_client
 
 # imports below are needed to make discord client aware of decorated methods
-from grant_proposal import grant_proposal, approve_grant_proposal
+from proposing import propose_command, approve_proposal
 from voting import on_raw_reaction_add
 from helpers import *
 
@@ -24,7 +24,7 @@ def main():
         logger.info("Running approval of the proposals...")
         # Start background tasks to approve pending proposals
         for proposal in pending_grant_proposals:
-            client.loop.create_task(approve_grant_proposal(proposal.voting_message_id))
+            client.loop.create_task(approve_proposal(proposal.voting_message_id))
             logger.info(
                 "Added task to event loop to approve voting_message_id=%d",
                 proposal.voting_message_id,
@@ -45,9 +45,9 @@ def main():
         pending_grant_proposals = db.load_pending_grant_proposals()
         for proposal in pending_grant_proposals:
             # Adding proposal without db parameter to only keep it in primary memory (as it's already in db)
-            add_grant_proposal(proposal)
+            add_proposal(proposal)
         logger.info(
-            "Loaded %d pending grant proposal(s) from database", get_grant_proposals_count()
+            "Loaded %d pending grant proposal(s) from database", get_proposals_count()
         )
         # Enabling setup hook to start proposal approving coroutines after the client will be initialised
         # client.run call is required before approve_grant_proposal, because it starts Discord event loop

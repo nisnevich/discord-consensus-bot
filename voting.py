@@ -1,26 +1,22 @@
-import logging
-
 import discord
 
-from utils.grant_utils import (
-    get_grant_proposal,
-    add_grant_proposal,
-    remove_grant_proposal,
-    is_relevant_grant_proposal,
+from utils.proposal_utils import (
+    get_proposal,
+    remove_proposal,
+    is_relevant_proposal,
     add_voter,
     remove_voter,
     get_voter,
     get_proposal_initiated_by,
 )
 from utils.db_utils import DBUtil
-from utils import db_utils
 from utils.logging_config import log_handler, console_handler
 from utils.validation import validate_roles
 from utils.bot_utils import get_discord_client
 from utils.server_utils import get_message
 from utils.const import *
 from utils.formatting_utils import get_amount_to_print
-from schemas.grant_proposals import Voters, GrantProposals
+from schemas import Voters
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -72,7 +68,7 @@ async def is_valid_voting_reaction(payload):
     logger.debug("Channel is correct")
 
     # Check if the reaction message is a relevant lazy consensus voting
-    if not is_relevant_grant_proposal(payload.message_id):
+    if not is_relevant_proposal(payload.message_id):
         return False
     logger.debug("Proposal is correct")
     return True
@@ -87,7 +83,7 @@ async def on_raw_reaction_remove(payload):
             return
 
         # Get the proposal (it was already validated that it exists)
-        proposal = get_grant_proposal(payload.message_id)
+        proposal = get_proposal(payload.message_id)
 
         # Error handling - retrieve the voter object from the DB
         voter = await get_voter(payload.user_id, payload.message_id, db)
@@ -181,7 +177,7 @@ async def on_raw_reaction_add(payload):
         # Edit the proposal in the voting channel
         await voting_message.edit(content=edit_in_voting_channel)
         # Remove the proposal
-        await remove_grant_proposal(proposal.voting_message_id, db)
+        await remove_proposal(proposal.voting_message_id, db)
         logger.info(
             "Cancelled grant proposal %s. voting_message_id=%d",
             log_message,
@@ -199,7 +195,7 @@ async def on_raw_reaction_add(payload):
                 await message.add_reaction(payload.emoji)
             return
 
-        proposal = get_grant_proposal(payload.message_id)
+        proposal = get_proposal(payload.message_id)
 
         # The voting message is needed to format the replies of the bot later
         voting_message = await get_message(client, payload.channel_id, payload.message_id)

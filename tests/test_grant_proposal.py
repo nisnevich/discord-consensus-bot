@@ -2,7 +2,7 @@ import asynctest
 from asynctest import patch
 import unittest.mock as mock
 
-from grant_proposal import validate_grant_message
+from proposing import validate_grant_message
 from utils.const import *
 
 

@@ -1,12 +1,10 @@
 import atexit
-import logging
 import asyncio
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Query
 from sqlalchemy import create_engine
-from schemas.grant_proposals import Base, GrantProposals
+from schemas import Base, GrantProposals
 
-from utils.const import DB_NAME, GRANT_PROPOSALS_TABLE_NAME, VOTERS_TABLE_NAME
 from utils.logging_config import log_handler, console_handler
 from utils.const import *
 

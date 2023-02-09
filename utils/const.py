@@ -10,7 +10,7 @@ DEFAULT_LOG_LEVEL = logging.DEBUG
 
 # Database
 DB_NAME = "lazy-consensus-bot.db"
-GRANT_PROPOSALS_TABLE_NAME = "grant_proposals"
+GRANT_PROPOSALS_TABLE_NAME = "proposals"
 VOTERS_TABLE_NAME = "voters"
 
 GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bot"

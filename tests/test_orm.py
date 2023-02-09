@@ -1,7 +1,7 @@
 import unittest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from schemas.grant_proposals import Base, GrantProposals, Voters
+from schemas import Base, GrantProposals, Voters
 
 
 class TestGrantProposals(unittest.TestCase):

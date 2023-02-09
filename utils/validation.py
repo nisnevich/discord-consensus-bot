@@ -64,10 +64,29 @@ def is_valid_language(text, threshold=MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION) -
     )
     return result
 
+async def validate_roles(user: User) -> bool:
+    """
+    Validate roles of the user to check if user has the required role to use this command.
+    Parameters:
+        user (discord.User): The user whose roles are being validated.
+
+    Returns:
+        bool: True if the user has the required roles, False otherwise.
+    """
+
+    # Check if user has allowed role
+    role = find(lambda r: r.id in ROLE_IDS_ALLOWED, user.roles)
+    if role is None:
+        return False
+    return True
+
+async def validate_grantless_message(original_message, description: str) -> bool:
+    pass
+
 
 async def validate_grant_message(original_message, amount: float, description: str) -> bool:
     """
-    Validate grant message - mention, amount etc.
+    Validate grant message sent in discord - mention, amount etc.
     Parameters:
         amount: The amount of the grant being proposed.
 
@@ -173,23 +192,6 @@ async def validate_grant_message(original_message, amount: float, description: s
         )
         return False
 
-    return True
-
-
-async def validate_roles(user: User) -> bool:
-    """
-    Validate roles of the user to check if user has the required role to use this command.
-    Parameters:
-        user (discord.User): The user whose roles are being validated.
-
-    Returns:
-        bool: True if the user has the required roles, False otherwise.
-    """
-
-    # Check if user has allowed role
-    role = find(lambda r: r.id in ROLE_IDS_ALLOWED, user.roles)
-    if role is None:
-        return False
     return True
 
 

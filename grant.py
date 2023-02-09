@@ -3,7 +3,7 @@ import time
 
 import discord
 
-from utils.grant_utils import get_grant_proposal, add_grant_proposal, remove_grant_proposal
+from utils.proposal_utils import get_proposal, add_proposal, remove_proposal
 from utils.db_utils import DBUtil
 from utils.const import *
 from utils.logging_config import log_handler, console_handler
@@ -23,7 +23,7 @@ client = get_discord_client()
 async def grant(voting_message_id):
     try:
         try:
-            grant_proposal = get_grant_proposal(voting_message_id)
+            grant_proposal = get_proposal(voting_message_id)
         except ValueError as e:
             logger.error("Grant proposal not found. voting_message_id=%d", voting_message_id)
             return
@@ -109,7 +109,7 @@ async def grant(voting_message_id):
 
         # Remove grant proposal from dictionary
         try:
-            await remove_grant_proposal(voting_message_id, db)
+            await remove_proposal(voting_message_id, db)
         except ValueError as e:
             logger.critical(f"Error while removing grant proposal: {e}")
             return
@@ -118,7 +118,7 @@ async def grant(voting_message_id):
     except Exception as e:
         try:
             # Try replying in Discord
-            grant_proposal = get_grant_proposal(voting_message_id)
+            grant_proposal = get_proposal(voting_message_id)
             channel = client.get_channel(grant_proposal.channel_id)
             original_message = await channel.fetch_message(voting_message_id)
 
