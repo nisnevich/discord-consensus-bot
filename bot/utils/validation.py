@@ -194,4 +194,4 @@ async def validate_grant_message(original_message, amount: float, description: s
 
 
 # The first run of is_valid_language always takes a few seconds (supposedly because of loading data into main memory), so we make a stub run when starting the application to avoid latency for users
-is_valid_language("lorem ipsum")
+is_valid_language("Loading nltk data to main memory")

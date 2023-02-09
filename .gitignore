@@ -1,10 +1,10 @@
-token
 **/__pycache__/
-logs/
-.project
-.pydevproject
-venv/
 .idea/
-lazy-consensus-bot.db
+logs/
+venv/
 nltk/
 
+.project
+.pydevproject
+consensus-bot.db
+token
