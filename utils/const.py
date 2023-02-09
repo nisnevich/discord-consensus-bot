@@ -33,15 +33,45 @@ DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
 GRANT_APPLY_COMMAND_NAME = 'grant'
 HELP_COMMAND_NAME = 'help-lazy'
+VOTERS_LIST_SEPARATOR = ", "
+RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
+MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
+MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
+
+# Emoji
 REACTION_ON_BOT_MENTION = "👋"  # wave
 # When the proposal is accepted, the bot will
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 REACTION_ON_PROPOSAL_CANCELLED = "🍃"  # leaves
 CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
 EMOJI_HOORAY = "🎉"
-VOTERS_LIST_SEPARATOR = ", "
-RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
-MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
+HEART_EMOJI_LIST = [
+    "❤️",
+    "♥️",
+    "🖤",
+    "💙",
+    "🤎",
+    "💝",
+    "💚",
+    "🧡",
+    "💜",
+    "💞",
+    "🥰",
+    "💖",
+    "💕",
+    "🤍",
+    "💛",
+    "💓",
+    "💗",
+    "💘",
+    "💌",
+    "😍",
+    "❣️",
+    "😻",
+    "🫶",
+    "❤️‍🔥",
+    "😘",
+]
 
 
 class ProposalResult(Enum):
@@ -73,22 +103,19 @@ Here are some examples to get you started:
 
 Don't worry, we all make mistakes, just give it another try! To learn more in DM, type `!help-lazy`. And if you're still having trouble, feel free to reach out for help.
 """
-ERROR_MESSAGE_NO_MENTIONS = "Looking for someone to propose a grant to? Make sure to mention a user that you'd like to give a grant."
-ERROR_MESSAGE_INVALID_COMMAND_FORMAT = (
-    "Whoops! Make sure the format is: `!propose @mention amount for a fun and exciting proposal.`"
-)
+ERROR_MESSAGE_NO_MENTIONS = "Where's the love?! You need to mention someone if you want to propose a grant! `!propose @mention 100 for a giant robot.`"
+ERROR_MESSAGE_INVALID_COMMAND_FORMAT = "Oopsie! The command format is as important as the ingredients in a cake. Make sure you got it right. `!propose @mention amount for a pet dragon.`"
 ERROR_MESSAGE_INVALID_USER = (
-    "Can't find that user. Are they on this server? Double check the mention."
-)
-ERROR_MESSAGE_EMPTY_AMOUNT = (
-    "Hold on, you forgot the amount! Example: `!propose @mention 100 for a unicorn farm.`"
+    "Hmmm, that user doesn't seem to be around here. Did you check under the couch?"
 )
 ERROR_MESSAGE_INVALID_AMOUNT = (
     "The amount must be a positive number. Example: `!propose @mention 100 for a giant robot.`"
 )
-ERROR_MESSAGE_NEGATIVE_AMOUNT = "Whoops, the amount must be a positive number, not {amount}"
-ERROR_MESSAGE_INVALID_DESCRIPTION = "Please provide a description of the grant, like this: `!propose @mention 100 for a giant robot.`"
+ERROR_MESSAGE_NEGATIVE_AMOUNT = "Hold on, {amount} is not enough to even buy a pack of gum. The amount has to be positive, my friend."
+ERROR_MESSAGE_EMPTY_AMOUNT = "The amount is like the cherry on top of a sundae, without it, your proposal just isn't sweet enough. `!propose @mention 100 for a unicorn farm.`"
+ERROR_MESSAGE_INVALID_DESCRIPTION = "You know what they say, if you don't describe your grant proposal, how will anyone know how awesome it is? `!propose @mention 100 for a giant robot.`"
 ERROR_MESSAGE_LENGTHY_DESCRIPTION = f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters. Like, who wants to read that much anyways?"
+ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Looks like your proposal needs a little more time in English class. Make sure you described all details in the Queen's language."
 ERROR_MESSAGE_INVALID_ROLE = "It's only for Layer 3 members, but don't worry if you're not quite there yet! Getting the Layer 3 role is like reaching the top of a mountain, but the view from the top is oh-so-worth it! Plus, think of all the cool features you'll have access to once you get there. Keep climbing, Eco-warrior! :mountain: :eco_heart:"
 
 # Help messages
@@ -105,7 +132,7 @@ Here's how it works:
 
 - Your proposal will be sent straight to the `#L3-Voting` channel for all to see. And don't worry, you don't have to lift a finger after that - just make sure you explained your proposal clearly and let the magic happen! 🦥
 
-- After {int(GRANT_PROPOSAL_TIMER_SECONDS / 60)} hours, if there's less than {LAZY_CONSENSUS_THRESHOLD} dissenters, BAM! The grant is automatically applied. 🚀 I will keep you all updated.
+- After {int(GRANT_PROPOSAL_TIMER_SECONDS / 60 / 60)} hours, if there's less than {LAZY_CONSENSUS_THRESHOLD} dissenters, BAM! The grant is automatically applied. 🚀 I will keep you all updated.
 
 - If you disagree to any proposal, add the {CANCEL_EMOJI_UNICODE} reaction to it in #L3-Voting. Don't worry, you can change your mind later (unless it's too late). Bonus points if you tell us why you're against it! ⏱️
 

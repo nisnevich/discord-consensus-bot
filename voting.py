@@ -19,6 +19,7 @@ from utils.validation import validate_roles
 from utils.bot_utils import get_discord_client
 from utils.server_utils import get_message
 from utils.const import *
+from utils.formatting_utils import get_amount_to_print
 from schemas.grant_proposals import Voters, GrantProposals
 
 logger = logging.getLogger(__name__)
@@ -136,7 +137,7 @@ async def on_raw_reaction_add(payload):
         # Don't remove unused variables because messages text may change
         mention_author = proposal.author
         mention_receiver = proposal.mention
-        amount_of_allocation = proposal.amount
+        amount_of_allocation = get_amount_to_print(proposal.amount)
         description_of_proposal = proposal.description
         list_of_voters = VOTERS_LIST_SEPARATOR.join(
             f"<@{voter.user_id}>" for voter in proposal.voters
@@ -190,7 +191,12 @@ async def on_raw_reaction_add(payload):
     try:
         logger.debug("Adding a reaction: %s", payload.event_type)
 
+        # Check if it's a valid voting reaction
         if not await is_valid_voting_reaction(payload):
+            # If not, check if the reaction is a heart emoji, to double it (just for fun)
+            if payload.emoji.name in HEART_EMOJI_LIST:
+                message = await get_message(client, payload.channel_id, payload.message_id)
+                await message.add_reaction(payload.emoji)
             return
 
         proposal = get_grant_proposal(payload.message_id)

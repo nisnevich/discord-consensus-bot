@@ -8,6 +8,8 @@ from utils.db_utils import DBUtil
 from utils.const import *
 from utils.logging_config import log_handler, console_handler
 from utils.bot_utils import get_discord_client
+from utils.formatting_utils import get_amount_to_print
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -26,10 +28,6 @@ async def grant(voting_message_id):
             logger.error("Grant proposal not found. voting_message_id=%d", voting_message_id)
             return
 
-        mention = grant_proposal.mention
-        amount = grant_proposal.amount
-        description = grant_proposal.description
-        channel_id = grant_proposal.channel_id
         result = ProposalResult.ACCEPTED
 
         # Retrieve the original proposal message
@@ -44,7 +42,7 @@ async def grant(voting_message_id):
             prefix=DISCORD_COMMAND_PREFIX,
             grant_command=GRANT_APPLY_COMMAND_NAME,
             mention=grant_proposal.mention,
-            amount=grant_proposal.amount,
+            amount=get_amount_to_print(grant_proposal.amount),
             description=grant_proposal.description,
             voting_url=voting_message.jump_url,
         )
@@ -76,7 +74,7 @@ async def grant(voting_message_id):
             await original_message.reply(
                 PROPOSAL_RESULT_PROPOSER_RESPONSE[result].format(
                     mention=grant_proposal.mention,
-                    amount=grant_proposal.amount,
+                    amount=get_amount_to_print(grant_proposal.amount),
                 )
             )
         elif not original_message:
@@ -89,7 +87,7 @@ async def grant(voting_message_id):
         if voting_message:
             await voting_message.edit(
                 content=PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE.format(
-                    amount=grant_proposal.amount,
+                    amount=get_amount_to_print(grant_proposal.amount),
                     mention=grant_proposal.mention,
                     author=grant_proposal.author,
                     result=PROPOSAL_RESULT_VOTING_CHANNEL[result],
@@ -102,7 +100,7 @@ async def grant(voting_message_id):
             )
         else:
             await voting_channel.send(
-                f"The {grant_proposal.amount} grant for {grant_proposal.mention} was applied, but I couldn't find the voting message in this channel. Was it removed? cc {RESPONSIBLE_MENTION}",
+                f"The {get_amount_to_print(grant_proposal.amount)} grant for {grant_proposal.mention} was applied, but I couldn't find the voting message in this channel. Was it removed? cc {RESPONSIBLE_MENTION}",
             )
             logger.warning(
                 "Warning: The proposal message in the voting channel not found. voting_message_id=%d",
