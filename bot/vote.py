@@ -171,7 +171,7 @@ async def on_raw_reaction_add(payload):
 
         if original_message:
             await original_message.add_reaction(REACTION_ON_PROPOSAL_CANCELLED)
-        # Reply in the original channel, unless it's not the voting channel itself (then not replying to avoid unnecessary spam)
+        # Reply in the original channel, unless it's not the voting channel itself (then not replying to avoid flooding)
         if original_message and voting_message.channel.id != original_message.channel.id:
             await original_message.reply(response_to_proposer)
         # Edit the proposal in the voting channel

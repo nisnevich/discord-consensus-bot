@@ -8,7 +8,7 @@ from bot.utils.validation import is_valid_language
 
 class TestIsValidLanguage(unittest.TestCase):
     def setUp(self):
-        nltk.download('words')
+        nltk.download('words', download_dir=NLTK_DATASETS_DIR)
         self.english_words = set(word.lower() for word in words.words())
 
     def test_only_non_english_words(self):

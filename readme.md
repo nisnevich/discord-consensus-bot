@@ -53,6 +53,7 @@ chmod 600 token # You should make it only readable by you
 - [PM2](https://pm2.io)
 - [Python 3.6](https://www.python.org/downloads/release/python-360/) or higher
 - [SQLAlchemy](https://www.sqlalchemy.org/)
+- [NLTK](https://www.nltk.org/)
 
 ## Contributing
 

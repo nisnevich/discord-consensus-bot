@@ -33,7 +33,7 @@ client = get_discord_client()
 
 async def approve_proposal(voting_message_id):
     """
-    Loop until the timer reaches GRANT_PROPOSAL_TIMER_SECONDS days. Every minute, the timer is incremented by 60 seconds and updated in the database. If the timer ends, the grant proposal is approved and the entry is removed from the dictionary and database.
+    Loop until the timer reaches GRANT_PROPOSAL_TIMER_SECONDS days. Every minute, the timer is incremented by GRANT_PROPOSAL_TIMER_SLEEP_SECONDS seconds and updated in the database. If the timer ends, the grant proposal is approved and the entry is removed from the dictionary and database.
     """
     logger.info("Running approval coroutine for voting_message_id=%d", voting_message_id)
     try:
@@ -57,12 +57,7 @@ async def approve_proposal(voting_message_id):
         logger.error(f"Error while removing grant proposal: {e}")
 
 
-async def proposal_with_grant(ctx, original_message, mention, args):
-
-    # TODO parse amount and description
-    amount = 10.0
-    description = "test"
-
+async def proposal_with_grant(ctx, original_message, mention, amount, description):
     # Validity checks
     if not await validate_roles(ctx.message.author):
         await original_message.reply(ERROR_MESSAGE_INVALID_ROLE)
@@ -91,7 +86,7 @@ async def proposal_with_grant(ctx, original_message, mention, args):
         )
     )
 
-    # Reply to the proposer if the message is not send in the voting channel (to avoid unnecessary spam otherwise)
+    # Reply to the proposer if the message is not send in the voting channel (to avoid flooding)
     bot_response_message = None
     if voting_channel.id != ctx.message.channel.id:
         bot_response_message = await original_message.reply(
@@ -149,8 +144,12 @@ async def propose_command(ctx, *args):
         full_text = " ".join(args)
 
         if len(args) < 3:
-            await original_message.reply("Too short proposal")
-            logger.info("The proposal is less than 3 args long. message_id=%d", original_message.id)
+            await original_message.reply(ERROR_MESSAGE_INVALID_COMMAND_FORMAT)
+            logger.info(
+                "Invalid command format. message_id=%d, invalid value=%s",
+                original_message.id,
+                original_message.content,
+            )
             return
 
         is_grantless = True
@@ -162,7 +161,20 @@ async def propose_command(ctx, *args):
             if args[0] == mention_id_str:
                 is_grantless = False
                 logger.debug("Received a proposal with a grant.")
-                await proposal_with_grant(ctx, original_message, mention, args)
+                # Suppose that the amount follows mention, and the description follows amount; the validation of these values comes next
+                amount = args[1]
+                try:
+                    amount = float(amount)
+                except ValueError:
+                    await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
+                    logger.info(
+                        "Unable to extract amount from the args. message_id=%d, invalid value=%s",
+                        original_message.id,
+                        amount,
+                    )
+                    return
+                description = " ".join(args[2:])
+                await proposal_with_grant(ctx, original_message, mention, amount, description)
 
         if is_grantless:
             logger.debug("Received a grantless proposal.")

@@ -64,7 +64,7 @@ async def grant(voting_message_id):
             # Throwing exception further because if the grant failed to apply, we don't want to do anything else
             raise e
 
-        # Reply to the original proposal message, if it still exists, and if it wasn't send in the voting channel (to avoid unnecessary spam)
+        # Reply to the original proposal message, if it still exists, and if it wasn't send in the voting channel (to avoid flooding)
         if original_message and (voting_channel.id != original_channel.id):
             await original_message.reply(
                 PROPOSAL_RESULT_PROPOSER_RESPONSE[result].format(
