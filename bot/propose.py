@@ -13,7 +13,7 @@ from bot.utils.proposal_utils import (
     is_relevant_proposal,
 )
 from bot.config.logging_config import log_handler, console_handler
-from bot.utils.validation import validate_roles, validate_grant_message
+from bot.utils.validation import validate_roles, validate_grant_message, validate_grantless_message
 from bot.utils.discord_utils import get_discord_client
 from bot.utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
@@ -59,16 +59,7 @@ async def approve_proposal(voting_message_id):
 
 async def proposal_with_grant(ctx, original_message, mention, amount, description):
     # Validity checks
-    if not await validate_roles(ctx.message.author):
-        await original_message.reply(ERROR_MESSAGE_INVALID_ROLE)
-        logger.info("Unauthorized user. message_id=%d", original_message.id)
-        return
     if not await validate_grant_message(original_message, amount, description):
-        return
-    if not mention or not amount or not description:
-        await original_message.reply(
-            COMMAND_FORMAT_RESPONSE.format(author=ctx.message.author.mention)
-        )
         return
 
     # Add proposal to the voting channel
@@ -122,7 +113,11 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
 
 
 async def proposal_grantless(ctx, original_message, description):
-    pass
+    # Validity checks
+    if not await validate_grantless_message(original_message, amount, description):
+        return
+
+    # TODO write separate messages for grantless proposals - initial reply to user, voting channel message (results are also separate), reply to user at the end (with separate results)
 
 
 @client.command(name=GRANT_PROPOSAL_COMMAND_NAME)
@@ -142,6 +137,12 @@ async def propose_command(ctx, *args):
     try:
         original_message = await ctx.fetch_message(ctx.message.id)
         full_text = " ".join(args)
+
+        # Validate that the user is allowed to use the command
+        if not await validate_roles(ctx.message.author):
+            await original_message.reply(ERROR_MESSAGE_INVALID_ROLE)
+            logger.info("Unauthorized user. message_id=%d", original_message.id)
+        return
 
         if len(args) < 3:
             await original_message.reply(ERROR_MESSAGE_INVALID_COMMAND_FORMAT)

@@ -137,7 +137,7 @@ async def validate_grant_message(original_message, amount: float, description: s
         return False
 
     # Check if amount is set
-    if amount != 0 and not amount:
+    if not amount:
         await original_message.reply(ERROR_MESSAGE_EMPTY_AMOUNT)
         logger.info("Amount not set. message_id=%d, invalid value=%s", original_message.id, amount)
         return False

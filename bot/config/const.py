@@ -123,7 +123,7 @@ ERROR_MESSAGE_NEGATIVE_AMOUNT = "Hold on, {amount} is not enough to even buy a p
 ERROR_MESSAGE_EMPTY_AMOUNT = "The amount is like the cherry on top of a sundae, without it, your proposal just isn't sweet enough. `!propose @mention 100 for a unicorn farm.`"
 ERROR_MESSAGE_INVALID_DESCRIPTION = "You know what they say, if you don't describe your grant proposal, how will anyone know how awesome it is? `!propose @mention 100 for a giant robot.`"
 ERROR_MESSAGE_LENGTHY_DESCRIPTION = f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters. Like, who wants to read that much anyways?"
-ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Looks like your proposal needs a little more time in English class. Make sure you described all details in the Queen's language."
+ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Looks like your proposal needs a little more time in English class. Let's make sure you described everything in the language of Shakespeare (English must be at least {100 * MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION}% of the text, but feel free to add a second language if you'd like. Just don't let it go over {MAX_DESCRIPTION_LENGTH} characters, okay?)."
 ERROR_MESSAGE_INVALID_ROLE = "It's only for Layer 3 members, but don't worry if you're not quite there yet! Getting the Layer 3 role is like reaching the top of a mountain, but the view from the top is oh-so-worth it! Plus, think of all the cool features you'll have access to once you get there. Keep climbing, Eco-warrior! :mountain: :eco_heart:"
 
 # Help messages
@@ -152,7 +152,10 @@ I'll just leave this here for contributors and the curious: {GITHUB_PROJECT_URL}
 """
 HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, you're adding your vote to the wrong message! It's like trying to put a puzzle piece in the wrong spot, it just doesn't fit! 😕 To make your vote count, please head to the correct voting message: {voting_link}."
 
-# Proposal related public messages
+# =====================
+# Proposals with grants
+# =====================
+
 NEW_PROPOSAL_SAME_CHANNEL_RESPONSE = """
 Alright, let's make this happen! You're proposing to give {mention} {amount} points, but watch out! If {threshold} or more big wigs from Layer 3 vote against it, the deal's off. Anyone who objects can make their voices heard here: {voting_link}
 
@@ -179,4 +182,24 @@ PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given and {mention} is now richer by {amount} points!",
     ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal. :think:",
+}
+
+# =====================
+# Grantless proposals
+# =====================
+
+RESPONSE_GRANTLESS = {
+    NEW_PROPOSAL_SAME_CHANNEL_RESPONSE: "Nice one. Let's see what the community thinks! Anyone who objects can make their voices heard here: {voting_link}",
+    NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE: ":thinking: Active voting! {countdown} This proposal to {description} has been proposed by {author}. {threshold} votes against will cancel it. Use {reaction} to vote before {date_finish}.",
+    PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE: "The proposal to {description} by {author} has come to a close. {result} It was proposed here: {link_to_original_message}",
+    PROPOSAL_RESULT_VOTING_CHANNEL: {
+        ProposalResult.ACCEPTED: "The proposal has been accepted! :tada:",
+        ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "It has been cancelled due to opposition from {threshold} members: {voters_list}",
+        ProposalResult.CANCELLED_BY_PROPOSER: "It has been cancelled by the proposer. :leaves:",
+    },
+    PROPOSAL_RESULT_PROPOSER_RESPONSE: {
+        ProposalResult.ACCEPTED: "Hooray! :tada: The proposal has been accepted!",
+        ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}",
+        ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal. :think:",
+    },
 }
