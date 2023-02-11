@@ -49,12 +49,6 @@ async def grant(voting_message_id):
             try:
                 channel = client.get_channel(GRANT_APPLY_CHANNEL_ID)
                 await channel.send(grant_message)
-                # Add "accepted" reactions to all messages
-                if original_message:
-                    await original_message.add_reaction(REACTION_ON_PROPOSAL_ACCEPTED)
-                if voting_message:
-                    await voting_message.add_reaction(REACTION_ON_PROPOSAL_ACCEPTED)
-                    await voting_message.add_reaction(EMOJI_HOORAY)
             except Exception as e:
                 await voting_channel.send(
                     f"Could not apply grant for {proposal.mention}. cc {RESPONSIBLE_MENTION}",
@@ -66,6 +60,13 @@ async def grant(voting_message_id):
                 )
                 # Throwing exception further because if the grant failed to apply, we don't want to do anything else
                 raise e
+
+        # Add "accepted" reactions to all messages
+        if original_message:
+            await original_message.add_reaction(REACTION_ON_PROPOSAL_ACCEPTED)
+        if voting_message:
+            await voting_message.add_reaction(REACTION_ON_PROPOSAL_ACCEPTED)
+            await voting_message.add_reaction(EMOJI_HOORAY)
 
         # Reply to the original proposal message, if it still exists, and if it wasn't send in the voting channel (to avoid flooding)
         if original_message and (voting_channel.id != original_channel.id):
