@@ -132,8 +132,6 @@ async def on_raw_reaction_add(payload):
         # Extracting dynamic data to fill messages
         # Don't remove unused variables because messages text may change
         mention_author = proposal.author
-        mention_receiver = proposal.mention
-        amount_of_allocation = get_amount_to_print(proposal.amount)
         description_of_proposal = proposal.description
         list_of_voters = VOTERS_LIST_SEPARATOR.join(
             f"<@{voter.user_id}>" for voter in proposal.voters
@@ -141,33 +139,61 @@ async def on_raw_reaction_add(payload):
         original_message = await get_message(client, proposal.channel_id, proposal.message_id)
         link_to_voting_message = voting_message.jump_url
         link_to_initial_proposer_message = original_message.jump_url if original_message else None
+        if not proposal.is_grantless:
+            mention_receiver = proposal.mention
+            amount_of_allocation = get_amount_to_print(proposal.amount)
 
-        # Filling the messages
+        # Filling the response messages with different arguments based on the reason of cancelling
         if reason == ProposalResult.CANCELLED_BY_PROPOSER:
-            response_to_proposer = PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
-                author=mention_author
-            )
-            result_message = PROPOSAL_RESULT_VOTING_CHANNEL[reason].format()
+            if not proposal.is_grantless:
+                response_to_proposer = PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE[reason].format(
+                    author=mention_author
+                )
+                result_message = PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL[reason].format()
+            else:
+                response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
+                    author=mention_author
+                )
+                result_message = GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL[reason].format()
             log_message = "(by the proposer)"
         elif reason == ProposalResult.CANCELLED_BY_REACHING_THRESHOLD:
-            response_to_proposer = PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
-                author=mention_author,
-                threshold=LAZY_CONSENSUS_THRESHOLD,
-                voting_link=link_to_voting_message,
-            )
-            result_message = PROPOSAL_RESULT_VOTING_CHANNEL[reason].format(
-                threshold=LAZY_CONSENSUS_THRESHOLD, voters_list=list_of_voters
-            )
+            if not proposal.is_grantless:
+                response_to_proposer = PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE[reason].format(
+                    author=mention_author,
+                    threshold=LAZY_CONSENSUS_THRESHOLD,
+                    voting_link=link_to_voting_message,
+                )
+                result_message = PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL[reason].format(
+                    threshold=LAZY_CONSENSUS_THRESHOLD, voters_list=list_of_voters
+                )
+            else:
+                response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
+                    author=mention_author,
+                    threshold=LAZY_CONSENSUS_THRESHOLD,
+                    voting_link=link_to_voting_message,
+                )
+                result_message = GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL[reason].format(
+                    threshold=LAZY_CONSENSUS_THRESHOLD, voters_list=list_of_voters
+                )
             log_message = "(by reaching threshold)"
-        edit_in_voting_channel = PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE.format(
-            result=result_message,
-            amount=amount_of_allocation,
-            mention=mention_receiver,
-            author=mention_author,
-            description=description_of_proposal,
-            # TODO#9 if link_to_initial_proposer_message is None, message should be different
-            link_to_original_message=link_to_initial_proposer_message,
-        )
+        if not proposal.is_grantless:
+            edit_in_voting_channel = PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL_EDITED_MESSAGE.format(
+                result=result_message,
+                amount=amount_of_allocation,
+                mention=mention_receiver,
+                author=mention_author,
+                description=description_of_proposal,
+                # TODO#9 if link_to_initial_proposer_message is None, message should be different
+                link_to_original_message=link_to_initial_proposer_message,
+            )
+        else:
+            edit_in_voting_channel = GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE.format(
+                result=result_message,
+                author=mention_author,
+                description=description_of_proposal,
+                # TODO#9 if link_to_initial_proposer_message is None, message should be different
+                link_to_original_message=link_to_initial_proposer_message,
+            )
 
         if original_message:
             await original_message.add_reaction(REACTION_ON_PROPOSAL_CANCELLED)
@@ -179,7 +205,8 @@ async def on_raw_reaction_add(payload):
         # Remove the proposal
         await remove_proposal(proposal.voting_message_id, db)
         logger.info(
-            "Cancelled grant proposal %s. voting_message_id=%d",
+            "Cancelled %s %s. voting_message_id=%d",
+            "grantless proposal" if proposal.is_grantless else "proposal with a grant",
             log_message,
             proposal.voting_message_id,
         )

@@ -79,7 +79,36 @@ async def validate_roles(user: User) -> bool:
 
 
 async def validate_grantless_message(original_message, description: str) -> bool:
-    pass
+    # check if the description is a non-empty string that has characters besides spaces
+    if not description or not description.strip():
+        await original_message.reply(ERROR_MESSAGE_INVALID_DESCRIPTION)
+        logger.info(
+            "Invalid description. message_id=%d, invalid value=%s", original_message.id, description
+        )
+        return False
+
+    # check if the description is less than a certain amount of characters
+    if len(description) > MAX_DESCRIPTION_LENGTH:
+        await original_message.reply(ERROR_MESSAGE_LENGTHY_DESCRIPTION)
+        logger.info(
+            "Too long description, exceeds the limit of %s. message_id=%d, invalid value=%s",
+            MAX_DESCRIPTION_LENGTH,
+            original_message.id,
+            description,
+        )
+        return False
+
+    # check if the proposal is written in English (or at least a part of it)
+    if not is_valid_language(description):
+        await original_message.reply(ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE)
+        logger.info(
+            "Less than %d%% of the English words in the description. message_id=%d, invalid value=%s",
+            int(100 * MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION),
+            original_message.id,
+            description,
+        )
+        return False
+    return True
 
 
 async def validate_grant_message(original_message, amount: float, description: str) -> bool:
@@ -160,37 +189,8 @@ async def validate_grant_message(original_message, amount: float, description: s
         )
         return False
 
-    # check if the description is a non-empty string that has characters besides spaces
-    if not description or not description.strip():
-        await original_message.reply(ERROR_MESSAGE_INVALID_DESCRIPTION)
-        logger.info(
-            "Invalid description. message_id=%d, invalid value=%s", original_message.id, description
-        )
-        return False
-
-    # check if the description is less than a certain amount of characters
-    if len(description) > MAX_DESCRIPTION_LENGTH:
-        await original_message.reply(ERROR_MESSAGE_LENGTHY_DESCRIPTION)
-        logger.info(
-            "Too long description, exceeds the limit of %s. message_id=%d, invalid value=%s",
-            MAX_DESCRIPTION_LENGTH,
-            original_message.id,
-            description,
-        )
-        return False
-
-    # check if the proposal is written in English (or at least a part of it)
-    if not is_valid_language(description):
-        await original_message.reply(ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE)
-        logger.info(
-            "Less than %d%% of the English words in the description. message_id=%d, invalid value=%s",
-            int(100 * MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION),
-            original_message.id,
-            description,
-        )
-        return False
-
-    return True
+    # The validation of proposals with grant is the same as with grantless, with some extra fields
+    return validate_grantless_message(original_message, description)
 
 
 # The first run of is_valid_language always takes a few seconds (supposedly because of loading data into main memory), so we make a stub run when starting the application to avoid latency for users

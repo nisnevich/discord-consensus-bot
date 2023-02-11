@@ -65,7 +65,7 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
     # Add proposal to the voting channel
     voting_channel = client.get_channel(VOTING_CHANNEL_ID)
     voting_message = await voting_channel.send(
-        NEW_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
+        NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE.format(
             countdown=get_discord_countdown_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
             date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
             amount=get_amount_to_print(amount),
@@ -81,7 +81,7 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
     bot_response_message = None
     if voting_channel.id != ctx.message.channel.id:
         bot_response_message = await original_message.reply(
-            NEW_PROPOSAL_SAME_CHANNEL_RESPONSE.format(
+            NEW_PROPOSAL_WITH_GRANT_SAME_CHANNEL_RESPONSE.format(
                 author=ctx.message.author.mention,
                 mention=mention.mention,
                 amount=get_amount_to_print(amount),
@@ -90,7 +90,7 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
                 voting_link=voting_message.jump_url,
             )
         )
-    logger.info("Sent confirmation messages for grant proposal with message_id=%d", ctx.message.id)
+    logger.info("Sent confirmation messages for proposal with grant, message_id=%d", ctx.message.id)
 
     # Add grant proposal to dictionary and database, including the message id in the voting channel sent above
     new_grant_proposal = Proposals(
@@ -114,10 +114,53 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
 
 async def proposal_grantless(ctx, original_message, description):
     # Validity checks
-    if not await validate_grantless_message(original_message, amount, description):
+    if not await validate_grantless_message(original_message, description):
         return
 
-    # TODO write separate messages for grantless proposals - initial reply to user, voting channel message (results are also separate), reply to user at the end (with separate results)
+    # Add proposal to the voting channel
+    voting_channel = client.get_channel(VOTING_CHANNEL_ID)
+    voting_message = await voting_channel.send(
+        NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
+            countdown=get_discord_countdown_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
+            date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
+            author=ctx.message.author.mention,
+            threshold=LAZY_CONSENSUS_THRESHOLD,
+            reaction=CANCEL_EMOJI_UNICODE,
+            description=description,
+        )
+    )
+
+    # Reply to the proposer if the message is not send in the voting channel (to avoid flooding)
+    bot_response_message = None
+    if voting_channel.id != ctx.message.channel.id:
+        bot_response_message = await original_message.reply(
+            NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE.format(
+                threshold=LAZY_CONSENSUS_THRESHOLD,
+                voting_link=voting_message.jump_url,
+            )
+        )
+    logger.info(
+        "Sent confirmation messages for grantless proposal with message_id=%d", ctx.message.id
+    )
+
+    # Add grant proposal to dictionary and database, including the message id in the voting channel sent above
+    new_grant_proposal = Proposals(
+        message_id=ctx.message.id,
+        channel_id=ctx.message.channel.id,
+        author=ctx.message.author.mention,
+        voting_message_id=voting_message.id,
+        is_grantless=True,
+        mention=None,
+        amount=None,
+        description=description,
+        timer=0,
+        bot_response_message_id=bot_response_message.id if bot_response_message else 0,
+    )
+    await add_proposal(new_grant_proposal, db)
+
+    # Run the approval coroutine
+    client.loop.create_task(approve_proposal(voting_message.id))
+    logger.info("Added task to event loop to approve message_id=%d", voting_message.id)
 
 
 @client.command(name=GRANT_PROPOSAL_COMMAND_NAME)
@@ -134,6 +177,8 @@ async def propose_command(ctx, *args):
             2) If it doesn't start with a mention - consider it grantless
     """
 
+    logger.debug("Proposal received: %s", " ".join(args))
+
     try:
         original_message = await ctx.fetch_message(ctx.message.id)
         full_text = " ".join(args)
@@ -142,7 +187,6 @@ async def propose_command(ctx, *args):
         if not await validate_roles(ctx.message.author):
             await original_message.reply(ERROR_MESSAGE_INVALID_ROLE)
             logger.info("Unauthorized user. message_id=%d", original_message.id)
-        return
 
         if len(args) < 3:
             await original_message.reply(ERROR_MESSAGE_INVALID_COMMAND_FORMAT)

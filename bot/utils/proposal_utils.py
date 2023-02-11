@@ -82,27 +82,45 @@ async def remove_proposal(voting_message_id, db: DBUtil):
 
 
 def validate_grantless_proposal(new_proposal):
-    pass
+    # Some extra validation; it's helpful when the values of the ORM object were changed after it was created, and for debugging as it provides detailed error messages
+    if not isinstance(new_proposal.message_id, int):
+        raise ValueError(
+            f"message_id should be an int, got {type(new_proposal.message_id)} instead: {new_proposal.message_id}"
+        )
+    if not isinstance(new_proposal.channel_id, int):
+        raise ValueError(
+            f"channel_id should be an int, got {type(new_proposal.channel_id)} instead: {new_proposal.channel_id}"
+        )
+    if not isinstance(new_proposal.author, (discord.User, str)):
+        raise ValueError(
+            f"author should be discord.User or str, got {type(new_proposal.author)} instead: {new_proposal.author}"
+        )
+    if not isinstance(new_proposal.voting_message_id, int):
+        raise ValueError(
+            f"voting_message_id should be an int, got {type(new_proposal.voting_message_id)} instead: {new_proposal.voting_message_id}"
+        )
+    if not isinstance(new_proposal.description, str):
+        raise ValueError(
+            f"description should be a string, got {type(new_proposal.description)} instead: {new_proposal.description}"
+        )
+    if not isinstance(new_proposal.is_grantless, bool):
+        raise ValueError(
+            f"is_grantless should be bool, got {type(new_proposal.is_grantless)} instead: {new_proposal.is_grantless}"
+        )
+    if not isinstance(new_proposal.timer, int):
+        raise ValueError(
+            f"timer should be an int, got {type(new_proposal.timer)} instead: {new_proposal.timer}"
+        )
+    if not isinstance(new_proposal.bot_response_message_id, int):
+        raise ValueError(
+            f"bot_response_message_id should be an int, got {type(new_proposal.bot_response_message_id)} instead: {new_proposal.bot_response_message_id}"
+        )
 
 
 def validate_proposal_with_grant(new_grant_proposal):
-    # Some extra validation; it's helpful when the values of the ORM object were changed after it was created, and for debugging as it provides detailed error messages
-    if not isinstance(new_grant_proposal.message_id, int):
-        raise ValueError(
-            f"message_id should be an int, got {type(new_grant_proposal.message_id)} instead: {new_grant_proposal.message_id}"
-        )
-    if not isinstance(new_grant_proposal.channel_id, int):
-        raise ValueError(
-            f"channel_id should be an int, got {type(new_grant_proposal.channel_id)} instead: {new_grant_proposal.channel_id}"
-        )
-    if not isinstance(new_grant_proposal.author, (discord.User, str)):
-        raise ValueError(
-            f"author should be discord.User or str, got {type(new_grant_proposal.author)} instead: {new_grant_proposal.author}"
-        )
-    if not isinstance(new_grant_proposal.voting_message_id, int):
-        raise ValueError(
-            f"voting_message_id should be an int, got {type(new_grant_proposal.voting_message_id)} instead: {new_grant_proposal.voting_message_id}"
-        )
+    # The validation of proposals with grant is the same as with grantless, with a couple of extra fields
+    validate_grantless_proposal(new_grant_proposal)
+
     if not isinstance(new_grant_proposal.mention, (discord.User, discord.user.ClientUser, str)):
         raise ValueError(
             f"mention should be discord.User str, got {type(new_grant_proposal.mention)} instead: {new_grant_proposal.mention}"
@@ -110,18 +128,6 @@ def validate_proposal_with_grant(new_grant_proposal):
     if not isinstance(new_grant_proposal.amount, (float, int)):
         raise ValueError(
             f"amount should be a float or int, got {type(new_grant_proposal.amount)} instead: {new_grant_proposal.amount}"
-        )
-    if not isinstance(new_grant_proposal.description, str):
-        raise ValueError(
-            f"description should be a string, got {type(new_grant_proposal.description)} instead: {new_grant_proposal.description}"
-        )
-    if not isinstance(new_grant_proposal.timer, int):
-        raise ValueError(
-            f"timer should be an int, got {type(new_grant_proposal.timer)} instead: {new_grant_proposal.timer}"
-        )
-    if not isinstance(new_grant_proposal.bot_response_message_id, int):
-        raise ValueError(
-            f"bot_response_message_id should be an int, got {type(new_grant_proposal.bot_response_message_id)} instead: {new_grant_proposal.bot_response_message_id}"
         )
 
 
