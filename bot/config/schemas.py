@@ -1,5 +1,5 @@
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Float, CheckConstraint
 
 from bot.config.const import GRANT_PROPOSALS_TABLE_NAME, VOTERS_TABLE_NAME
 
@@ -16,7 +16,8 @@ class Proposals(Base):
     voting_message_id = Column(Integer)
     is_grantless = Column(Boolean)
     mention = Column(String)
-    amount = Column(Float)
+    # Defining some constraints to avoid overflow
+    amount = Column(Float, CheckConstraint('amount > -1000000000 AND amount < 1000000000'))
     description = Column(String)
     timer = Column(Integer)
     # This is only needed for some error handling, though very helpful for onboarding new users

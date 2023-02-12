@@ -164,6 +164,18 @@ async def validate_grant_message(
         )
         return False
 
+    # Check if amount is not larger than a certain value to avoid overflow
+    if float(amount) > MAX_PROPOSAL_AMOUNT:
+        await original_message.reply(
+            ERROR_MESSAGE_OVERFLOW_AMOUNT.format(amount=get_amount_to_print(amount))
+        )
+        logger.info(
+            "Too large amount. message_id=%d, invalid value=%s",
+            original_message.id,
+            amount,
+        )
+        return False
+
     # The validation of proposals with grant is the same as with grantless, with some extra fields
     return validate_grantless_message(original_message, description)
 

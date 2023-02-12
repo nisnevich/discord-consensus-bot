@@ -1,5 +1,6 @@
 import discord
 import logging
+import sys
 
 # Function overloading
 from multipledispatch import dispatch
@@ -129,6 +130,11 @@ def validate_proposal_with_grant(new_grant_proposal):
         raise ValueError(
             f"amount should be a float or int, got {type(new_grant_proposal.amount)} instead: {new_grant_proposal.amount}"
         )
+    if (
+        -sys.float_info.max >= new_grant_proposal.amount
+        or new_grant_proposal.amount >= sys.float_info.max
+    ):
+        raise ValueError(f"amount overflows float type capacity")
 
 
 @dispatch(Proposals)
