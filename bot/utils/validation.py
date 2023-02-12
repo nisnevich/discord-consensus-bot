@@ -87,12 +87,24 @@ async def validate_grantless_message(original_message, description: str) -> bool
         )
         return False
 
-    # check if the description is less than a certain amount of characters
+    # check that the description is no longer than a certain amount of characters
     if len(description) > MAX_DESCRIPTION_LENGTH:
         await original_message.reply(ERROR_MESSAGE_LENGTHY_DESCRIPTION)
         logger.info(
             "Too long description, exceeds the limit of %s. message_id=%d, invalid value=%s",
             MAX_DESCRIPTION_LENGTH,
+            original_message.id,
+            description,
+        )
+        return False
+
+    print(len(description))
+    # check that the description is longer than a certain amount of characters
+    if len(description) < MIN_DESCRIPTION_LENGTH:
+        await original_message.reply(ERROR_MESSAGE_SHORTY_DESCRIPTION)
+        logger.info(
+            "Too short description, below the limit of %s. message_id=%d, invalid value=%s",
+            MIN_DESCRIPTION_LENGTH,
             original_message.id,
             description,
         )
@@ -177,7 +189,7 @@ async def validate_grant_message(
         return False
 
     # The validation of proposals with grant is the same as with grantless, with some extra fields
-    return validate_grantless_message(original_message, description)
+    return await validate_grantless_message(original_message, description)
 
 
 # The first run of is_valid_language always takes a few seconds (supposedly because of loading data into main memory), so we make a stub run when starting the application to avoid latency for users
