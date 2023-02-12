@@ -3,6 +3,7 @@ import unittest
 import nltk
 from nltk.corpus import words
 
+from bot.config.const import NLTK_DATASETS_DIR
 from bot.utils.validation import is_valid_language
 
 

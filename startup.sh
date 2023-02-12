@@ -45,14 +45,12 @@ fi
 
 echo "Running unit tests..."
 # Run unit tests
-output=$(python3 -m unittest discover -s tests -p test_*.py -v || exit 1)
+output=$(python3 -m unittest discover -s bot/tests -p test_*.py -v || exit 1)
 # Check if any test failed
 if echo "$output" | grep -q "FAILED"; then
   echo "Error: Unit tests failed."
   echo "$output"
   exit 1
-else
-  echo "Unit tests passed successfully!"
 fi
 
 # Check if "pm2 startup" was already set up before running it

@@ -60,7 +60,7 @@ async def approve_proposal(voting_message_id):
 
 async def proposal_with_grant(ctx, original_message, mention, amount, description):
     # Validity checks
-    if not await validate_grant_message(original_message, amount, description):
+    if not await validate_grant_message(original_message, mention, amount, description):
         return
 
     # Add proposal to the voting channel

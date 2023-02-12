@@ -111,52 +111,27 @@ async def validate_grantless_message(original_message, description: str) -> bool
     return True
 
 
-async def validate_grant_message(original_message, amount: float, description: str) -> bool:
+async def validate_grant_message(
+    original_message, mention: str, amount: float, description: str
+) -> bool:
     """
     Validate grant message sent in discord - mention, amount etc.
     Parameters:
         amount: The amount of the grant being proposed.
-
     Returns:
         bool: True if the grant proposal message is valid, False otherwise.
     """
     logger.debug(
-        "Validation started.\nMentions: %s\nAmount: %s\nDescription: %s",
-        original_message.mentions,
+        "Grant proposal validation started.\nPrimary mention: %s\nAmount: %s\nDescription: %s\nAll mentions: %s",
+        mention,
         amount,
         description,
+        original_message.mentions,
     )
 
-    # check if there are mentions in the message
-    if not original_message.mentions:
-        await original_message.reply(ERROR_MESSAGE_NO_MENTIONS)
-        logger.info(
-            "No mentions found in the message. message_id=%d, invalid value=%s",
-            original_message.id,
-            original_message.content,
-        )
-        return False
-
-    command = f"{DISCORD_COMMAND_PREFIX}{GRANT_PROPOSAL_COMMAND_NAME}"
-    # take the first mention
-    user = original_message.mentions[0]
-    # check if the mention follows the "!propose" command
-    command_and_mention = f"{DISCORD_COMMAND_PREFIX}{GRANT_PROPOSAL_COMMAND_NAME} {original_message.mentions[0].mention}"
-    # comparing the message and how it should look like while removing all spaces (to avoid issues with multiple spaces)
-    stripped_content = original_message.content.replace(" ", "")
-    if stripped_content[: len(command_and_mention.replace(" ", ""))] != command_and_mention.replace(
-        " ", ""
-    ):
-        await original_message.reply(ERROR_MESSAGE_INVALID_COMMAND_FORMAT)
-        logger.info(
-            "Invalid command format. message_id=%d, invalid value=%s",
-            original_message.id,
-            original_message.content,
-        )
-        return False
-
-    # Check if the mention is a valid user
-    if user is None:
+    # Assume that the validation of the mention was done when parsing the command
+    # Only do some basic check
+    if mention is None:
         await original_message.reply(ERROR_MESSAGE_INVALID_USER)
         logger.info(
             "Invalid mention. message_id=%d, invalid value=%s",
