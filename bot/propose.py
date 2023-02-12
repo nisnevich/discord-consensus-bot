@@ -2,6 +2,7 @@ import asyncio
 import logging
 import typing
 import discord
+import os
 from discord.ext import commands
 
 from bot.grant import grant
@@ -177,11 +178,20 @@ async def propose_command(ctx, *args):
             2) If it doesn't start with a mention - consider it grantless
     """
 
-    logger.debug("Proposal received: %s", " ".join(args))
-
     try:
-        original_message = await ctx.fetch_message(ctx.message.id)
         full_text = " ".join(args)
+        logger.debug("Proposal received: %s", full_text)
+
+        original_message = await ctx.fetch_message(ctx.message.id)
+
+        # A reserve mechanism to stop accepting new proposals
+        if os.path.exists(STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME):
+            await original_message.reply(PROPOSALS_PAUSED_RESPONSE)
+            logger.info(
+                "Rejecting the proposal from %s because a stopcock file is detected.",
+                ctx.message.author.mention,
+            )
+            return
 
         # Validate that the user is allowed to use the command
         if not await validate_roles(ctx.message.author):

@@ -46,6 +46,8 @@ RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's resp
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
 
+STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock"
+
 # Emoji
 REACTION_ON_BOT_MENTION = "👋"  # wave
 # When the proposal is accepted, the bot will
@@ -127,6 +129,7 @@ ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Looks like your proposal needs 
 ERROR_MESSAGE_INVALID_ROLE = "It's only for Layer 3 members, but don't worry if you're not quite there yet! Getting the Layer 3 role is like reaching the top of a mountain, but the view from the top is oh-so-worth it! Plus, think of all the cool features you'll have access to once you get there. Keep climbing, Eco-warrior! :mountain: :eco_heart:"
 ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED = "The {amount} grant for {mention} was applied, but I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author} is applied! However, I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
+PROPOSALS_PAUSED_RESPONSE = "Accepting new proposals was temporarily paused."
 
 # Help messages
 HELP_MESSAGE_NON_AUTHORIZED_USER = f"""
