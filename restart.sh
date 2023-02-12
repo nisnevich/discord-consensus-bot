@@ -1,5 +1,4 @@
 #!/bin/bash
 
-./shutdown.sh
-./startup.sh
+pm2 reload "eco-lazy-consensus-bot"
 
