@@ -188,6 +188,18 @@ async def validate_grant_message(
         )
         return False
 
+    # Check if the amount is less than a certain value to avoid flooding the voting channel
+    if float(amount) < MIN_PROPOSAL_AMOUNT:
+        await original_message.reply(
+            ERROR_MESSAGE_LITTLE_AMOUNT.format(amount=get_amount_to_print(amount))
+        )
+        logger.info(
+            "Too little amount. message_id=%d, invalid value=%s",
+            original_message.id,
+            amount,
+        )
+        return False
+
     # The validation of proposals with grant is the same as with grantless, with some extra fields
     return await validate_grantless_message(original_message, description)
 
