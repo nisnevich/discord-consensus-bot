@@ -2,6 +2,7 @@ import asyncio
 import logging
 import typing
 import discord
+import datetime
 import os
 from discord.ext import commands
 
@@ -104,6 +105,7 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
         amount=amount,
         description=description,
         timer=0,
+        submitted_at=datetime.datetime.utcnow(),
         bot_response_message_id=bot_response_message.id if bot_response_message else 0,
     )
     await add_proposal(new_grant_proposal, db)
@@ -155,6 +157,7 @@ async def proposal_grantless(ctx, original_message, description):
         amount=None,
         description=description,
         timer=0,
+        submitted_at=datetime.datetime.utcnow(),
         bot_response_message_id=bot_response_message.id if bot_response_message else 0,
     )
     await add_proposal(new_grant_proposal, db)

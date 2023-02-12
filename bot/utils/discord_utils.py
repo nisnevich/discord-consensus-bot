@@ -46,3 +46,18 @@ def get_discord_client(
         raise ValueError("Client should have a command prefix set")
 
     return client
+
+
+async def get_user_by_id_or_mention(id_or_mention):
+    """
+    Retrieves the nickname of a Discord user by either their user ID or mention.
+
+    :param id_or_mention: The Discord user ID or mention (e.g. <@703574259401883728>)
+    :return: The user on the Discord server
+    """
+    if id_or_mention.startswith("<@") and id_or_mention.endswith(">"):
+        user_id = int(id_or_mention[2:-1].strip("!"))
+    else:
+        user_id = int(id_or_mention)
+    user = await client.fetch_user(user_id)
+    return user

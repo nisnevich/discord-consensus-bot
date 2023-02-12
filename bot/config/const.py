@@ -14,6 +14,7 @@ DEFAULT_LOG_LEVEL = logging.DEBUG
 DB_PATH = os.path.join(PROJECT_ROOT, "consensus-bot.db")
 GRANT_PROPOSALS_TABLE_NAME = "proposals"
 VOTERS_TABLE_NAME = "voters"
+PROPOSAL_HISTORY_TABLE_NAME = 'proposal_history'
 
 # nltk datasets to download
 NLTK_DATASETS_DIR = f"{PROJECT_ROOT}/nltk"
@@ -41,6 +42,7 @@ DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
 GRANT_APPLY_COMMAND_NAME = 'grant'
 HELP_COMMAND_NAME = 'help-lazy'
+EXPORT_COMMAND_NAME = 'export'
 VOTERS_LIST_SEPARATOR = ", "
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
@@ -91,6 +93,14 @@ class ProposalResult(Enum):
     ACCEPTED = 0
     CANCELLED_BY_REACHING_THRESHOLD = 1
     CANCELLED_BY_PROPOSER = 2
+
+    def __str__(self):
+        if self.value == ProposalResult.ACCEPTED.value:
+            return 'Accepted'
+        elif self.value == ProposalResult.CANCELLED_BY_REACHING_THRESHOLD.value:
+            return 'Cancelled by reaching threshold'
+        elif self.value == ProposalResult.CANCELLED_BY_PROPOSER.value:
+            return 'Cancelled by proposer'
 
 
 # ==============

@@ -1,7 +1,22 @@
-from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Float, CheckConstraint
+import datetime
 
-from bot.config.const import GRANT_PROPOSALS_TABLE_NAME, VOTERS_TABLE_NAME
+from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Float,
+    CheckConstraint,
+)
+
+from bot.config.const import (
+    GRANT_PROPOSALS_TABLE_NAME,
+    VOTERS_TABLE_NAME,
+    PROPOSAL_HISTORY_TABLE_NAME,
+)
 
 Base = declarative_base()
 
@@ -20,6 +35,7 @@ class Proposals(Base):
     amount = Column(Float, CheckConstraint('amount > -1000000000 AND amount < 1000000000'))
     description = Column(String)
     timer = Column(Integer)
+    submitted_at = Column(DateTime)
     # This is only needed for some error handling, though very helpful for onboarding new users
     bot_response_message_id = Column(Integer)
 
@@ -36,7 +52,7 @@ class Proposals(Base):
         self.voters = []
 
     def __repr__(self):
-        return f"<Proposals(id='{self.id}', message_id='{self.message_id}', channel_id='{self.channel_id}', author='{self.author}', voting_message_id='{self.voting_message_id}', mention='{self.mention}', amount='{self.amount}', description='{self.description}', timer='{self.timer}', bot_response_message_id='{self.bot_response_message_id}')>"
+        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, timer={self.timer}, submitted_at={self.submitted_at}, bot_response_message_id={self.bot_response_message_id})>"
 
 
 class Voters(Base):
@@ -54,3 +70,28 @@ class Voters(Base):
 
     def __repr__(self) -> str:
         return f"<Voter(id={self.id}, user_id={self.user_id}, grant_proposal_id={self.grant_proposal_id}>"
+
+
+class ProposalHistory(Proposals):
+    """
+    The `ProposalHistory` class is a subclass of the `Proposals` class. It represents the history of approved proposals and is stored in a separate table in the database.
+
+    Attributes:
+        __tablename__ (str): The name of the table in the database that corresponds to this class.
+        __mapper_args__ (dict): A special dictionary used to pass arguments to the SQLAlchemy mapper.
+        id (sqlalchemy.Column): A column representing the primary key for this table. It is a foreign key to the `id` column in the `Proposals` table.
+        result (sqlalchemy.Column): An integer column that stores whether the result of the proposal. This should be one of the enumerated values in `ProposalResult`.
+
+        closed_at (sqlalchemy.Column): A datetime column that stores the date and time when the proposal was approved. The default value is the current UTC time.
+    """
+
+    __tablename__ = PROPOSAL_HISTORY_TABLE_NAME
+    __mapper_args__ = {
+        'polymorphic_identity': PROPOSAL_HISTORY_TABLE_NAME,
+    }
+    id = Column(Integer, ForeignKey('proposals.id'), primary_key=True)
+    result = Column(Integer, default=None)
+    closed_at = Column(DateTime)
+
+    def __repr__(self):
+        return f"ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, timer={self.timer}, submitted_at={self.submitted_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, closed_at={self.closed_at})"

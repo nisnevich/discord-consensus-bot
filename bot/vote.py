@@ -202,6 +202,13 @@ async def on_raw_reaction_add(payload):
             await original_message.reply(response_to_proposer)
         # Edit the proposal in the voting channel
         await voting_message.edit(content=edit_in_voting_channel)
+        # Add history item for analytics
+        await db.add_history_item(proposal, reason)
+        logger.debug(
+            "Added history item, voting_message_id=%d, result=%s",
+            proposal.voting_message_id,
+            reason,
+        )
         # Remove the proposal
         await remove_proposal(proposal.voting_message_id, db)
         logger.info(
