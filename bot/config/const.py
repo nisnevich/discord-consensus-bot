@@ -12,6 +12,7 @@ DEFAULT_LOG_LEVEL = logging.DEBUG
 
 # Database
 DB_PATH = os.path.join(PROJECT_ROOT, "consensus-bot.db")
+DB_HISTORY_PATH = os.path.join(PROJECT_ROOT, "consensus-bot-history.db")
 GRANT_PROPOSALS_TABLE_NAME = "proposals"
 VOTERS_TABLE_NAME = "voters"
 PROPOSAL_HISTORY_TABLE_NAME = 'proposal_history'
@@ -52,6 +53,7 @@ MIN_PROPOSAL_AMOUNT = 500
 MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
 
 STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock"
+EMPTY_ANALYTICS_VALUE = "n/a"
 
 # Emoji
 REACTION_ON_BOT_MENTION = "👋"  # wave

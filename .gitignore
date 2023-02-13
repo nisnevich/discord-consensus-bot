@@ -4,6 +4,7 @@ logs/
 venv/
 nltk/
 
+.gitignore
 .project
 .pydevproject
 consensus-bot.db

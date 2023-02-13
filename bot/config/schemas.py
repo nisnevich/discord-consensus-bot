@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     Float,
     CheckConstraint,
+    Index,
 )
 
 from bot.config.const import (
@@ -91,7 +92,11 @@ class ProposalHistory(Proposals):
     }
     id = Column(Integer, ForeignKey('proposals.id'), primary_key=True)
     result = Column(Integer, default=None)
+    voting_message_url = Column(String)
     closed_at = Column(DateTime)
+
+    # Add an index on the result column to optimise read query perfomance
+    __table_args__ = (Index("ix_result", result),)
 
     def __repr__(self):
         return f"ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, timer={self.timer}, submitted_at={self.submitted_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, closed_at={self.closed_at})"

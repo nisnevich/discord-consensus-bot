@@ -10,11 +10,13 @@ from bot.config.const import (
     HELP_COMMAND_NAME,
     DEFAULT_LOG_LEVEL,
     EXPORT_COMMAND_NAME,
+    EMPTY_ANALYTICS_VALUE,
 )
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.discord_utils import get_discord_client, get_message, get_user_by_id_or_mention
 from bot.utils.validation import validate_roles
 from bot.utils.db_utils import DBUtil
+from bot.utils.formatting_utils import get_amount_to_print
 from bot.config.schemas import ProposalHistory
 from bot.config.const import ProposalResult, VOTING_CHANNEL_ID
 
@@ -63,7 +65,7 @@ async def export(ctx):
         await ctx.message.delete()
 
         accepted_proposals = (
-            DBUtil.session.query(ProposalHistory)
+            DBUtil.session_history.query(ProposalHistory)
             .filter(ProposalHistory.result == ProposalResult.ACCEPTED.value)
             .all()
         )
@@ -75,8 +77,9 @@ async def export(ctx):
         writer = csv.DictWriter(
             file,
             fieldnames=[
-                "Date when completed (UTC time)",
+                "When completed (UTC time)",
                 "Author",
+                "Has grant",
                 "Given to",
                 "Amount",
                 "Description",
@@ -87,34 +90,19 @@ async def export(ctx):
 
         for proposal in accepted_proposals:
             logger.debug("Exporting %s", proposal)
-            voting_message = await get_message(
-                client, VOTING_CHANNEL_ID, proposal.voting_message_id
-            )
-            author = await get_user_by_id_or_mention(proposal.author)
-            mention = (
-                await get_user_by_id_or_mention(proposal.mention)
-                if not proposal.is_grantless
-                else "n/a"
-            )
-
-            logger.debug(
-                "Proposal author: %s, proposal mention: %s", proposal.author, proposal.mention
-            )
-            logger.debug("Author: %s, mention: %s", author, mention)
             writer.writerow(
                 {
-                    "Date when completed (UTC time)": proposal.closed_at.strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    ),
-                    "Author": f"{author.name}#{author.discriminator}"
-                    if type(author) is discord.User
-                    else author,
-                    "Given to": f"{mention.name}#{mention.discriminator}"
-                    if type(mention) is discord.User
-                    else mention,
-                    "Amount": proposal.amount if not proposal.is_grantless else "n/a",
+                    "When completed (UTC time)": proposal.closed_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    "Author": proposal.author,
+                    "Has grant": not proposal.is_grantless,
+                    "Given to": proposal.mention
+                    if proposal.mention is not None
+                    else EMPTY_ANALYTICS_VALUE,
+                    "Amount": get_amount_to_print(proposal.amount)
+                    if proposal.amount is not None
+                    else EMPTY_ANALYTICS_VALUE,
                     "Description": proposal.description,
-                    "Voting URL": voting_message.jump_url,
+                    "Voting URL": proposal.voting_message_url,
                 }
             )
 
