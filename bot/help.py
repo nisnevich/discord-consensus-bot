@@ -61,6 +61,15 @@ async def help(ctx):
 @client.command(name=EXPORT_COMMAND_NAME)
 async def export(ctx):
     try:
+        # Reply to a non-authorized user
+        if not await validate_roles(ctx.message.author):
+            # Adding greetings and "cancelled" reactions
+            await original_message.add_reaction(REACTION_ON_BOT_MENTION)
+            await original_message.add_reaction(CANCEL_EMOJI_UNICODE)
+            # Sending response in DM
+            await ctx.author.send(HELP_MESSAGE_NON_AUTHORIZED_USER)
+            return
+
         # Remove the message requesting the analytics
         await ctx.message.delete()
 

@@ -220,7 +220,7 @@ NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :eco_kyep: :eco_rocket: **Active voting!**
 {countdown} this idea by {author} will have a green light, unless {threshold} members react with {reaction} to this message (for help type *!help-lazy*).
 
-*Note: this proposal does not approve any funding. It is simply seeking permission for certain actions. If the text below states otherwise, it should be revoked.*
+*Note: this request does not apply a grant, it only approves certain actions. If the text below states otherwise, it should be revoked and clarified. To allocate points, use '!propose @user amount description', or other ways.*
 
 `Suggestion:` {description}
 """

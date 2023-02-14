@@ -8,4 +8,5 @@ nltk/
 .project
 .pydevproject
 consensus-bot.db
+consensus-bot-history.db
 token
