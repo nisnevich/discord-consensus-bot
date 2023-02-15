@@ -41,6 +41,7 @@ GRANT_APPLY_CHANNEL_ID = 1067127829654937692
 
 DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
+PROPOSAL_COMMAND_ALIASES = ['lazy', 'suggest', 'prop']
 GRANT_APPLY_COMMAND_NAME = 'grant'
 HELP_COMMAND_NAME = 'help-lazy'
 EXPORT_COMMAND_NAME = 'export'
@@ -129,7 +130,7 @@ Here are some examples to get you started:
 Don't worry, we all make mistakes, just give it another try! To learn more in DM, type `!help-lazy`. And if you're still having trouble, feel free to reach out for help.
 """
 ERROR_MESSAGE_NO_MENTIONS = "Where's the love?! You need to mention someone if you want to propose a grant! `!propose @mention 100 for a giant robot.`"
-ERROR_MESSAGE_INVALID_COMMAND_FORMAT = "Oopsie! The command format is as important as the ingredients in a cake. Make sure you got it right. `!propose @mention amount for a pet dragon.`"
+ERROR_MESSAGE_INVALID_COMMAND_FORMAT = "Oopsie! The command format is as important as the ingredients in a pizza. To make sure you got it right, type `!help-lazy`"
 ERROR_MESSAGE_INVALID_USER = (
     "Hmmm, that user doesn't seem to be around here. Did you check under the couch?"
 )
@@ -168,17 +169,21 @@ Here's how it works:
 
 - After {int(GRANT_PROPOSAL_TIMER_SECONDS / 60 / 60)} hours, if there's less than {LAZY_CONSENSUS_THRESHOLD} dissenters, BAM! You've got the green light. If you requested a grant, it will be automatically applied. 🚀 I will keep you all updated.
 
-- If you disagree to any proposal, add the {CANCEL_EMOJI_UNICODE} reaction to it in #L3-Voting. Don't worry, you can change your mind later (unless it's too late). Bonus points if you tell us why you're against it! ⏱️
+- If you disagree to any proposal, add the {CANCEL_EMOJI_UNICODE} reaction to it in `#L3-Voting`. Don't worry, you can change your mind later (unless it's too late). Bonus points if you tell us why you're against it! ⏱️
 
-- Also, if you change your mind regarding your own proposal, just add {CANCEL_EMOJI_UNICODE} to it in #L3-Voting and poof! It's gone. Magic! 🎩
+- Also, if you change your mind regarding your own proposal, just add {CANCEL_EMOJI_UNICODE} to it in `#L3-Voting` and poof! It's gone. Magic! 🎩
 
-Before submitting a proposal, make sure to clearly explain the background and details of the proposal. Clearly state what actions will be taken if the proposal is approved. Avoid vague descriptions and submit proposals in the appropriate channel (such as #layer3-points-granting) to avoid cluttering the public channels. Use the lazy consensus responsibly.
+Before submitting a proposal, make sure to clearly explain the background and details of the proposal. Clearly state what actions will be taken if the proposal is approved. Avoid vague descriptions and submit proposals in the appropriate channel (such as `#layer3-points-granting`) to avoid cluttering the public channels. Use the lazy consensus responsibly.
 
 So, don't be shy and get those creative juices flowing! Let's make Eco the best it can be with some fresh ideas! 🌟
 
-Having questions or ideas? Reach out to {RESPONSIBLE_MENTION}, or submit directly on GitHub: {GITHUB_PROJECT_URL}
+For power users:
+- Some shortcuts of `!propose` are: {", ".join(PROPOSAL_COMMAND_ALIASES)}
+- Run `!export` to receive analytics.
 
-The project is looking for contributors and teammates, reach out to {RESPONSIBLE_MENTION} if you're interested.
+For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The project is looking for contributors and teammates.
+
+{GITHUB_PROJECT_URL}
 """
 HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, you're adding your vote to the wrong message! It's like trying to put a puzzle piece in the wrong spot, it just doesn't fit! 😕 To make your vote count, please head to the correct voting message: {voting_link}."
 
@@ -191,7 +196,7 @@ Alright, let's make this happen! You're proposing to give {mention} {amount} poi
 """
 NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE = """
 :eco_kyep: :eco_rocket: **Active voting!**
-{countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message (if you need help, type *!help-lazy*).
+{countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message. *If you need help, run !help-lazy command.*
 `Proposed by:` {author}
 `Goal:` {description}
 """  # Another version: {author} proposed giving {amount} points to {mention}. {threshold} votes against will cancel it. Use {reaction} to vote before {date_finish}.

@@ -167,7 +167,7 @@ async def proposal_grantless(ctx, original_message, description):
     logger.info("Added task to event loop to approve message_id=%d", voting_message.id)
 
 
-@client.command(name=GRANT_PROPOSAL_COMMAND_NAME)
+@client.command(name=GRANT_PROPOSAL_COMMAND_NAME, aliases=PROPOSAL_COMMAND_ALIASES)
 async def propose_command(ctx, *args):
     f"""
     Submit a grant proposal. The proposal will be approved after {GRANT_PROPOSAL_TIMER_SECONDS}
