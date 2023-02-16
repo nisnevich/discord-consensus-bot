@@ -21,11 +21,20 @@ proposals = {}
 
 
 async def get_voter(user_id, voting_message_id, db):
-    query_results = await db.filter(
-        Voters.user_id == user_id, Voters.voting_message_id == voting_message_id
-    )
-    logger.debug("get_voter query result: %s", query_results)
-    return query_results if not query_results else query_results[0]
+    voters_found = []
+    # Iterate through proposals and check for voters with matching ids
+    for id in proposals:
+        p = proposals[id]
+        for v in p.voters:
+            if v.user_id == user_id and v.voting_message_id == voting_message_id:
+                voters_found.append(v)
+    # If a single match is found, return it
+    if len(voters_found) == 1:
+        return voters_found[0]
+    # Otherwise return the entire array (it should be empty most of the time, the case when there's
+    # more than 1 match is erroneous, but may happen and should be handled accordingly)
+    else:
+        return voters_found
 
 
 async def add_voter(proposal, voter, db):

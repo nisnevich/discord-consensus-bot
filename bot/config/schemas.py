@@ -36,6 +36,7 @@ class Proposals(Base):
     amount = Column(Float, CheckConstraint('amount > -1000000000 AND amount < 1000000000'))
     description = Column(String)
     timer = Column(Integer)
+    threshold = Column(Integer)
     submitted_at = Column(DateTime)
     # This is only needed for some error handling, though very helpful for onboarding new users
     bot_response_message_id = Column(Integer)

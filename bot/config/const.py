@@ -31,7 +31,7 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # Invite link with required permissions
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
-GRANT_PROPOSAL_TIMER_SECONDS = 10  # 3 days is 259200
+GRANT_PROPOSAL_TIMER_SECONDS = 20000  # 3 days is 259200
 GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 1
 LAZY_CONSENSUS_THRESHOLD = 2
 
@@ -214,7 +214,7 @@ NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE = """
 PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
 The {amount} points grant for {mention} suggested by {author} {result}
 Goal: {description}
-It was proposed here: {link_to_original_message}
+*It was proposed here: {link_to_original_message}*
 """
 PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL = {
     ProposalResult.ACCEPTED: "has been given! :tada:",
@@ -243,7 +243,7 @@ NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
 The proposal by {author} {result}
 Suggestion: {description}
-It was proposed here: {link_to_original_message}
+*It was proposed here: {link_to_original_message}*
 """
 GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL = {
     ProposalResult.ACCEPTED: "has been accepted! :tada:",

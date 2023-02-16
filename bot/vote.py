@@ -234,12 +234,6 @@ async def on_raw_reaction_add(payload):
         # The voting message is needed to format the replies of the bot later
         voting_message = await get_message(client, payload.channel_id, payload.message_id)
 
-        #  Check whether the voter is the proposer himself, and then cancel the proposal
-        if proposal.author == payload.member.mention:
-            await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
-            return
-        logger.debug("Author is not the same")
-
         # Error/fraud handling - check if the user has already voted for this proposal
         voter = await get_voter(payload.user_id, payload.message_id, db)
         logger.debug("Voter: %s", voter)
@@ -267,6 +261,14 @@ async def on_raw_reaction_add(payload):
             len(proposal.voters),
             proposal.voting_message_id,
         )
+
+        #  Check whether the voter is the proposer himself, and then cancel the proposal
+        if proposal.author == payload.member.mention:
+            logger.debug("The proposer voted against, cancelling")
+            await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
+            return
+        logger.debug("The proposer isn't the author of the proposal")
+
         # Check if the threshold is reached
         if len(proposal.voters) >= LAZY_CONSENSUS_THRESHOLD:
             logger.debug("Threshold is reached, cancelling")

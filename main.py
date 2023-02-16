@@ -45,10 +45,9 @@ def main():
         pending_grant_proposals = db.load_pending_grant_proposals()
         for proposal in pending_grant_proposals:
             # Adding proposal without db parameter to only keep it in primary memory (as it's already in db)
+            # Voters will also be restored (thanks to a bidirectional relationship with voters)
             add_proposal(proposal)
-        logger.info(
-            "Loaded %d pending grant proposal(s) from database", get_proposals_count()
-        )
+        logger.info("Loaded %d pending grant proposal(s) from database", get_proposals_count())
         # Enabling setup hook to start proposal approving coroutines after the client will be initialised
         # client.run call is required before approve_grant_proposal, because it starts Discord event loop
         client.setup_hook = start_proposals_coroutines

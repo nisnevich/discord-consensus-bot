@@ -150,8 +150,9 @@ class DBUtil:
             proposal_dict = {
                 key: value
                 for key, value in proposal.__dict__.items()
-                if key != "_sa_instance_state" and key != "id"
+                if key != "_sa_instance_state" and key != "id" and key != "voters"
             }
+
             DBUtil.session_history.add(
                 ProposalHistory(
                     **proposal_dict,
@@ -164,4 +165,4 @@ class DBUtil:
 
     async def commit(self):
         async with DBUtil.session_lock:
-            DBUtil.session_history.commit()
+            DBUtil.session.commit()
