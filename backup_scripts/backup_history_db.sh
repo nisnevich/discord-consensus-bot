@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source ../env_vars.sh
+source $CONSENSUS_PROJECT_ROOT/env_vars.sh
 
 # Current date and time
 CURRENT_DATETIME="$(date +%Y-%m-%d-%H-%M-%S)"

@@ -1,15 +1,35 @@
 #!/bin/bash
 
-# Loading environmental variables
-source env_vars.sh
-
-# Defining some helper methods
+# Definition of some helper methods
 print_section() {
   title="$1"
   color="\033[1;33m"
   reset_color="\033[0m"
   printf "\n\n${color}==========  %s  ==========${reset_color}\n\n" "$title"
 }
+
+# ===================
+# Setup env variables
+# ===================
+
+print_section "Setting up env..."
+
+# Add project root to .bashrc
+export CONSENSUS_PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+line="export CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT"
+# Check if the line is already in .bashrc
+if grep -Fxq "$line" ~/.bashrc
+then
+    echo "Project root has already been added to .bashrc"
+else
+    # Add the line to .bashrc
+    echo "$line" >> ~/.bashrc
+    echo "Added project root to .bashrc"
+fi
+
+# Load the rest of the environmental variables
+source env_vars.sh
+
 
 # ============
 # Setup Python
@@ -94,11 +114,8 @@ if [ $CONSENSUS_BACKUP_ENABLED -eq 1 ]; then
   else
     echo "Missing Google Cloud token, starting no-browser authorization..."
     # Initiate gcloud no-browser authentication (requires another machine with a browser to login)
+    gcloud auth login --no-browser
     gcloud auth application-default login --no-browser
-    
-    # Note that to login in the browser environment, you need to run both:
-    # gcloud auth login
-    # gcloud auth application-default login
   fi
 
   # Verify the quota project has been set, and set the config otherwise
@@ -129,8 +146,8 @@ if [ $CONSENSUS_BACKUP_ENABLED -eq 1 ]; then
   # # Backup history DB twice a day
   # cron_entry_history="0 0,12 * * * $(pwd)/backup_scripts/backup_history_db.sh"
   # Testing values
-  cron_entry_runtime="* * * * * $(pwd)/backup_scripts/backup_runtime_db.sh"
-  cron_entry_history="* * * * * $(pwd)/backup_scripts/backup_history_db.sh"
+  cron_entry_runtime="* * * * * CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT $(pwd)/backup_scripts/backup_runtime_db.sh >> $CONSENSUS_LOGS_DIR/crontab.log 2>&1"
+  cron_entry_history="* * * * * CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT $(pwd)/backup_scripts/backup_history_db.sh >> $CONSENSUS_LOGS_DIR/crontab.log 2>&1"
 
   # Check if the cron entry for history db is already in the cron file
   if ! crontab -l | grep "$cron_entry_history"; then
