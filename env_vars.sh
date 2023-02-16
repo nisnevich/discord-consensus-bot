@@ -4,6 +4,10 @@
 export CONSENSUS_BACKUP_ENABLED=1
 export GOOGLE_CLOUD_PROJECT_NAME="consensus-bot-377809"
 
-# Set the project root directory to the parent directory of the script directory
+# Logs dir
 export CONSENSUS_LOGS_DIR="$CONSENSUS_PROJECT_ROOT/logs"
+# Runtime DB backup log file
+export LOG_BACKUP_RUNTIME_FILE_PATH="$CONSENSUS_LOGS_DIR/backup-runtime-db.log"
+# History DB backup file
+export LOG_BACKUP_HISTORY_FILE_PATH="$CONSENSUS_LOGS_DIR/backup-history-db.log"
 

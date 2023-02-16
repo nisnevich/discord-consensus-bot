@@ -14,12 +14,13 @@ print_section() {
 
 print_section "Setting up env..."
 
-# Add project root to .bashrc
+# Set the project root directory to the parent directory of the script directory
 export CONSENSUS_PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Add project root to .bashrc
 line="export CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT"
-# Check if the line is already in .bashrc
-if grep -Fxq "$line" ~/.bashrc
-then
+# Check if it's already there
+if grep -Fxq "$line" ~/.bashrc; then
     echo "Project root has already been added to .bashrc"
 else
     # Add the line to .bashrc
@@ -146,8 +147,8 @@ if [ $CONSENSUS_BACKUP_ENABLED -eq 1 ]; then
   # # Backup history DB twice a day
   # cron_entry_history="0 0,12 * * * $(pwd)/backup_scripts/backup_history_db.sh"
   # Testing values
-  cron_entry_runtime="* * * * * CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT $(pwd)/backup_scripts/backup_runtime_db.sh >> $CONSENSUS_LOGS_DIR/crontab.log 2>&1"
-  cron_entry_history="* * * * * CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT $(pwd)/backup_scripts/backup_history_db.sh >> $CONSENSUS_LOGS_DIR/crontab.log 2>&1"
+  cron_entry_runtime="0 * * * * CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT $(pwd)/backup_scripts/backup_runtime_db.sh >> $LOG_BACKUP_RUNTIME_FILE_PATH 2>&1"
+  cron_entry_history="0 0,12 * * * CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT $(pwd)/backup_scripts/backup_history_db.sh >> $LOG_BACKUP_HISTORY_FILE_PATH 2>&1"
 
   # Check if the cron entry for history db is already in the cron file
   if ! crontab -l | grep "$cron_entry_history"; then
