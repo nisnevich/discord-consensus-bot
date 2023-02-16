@@ -41,7 +41,7 @@ GRANT_APPLY_CHANNEL_ID = 1067127829654937692
 
 DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
-PROPOSAL_COMMAND_ALIASES = ['lazy', 'suggest', 'prop']
+PROPOSAL_COMMAND_ALIASES = ['lazy', 'suggest', 'prop', 'consensus']
 GRANT_APPLY_COMMAND_NAME = 'grant'
 HELP_COMMAND_NAME = 'help-lazy'
 EXPORT_COMMAND_NAME = 'export'
@@ -50,7 +50,7 @@ RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's resp
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 MIN_DESCRIPTION_LENGTH = 30  # just some common sense value
 MAX_PROPOSAL_AMOUNT = 100000000
-MIN_PROPOSAL_AMOUNT = 500
+MIN_PROPOSAL_AMOUNT = 250
 MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
 
 STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock"
@@ -191,11 +191,22 @@ HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, you're adding your vote to the wrong mes
 # Proposals with grants
 # =====================
 
+
+def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
+    if amount < 1000:
+        return ":points:"
+    if amount < 5000:
+        return ":eco_bag:"
+    if amount < 20000:
+        return ":eco_bag_big::eco_bag_big:"
+    return ":eco_bag_big::eco_bag_big::eco_bag_big::eco_bag_big::eco_bag_big:"
+
+
 NEW_PROPOSAL_WITH_GRANT_SAME_CHANNEL_RESPONSE = """
 Alright, let's make this happen! You're proposing to give {mention} {amount} points, but watch out! If {threshold} or more big wigs from Layer 3 vote against it, the deal's off. Anyone who objects can make their voices heard here: {voting_link}
 """
 NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE = """
-:eco_kyep: :eco_rocket: **Active voting!**
+:eco_kyep: :eco_rocket: **Active grant proposal!** {amount_reaction}
 {countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message. *If you need help, run !help-lazy command.*
 `Proposed by:` {author}
 `Goal:` {description}
@@ -212,7 +223,7 @@ PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL = {
 }
 PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given and {mention} is now richer by {amount} points!",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}",
+    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :eco_Peace:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal. :think:",
 }
 
@@ -222,10 +233,10 @@ PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
 
 NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE = "Nice one, but let's see what the community thinks! Anyone who objects can make their voices heard here: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:eco_kyep: :eco_rocket: **Active voting!**
+:eco_kyep: :eco_rocket: **Active proposal!** :eco_raised_hand:
 {countdown} this idea by {author} will have a green light, unless {threshold} members react with {reaction} to this message (for help type *!help-lazy*).
 
-*Note: this request does not apply a grant, it only approves certain actions. If the text below states otherwise, it should be revoked and clarified. To allocate points, use '!propose @user amount description', or other ways.*
+*Note: this proposal only approves certain actions, not a grant. If the text below states otherwise, it should be revoked and clarified. To allocate points, use '!propose @user amount reason', or other ways.*
 
 `Suggestion:` {description}
 """
@@ -241,6 +252,6 @@ GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL = {
 }
 GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The proposal has been accepted!",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}",
+    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :eco_Peace:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal. :think:",
 }

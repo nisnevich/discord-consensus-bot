@@ -111,7 +111,7 @@ async def export(ctx):
                     if proposal.amount is not None
                     else EMPTY_ANALYTICS_VALUE,
                     "Description": proposal.description,
-                    "Voting URL": proposal.voting_message_url,
+                    "Voting URL": f'=HYPERLINK("{proposal.voting_message_url}", "url")',
                 }
             )
 
