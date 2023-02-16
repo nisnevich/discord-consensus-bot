@@ -1,9 +1,6 @@
 #!/bin/bash
 
-export CONSENSUS_PROJECT_ROOT="$PWD"
-export CONSENSUS_LOGS_DIR="$CONSENSUS_PROJECT_ROOT/logs"
-# Backup is only needed to be enabled on prod, so this variable should be 1 only in the prod branch, unless it's used for testing purposes
-export CONSENSUS_BACKUP_ENABLED=1
+source env_vars.sh
 
 # ============
 # Setup Python
@@ -66,6 +63,9 @@ if [ $CONSENSUS_BACKUP_ENABLED -eq 1 ]; then
   gcloud auth application-default login --no-browser
   echo "Note that you need to add a project that will be billed by running 'gcloud auth application-default set-quota-project project-name' (replace 'project-name' with the relevant name)."
   echo "For other users (to run the bot on other evn), copy ~/.config/gcloud/ to their home dir"
+  # * Note that in the browser environment you need to run both:
+  # gcloud auth login
+  # gcloud auth application-default login
   # # As per the above message, you also have to run this:
   # project_name='project-001'
   # gcloud auth application-default set-quota-project $project_name

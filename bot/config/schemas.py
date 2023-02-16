@@ -99,4 +99,4 @@ class ProposalHistory(Proposals):
     __table_args__ = (Index("ix_result", result),)
 
     def __repr__(self):
-        return f"ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, timer={self.timer}, submitted_at={self.submitted_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, closed_at={self.closed_at})"
+        return f"ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, timer={self.timer}, submitted_at={self.submitted_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url}, closed_at={self.closed_at})"
