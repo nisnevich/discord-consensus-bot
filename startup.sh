@@ -1,12 +1,21 @@
 #!/bin/bash
 
+# Loading environmental variables
 source env_vars.sh
+
+# Defining some helper methods
+print_section() {
+  title="$1"
+  color="\033[1;33m"
+  reset_color="\033[0m"
+  printf "\n\n${color}==========  %s  ==========${reset_color}\n\n" "$title"
+}
 
 # ============
 # Setup Python
 # ============
 
-echo "Verifying python installation..."
+print_section "Verifying Python installation..."
 
 # Install python3 if it's not already installed
 if ! command -v python3 &> /dev/null; then
@@ -15,17 +24,23 @@ if ! command -v python3 &> /dev/null; then
   apt-get install python3 -y
   echo "Adding python3 to PATH..."
   export PATH=$PATH:/usr/bin/python3
+else
+  echo "Python is already installed."
 fi
 # Check if python is available in path, or drop error otherwise
 if ! command -v python3 &> /dev/null; then
   echo "ERROR: Python3 not found in PATH!"
   exit 1
+else
+  echo "python3 is in the PATH."
 fi
 # Install pip3 if it's not already installed
 if ! command -v pip3 &> /dev/null; then
   echo "Installing pip3..."
   apt-get update
   apt-get install python3-pip -y
+else
+  echo "pip3 is already installed."
 fi
 
 
@@ -33,17 +48,21 @@ fi
 # Setup PM2 (used for runtime sustainability)
 # ===========================================
 
-echo "Verifying PM2 installation..."
+print_section "Verifying PM2 installation..."
 
 # Install npm if it's not already installed
 if ! command -v npm &> /dev/null; then
   curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
   sudo apt-get install -y nodejs
+else
+  echo "NodeJS is already installed."
 fi
 # Install pm2 if it is not already installed
 if ! command -v pm2 &> /dev/null; then
   echo "Installing pm2..."
   npm install -g pm2
+else
+  echo "PM2 is already installed."
 fi
 
 
@@ -51,11 +70,11 @@ fi
 # Setup DB backups to Google Storage
 # ==================================
 
-echo "Verifying backup configuration..."
+print_section "Verifying backup configuration..."
 
 if [ $CONSENSUS_BACKUP_ENABLED -eq 1 ]; then
   # Install google-cloud-sdk (includes gsutil and gcloud) if it is not already installed
-  if ! command -v google-cloud-sdk &> /dev/null; then
+  if ! which gcloud &> /dev/null; then
     echo "Installing Google Cloud SDK..."
     # Add the Cloud SDK distribution URI as a package source
     echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
@@ -76,9 +95,10 @@ if [ $CONSENSUS_BACKUP_ENABLED -eq 1 ]; then
     echo "Missing Google Cloud token, starting no-browser authorization..."
     # Initiate gcloud no-browser authentication (requires another machine with a browser to login)
     gcloud auth application-default login --no-browser
-    # FIXME remove
-    echo "Note that you need to add a project that will be billed by running 'gcloud auth application-default set-quota-project project-name' (replace 'project-name' with the relevant name)."
-    echo "For other users (to run the bot on other evn), copy ~/.config/gcloud/ to their home dir"
+    
+    # Note that to login in the browser environment, you need to run both:
+    # gcloud auth login
+    # gcloud auth application-default login
   fi
 
   # Verify the quota project has been set, and set the config otherwise
@@ -91,28 +111,10 @@ if [ $CONSENSUS_BACKUP_ENABLED -eq 1 ]; then
       gcloud auth application-default set-quota-project $GOOGLE_CLOUD_PROJECT_NAME
     fi
   else
-    echo "The current project is not set. Setting it to $GOOGLE_CLOUD_PROJECT_NAME"
+    echo "The current project is not set. Setting it to $GOOGLE_CLOUD_PROJECT_NAME..."
     gcloud config set core/project $GOOGLE_CLOUD_PROJECT_NAME
     gcloud auth application-default set-quota-project $GOOGLE_CLOUD_PROJECT_NAME
   fi
-
-  # * Note that in the browser environment you need to run both:
-  # gcloud auth login
-  # gcloud auth application-default login
-  #
-    # FIXME remove
-  #
-  # # As per the above message, you also have to set quota:
-  # project_name='project-001'
-  # gcloud auth application-default set-quota-project $project_name
-  #
-  # # If you have other users, copy the credential file to them:
-  # username='prod'
-  # sudo mkdir -p /home/$username/.config/gcloud/
-  # sudo cp -R ~/.config/gcloud/ /home/$username/.config/gcloud/
-  #
-  # # Don't forget to change owner:
-  # sudo chown -R $username:$username /home/$username/.config
 
   # ===========================
   # Setup cron jobs for backups
@@ -164,7 +166,7 @@ fi
 # Setup Python dependencies (wheels)
 # ==================================
 
-echo "Enabling python dependencies..."
+print_section "Enabling python dependencies..."
 
 # Check if requirements.txt packages are installed before installing them
 if [ ! -f /requirements.txt ]; then 
@@ -182,7 +184,7 @@ fi
 # Run tests
 # =========
 
-echo "Running unit tests..."
+print_section "Running unit tests..."
 # Run unit tests
 output=$(python3 -m unittest discover -s bot/tests -p test_*.py -v || exit 1)
 # Check if any test failed
@@ -197,13 +199,15 @@ fi
 # Starting the bot
 # ================
 
-echo "Starting the bot..."
+print_section "Starting the bot..."
 
 # Check if "pm2 startup" was already set up before running it
 if ! command -v pm2 startup &> /dev/null; then
   echo "Enabling pm2 to run on reboot..."
   # Set up pm2 to run on reboot
   pm2 startup
+else
+  echo "PM2 on-reboot starup is already enabled."
 fi
 
 # Run main.py with pm2 (and log any output of this command in a bright color to distinguish it easily)

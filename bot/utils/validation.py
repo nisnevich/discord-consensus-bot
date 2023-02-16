@@ -22,6 +22,7 @@ logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
 # Preparing ntlk to validate language of the proposal
+nltk.data.path.append(NLTK_DATASETS_DIR)
 for dataset in NLTK_DATASETS:
     nltk.download(dataset, download_dir=NLTK_DATASETS_DIR)
 # Saving set of words in lowercase to compare later
