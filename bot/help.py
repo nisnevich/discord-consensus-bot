@@ -86,13 +86,13 @@ async def export(ctx):
         writer = csv.DictWriter(
             file,
             fieldnames=[
+                "Discord link",
                 "When completed (UTC time)",
                 "Author",
                 "Has grant",
                 "Given to",
                 "Amount",
                 "Description",
-                "Voting URL",
             ],
         )
         writer.writeheader()
@@ -101,6 +101,7 @@ async def export(ctx):
             logger.debug("Exporting %s", proposal)
             writer.writerow(
                 {
+                    "Discord link": f'=HYPERLINK("{proposal.voting_message_url}", "Open in Discord")',
                     "When completed (UTC time)": proposal.closed_at.strftime("%Y-%m-%d %H:%M:%S"),
                     "Author": proposal.author,
                     "Has grant": not proposal.is_grantless,
@@ -111,7 +112,6 @@ async def export(ctx):
                     if proposal.amount is not None
                     else EMPTY_ANALYTICS_VALUE,
                     "Description": proposal.description,
-                    "Voting URL": f'=HYPERLINK("{proposal.voting_message_url}", "url")',
                 }
             )
 
