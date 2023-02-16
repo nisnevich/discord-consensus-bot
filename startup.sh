@@ -6,6 +6,8 @@ source env_vars.sh
 # Setup Python
 # ============
 
+echo "Verifying python installation..."
+
 # Install python3 if it's not already installed
 if ! command -v python3 &> /dev/null; then
   echo "Installing python3..."
@@ -31,6 +33,8 @@ fi
 # Setup PM2 (used for runtime sustainability)
 # ===========================================
 
+echo "Verifying PM2 installation..."
+
 # Install npm if it's not already installed
 if ! command -v npm &> /dev/null; then
   curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
@@ -47,9 +51,12 @@ fi
 # Setup DB backups to Google Storage
 # ==================================
 
+echo "Verifying backup configuration..."
+
 if [ $CONSENSUS_BACKUP_ENABLED -eq 1 ]; then
   # Install google-cloud-sdk (includes gsutil and gcloud) if it is not already installed
   if ! command -v google-cloud-sdk &> /dev/null; then
+    echo "Installing Google Cloud SDK..."
     # Add the Cloud SDK distribution URI as a package source
     echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
     # Import the Google Cloud Platform public key
@@ -58,15 +65,44 @@ if [ $CONSENSUS_BACKUP_ENABLED -eq 1 ]; then
     sudo apt-get update
     # Install the Google Cloud SDK
     sudo apt-get install google-cloud-sdk
+  else
+    echo "Google Cloud SDK is already installed."
   fi
+  
   # Initiate gcloud authentication (you'll need another machine that has a web browser)
-  gcloud auth application-default login --no-browser
-  echo "Note that you need to add a project that will be billed by running 'gcloud auth application-default set-quota-project project-name' (replace 'project-name' with the relevant name)."
-  echo "For other users (to run the bot on other evn), copy ~/.config/gcloud/ to their home dir"
+  if [[ -n $(gcloud auth application-default print-access-token 2>/dev/null) ]]; then
+    echo "Google Cloud authorization has already been made."
+  else
+    echo "Missing Google Cloud token, starting no-browser authorization..."
+    # Initiate gcloud no-browser authentication (requires another machine with a browser to login)
+    gcloud auth application-default login --no-browser
+    # FIXME remove
+    echo "Note that you need to add a project that will be billed by running 'gcloud auth application-default set-quota-project project-name' (replace 'project-name' with the relevant name)."
+    echo "For other users (to run the bot on other evn), copy ~/.config/gcloud/ to their home dir"
+  fi
+
+  # Verify the quota project has been set, and set the config otherwise
+  if [[ -n $(gcloud config get-value core/project 2>/dev/null) ]]; then
+    current_project=$(gcloud config get-value core/project)
+    if [[ "$current_project" == "$GOOGLE_CLOUD_PROJECT_NAME" ]]; then
+      echo "The quota project is already set to $GOOGLE_CLOUD_PROJECT_NAME"
+    else
+      echo "The quota project is set to $current_project. Setting it to $GOOGLE_CLOUD_PROJECT_NAME"
+      gcloud auth application-default set-quota-project $GOOGLE_CLOUD_PROJECT_NAME
+    fi
+  else
+    echo "The current project is not set. Setting it to $GOOGLE_CLOUD_PROJECT_NAME"
+    gcloud config set core/project $GOOGLE_CLOUD_PROJECT_NAME
+    gcloud auth application-default set-quota-project $GOOGLE_CLOUD_PROJECT_NAME
+  fi
+
   # * Note that in the browser environment you need to run both:
   # gcloud auth login
   # gcloud auth application-default login
-  # # As per the above message, you also have to run this:
+  #
+    # FIXME remove
+  #
+  # # As per the above message, you also have to set quota:
   # project_name='project-001'
   # gcloud auth application-default set-quota-project $project_name
   #
@@ -77,53 +113,58 @@ if [ $CONSENSUS_BACKUP_ENABLED -eq 1 ]; then
   #
   # # Don't forget to change owner:
   # sudo chown -R $username:$username /home/$username/.config
-fi
 
+  # ===========================
+  # Setup cron jobs for backups
+  # ===========================
+  
+  echo "Verifying cron entries for backup scripts..."
 
-# ===========================
-# Setup cron jobs for backups
-# ===========================
+  # The cron entries to be added
+  # FIXME
+  # # Backup runtime DB every hour
+  # cron_entry_runtime="0 * * * * $(pwd)/backup_scripts/backup_runtime_db.sh"
+  # # Backup history DB twice a day
+  # cron_entry_history="0 0,12 * * * $(pwd)/backup_scripts/backup_history_db.sh"
+  # Testing values
+  cron_entry_runtime="* * * * * $(pwd)/backup_scripts/backup_runtime_db.sh"
+  cron_entry_history="* * * * * $(pwd)/backup_scripts/backup_history_db.sh"
 
-# The cron entries to be added
-# FIXME
-# # Backup runtime DB every 30 mins
-# cron_entry_runtime="30 * * * * $(pwd)/backup_scripts/backup_runtime_db.sh"
-# # Backup history DB every day at midnight
-# cron_entry_history="0 0 * * * $(pwd)/backup_scripts/backup_history_db.sh"
-# Testing values
-cron_entry_runtime="* * * * * $(pwd)/backup_scripts/backup_runtime_db.sh"
-cron_entry_history="* * * * * $(pwd)/backup_scripts/backup_history_db.sh"
+  # Check if the cron entry for history db is already in the cron file
+  if ! crontab -l | grep "$cron_entry_history"; then
+    # If not, add it
+    (crontab -l; echo "$cron_entry_history") | crontab -
+    # Confirm that the cron entry has been added
+    echo "Successfully added cron entry: $cron_entry_history"
+  else
+    # If the cron entry already exists, do nothing
+    echo "Cron entry already exists: $cron_entry_history"
+  fi
 
-# Check if the cron entry for history db is already in the cron file
-if ! crontab -l | grep "$cron_entry_history"; then
-  # If not, add it
-  (crontab -l; echo "$cron_entry_history") | crontab -
-  # Confirm that the cron entry has been added
-  echo "Successfully added cron entry: $cron_entry_history"
+  # Check if the cron entry for runtime db is already in the cron file
+  if ! crontab -l | grep "$cron_entry_runtime"; then
+    # If not, add it
+    (crontab -l; echo "$cron_entry_runtime") | crontab -
+    # Confirm that the cron entry has been added
+    echo "Successfully added cron entry: $cron_entry_runtime"
+  else
+    # If the cron entry already exists, do nothing
+    echo "Cron entry already exists: $cron_entry_runtime"
+  fi
+
+  # Print logs
+  echo "The crontab:"
+  crontab -l
 else
-  # If the cron entry already exists, do nothing
-  echo "Cron entry already exists: $cron_entry_history"
+  echo "Backups are disabled."
 fi
-
-# Check if the cron entry for runtime db is already in the cron file
-if ! crontab -l | grep "$cron_entry_runtime"; then
-  # If not, add it
-  (crontab -l; echo "$cron_entry_runtime") | crontab -
-  # Confirm that the cron entry has been added
-  echo "Successfully added cron entry: $cron_entry_runtime"
-else
-  # If the cron entry already exists, do nothing
-  echo "Cron entry already exists: $cron_entry_runtime"
-fi
-
-# Print logs
-echo "The updated crontab:"
-crontab -l
 
 
 # ==================================
 # Setup Python dependencies (wheels)
 # ==================================
+
+echo "Enabling python dependencies..."
 
 # Check if requirements.txt packages are installed before installing them
 if [ ! -f /requirements.txt ]; then 
@@ -156,10 +197,13 @@ fi
 # Starting the bot
 # ================
 
+echo "Starting the bot..."
+
 # Check if "pm2 startup" was already set up before running it
 if ! command -v pm2 startup &> /dev/null; then
-    # Set up pm2 to run on reboot
-    pm2 startup
+  echo "Enabling pm2 to run on reboot..."
+  # Set up pm2 to run on reboot
+  pm2 startup
 fi
 
 # Run main.py with pm2 (and log any output of this command in a bright color to distinguish it easily)
