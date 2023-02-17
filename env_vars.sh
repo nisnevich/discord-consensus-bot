@@ -5,9 +5,9 @@ export CONSENSUS_BACKUP_ENABLED=0
 export GOOGLE_CLOUD_PROJECT_NAME="consensus-bot-377809"
 
 # Backup runtime DB every hour
-export $CRON_RUNTIME_DB_BACKUP_SCHEDULE="0 * * * *"
+export CRON_RUNTIME_DB_BACKUP_SCHEDULE="0 * * * *"
 # Backup history DB twice a day
-export $CRON_HISTORY_DB_BACKUP_SCHEDULE ="0 0,12 * * *"
+export CRON_HISTORY_DB_BACKUP_SCHEDULE="0 0,12 * * *"
 
 # Logs dir
 export CONSENSUS_LOGS_DIR="$CONSENSUS_PROJECT_ROOT/logs"
