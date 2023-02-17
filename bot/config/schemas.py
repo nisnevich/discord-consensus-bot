@@ -37,7 +37,7 @@ class Proposals(Base):
     # Defines whether the proposal has a grant or not
     is_grantless = Column(Boolean)
     # Mention of a user to give a grant to (empty when is_grantless is true)
-    mention = Column(String)
+    mentions = relationship('Mention', back_populates='proposal')
     # Amount of the grant (empty when is_grantless is true)
     # Defining some constraints to avoid overflow
     amount = Column(Float, CheckConstraint('amount > -1000000000 AND amount < 1000000000'))
@@ -68,6 +68,15 @@ class Proposals(Base):
 
     def __repr__(self):
         return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id})>"
+
+
+class Mention(Base):
+    __tablename__ = 'mentions'
+
+    id = Column(Integer, primary_key=True)
+    proposal_id = Column(Integer, ForeignKey('proposals.id'))
+    mention = Column(String)
+    proposal = relationship('Proposals', back_populates='mentions')
 
 
 class Voters(Base):

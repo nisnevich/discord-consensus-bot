@@ -3,6 +3,7 @@ import logging
 import typing
 import discord
 import os
+import re
 from discord.ext import commands
 from datetime import datetime, timedelta
 
@@ -225,31 +226,32 @@ async def propose_command(ctx, *args):
             )
             return
 
-        is_grantless = True
-        if original_message.mentions:
-            # If the first argument is a mention of a discord user - consider it a grant proposal (and validate accordingly)
-            mention = original_message.mentions[0]
-            # Converting mention to <@123> format, because in the arguments it's passed like that
-            mention_id_str = "<@{}>".format(mention.id)
-            if args[0] == mention_id_str:
-                is_grantless = False
-                logger.debug("Received a proposal with a grant.")
-                # Suppose that the amount follows mention, and the description follows amount; the validation of these values comes next
-                amount = args[1]
-                try:
-                    amount = float(amount)
-                except ValueError:
-                    await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
-                    logger.info(
-                        "Unable to extract amount from the args. message_id=%d, invalid value=%s",
-                        original_message.id,
-                        amount,
-                    )
-                    return
-                description = " ".join(args[2:])
-                await proposal_with_grant(ctx, original_message, mention, amount, description)
-
-        if is_grantless:
+        # Extract mentions from the beginning of the command arguments
+        MENTION_REGEX = re.compile(r"(<@!?\d+>)")
+        mentions = []
+        for arg in args:
+            match = MENTION_REGEX.match(arg)
+            if match:
+                mentions.append(match.group(1))
+            else:
+                break
+        if len(mentions) > 0:
+            is_grantless = False
+            logger.debug("Received a proposal with a grant.")
+            # Suppose that the amount follows mention, and the description follows amount; the validation of these values comes next
+            amount = args[len(mentions)]
+            try:
+                amount = float(amount)
+            except ValueError:
+                await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
+                logger.info(
+                    "Unable to extract amount from the args. message_id=%d, invalid value=%s",
+                    original_message.id,
+                    amount,
+                )
+                return
+            await proposal_with_grant(ctx, original_message, mention, amount, description)
+        else:
             logger.debug("Received a grantless proposal.")
             await proposal_grantless(ctx, original_message, full_text)
 
