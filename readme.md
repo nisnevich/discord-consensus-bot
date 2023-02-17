@@ -47,12 +47,13 @@ chmod 600 token # You should make it only readable by you
 ./shutdown.sh
 ```
 
-### Dependencies:
-- [Node.js](https://nodejs.org)
-- [npm](https://www.npmjs.com)
-- [PM2](https://pm2.io)
+### Primary dependencies:
 - [Python 3.6](https://www.python.org/downloads/release/python-360/) or higher
-- [SQLAlchemy](https://www.sqlalchemy.org/)
+- [Discord API 2.1](https://discord.com/developers/docs/intro) 
+- [SQLAlchemy 1.4.46](https://www.sqlalchemy.org/)
+- [NLTK](https://www.nltk.org/)
+- [Google Cloud SDK](https://cloud.google.com/sdk)
+- [PM2](https://pm2.io) (requires [npm](https://www.npmjs.com) and [Node.js](https://nodejs.org))
 
 ## Contributing
 

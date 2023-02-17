@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source env_vars.sh
+
 # Stop the bot
 pm2 stop "eco-lazy-consensus-bot-beta"
 
