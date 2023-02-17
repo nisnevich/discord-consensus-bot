@@ -26,12 +26,10 @@ async def grant(voting_message_id):
         result = ProposalResult.ACCEPTED
 
         # Retrieve the original proposal message
-        original_channel = client.get_channel(proposal.channel_id)
-        original_message = await original_channel.fetch_message(proposal.message_id)
+        original_message = await get_message(client, proposal.channel_id, proposal.message_id)
         link_to_original_message = original_message.jump_url if original_message else None
         # Retrieve the voting message
-        voting_channel = client.get_channel(VOTING_CHANNEL_ID)
-        voting_message = await voting_channel.fetch_message(proposal.voting_message_id)
+        voting_message = await get_message(client, VOTING_CHANNEL_ID, proposal.voting_message_id)
 
         # Applying the grant if the proposal isn't grantless
         if not proposal.is_grantless:

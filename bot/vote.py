@@ -86,7 +86,7 @@ async def on_raw_reaction_remove(payload):
         proposal = get_proposal(payload.message_id)
 
         # Error handling - retrieve the voter object from the DB
-        voter = await get_voter(payload.user_id, payload.message_id, db)
+        voter = await get_voter(payload.user_id, payload.message_id)
         if not voter:
             logger.warning(
                 "Warning: Unable to find in the DB a user whose voting reaction was presented on active proposal. channel=%s, message=%s, user=%s, proposal=%s",
@@ -98,7 +98,7 @@ async def on_raw_reaction_remove(payload):
             return
 
         # Remove the voter from the list of voters for the grant proposal
-        await remove_voter(proposal, voter, db)
+        await remove_voter(proposal, voter)
 
     except Exception as e:
         try:
@@ -235,7 +235,7 @@ async def on_raw_reaction_add(payload):
         voting_message = await get_message(client, payload.channel_id, payload.message_id)
 
         # Error/fraud handling - check if the user has already voted for this proposal
-        voter = await get_voter(payload.user_id, payload.message_id, db)
+        voter = await get_voter(payload.user_id, payload.message_id)
         logger.debug("Voter: %s", voter)
         if voter:
             logger.warning(
@@ -253,7 +253,6 @@ async def on_raw_reaction_add(payload):
         await add_voter(
             proposal,
             Voters(user_id=payload.user_id, voting_message_id=proposal.voting_message_id),
-            db,
         )
         logger.info(
             "Added vote of user_id=%s, total %d voters against voting_message_id=%d",

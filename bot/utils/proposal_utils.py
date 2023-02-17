@@ -17,11 +17,12 @@ logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
+db = DBUtil()
 
 proposals = {}
 
 
-async def get_voter(user_id, voting_message_id, db):
+async def get_voter(user_id, voting_message_id):
     voters_found = []
     # Iterate through proposals and check for voters with matching ids
     for id in proposals:
@@ -38,12 +39,12 @@ async def get_voter(user_id, voting_message_id, db):
         return voters_found
 
 
-async def add_voter(proposal, voter, db):
+async def add_voter(proposal, voter):
     await db.add(voter)
     await db.append(proposal.voters, voter)
 
 
-async def remove_voter(proposal, voter, db):
+async def remove_voter(proposal, voter):
     await db.remove(proposal.voters, voter)
     await db.delete(voter)
 
