@@ -202,6 +202,15 @@ async def propose_command(ctx, *args):
             )
             return
 
+        # Don't accept proposal if recovery is in progress
+        if db.is_recovery():
+            await original_message.reply(PROPOSALS_PAUSED_RECOVERY_RESPONSE)
+            logger.info(
+                "Rejecting the proposal from %s because recovery is in progress.",
+                ctx.message.author.mention,
+            )
+            return
+
         # Validate that the user is allowed to use the command
         if not await validate_roles(ctx.message.author):
             await original_message.reply(ERROR_MESSAGE_INVALID_ROLE)

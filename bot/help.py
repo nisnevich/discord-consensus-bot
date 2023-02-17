@@ -11,6 +11,7 @@ from bot.config.const import (
     DEFAULT_LOG_LEVEL,
     EXPORT_COMMAND_NAME,
     EMPTY_ANALYTICS_VALUE,
+    HELP_COMMAND_ALIASES,
 )
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.discord_utils import get_discord_client, get_message, get_user_by_id_or_mention
@@ -28,7 +29,7 @@ logger.addHandler(console_handler)
 client = get_discord_client()
 
 
-@client.command(name=HELP_COMMAND_NAME)
+@client.command(name=HELP_COMMAND_NAME, aliases=HELP_COMMAND_ALIASES)
 async def help(ctx):
     try:
         # Remove the help request message
@@ -38,7 +39,8 @@ async def help(ctx):
             await ctx.author.send(HELP_MESSAGE_NON_AUTHORIZED_USER)
             return
         # Reply to an authorized user
-        await ctx.author.send(HELP_MESSAGE_AUTHORIZED_USER)
+        message = await ctx.author.send(HELP_MESSAGE_AUTHORIZED_USER)
+        await message.edit(suppress=True)
     except Exception as e:
         try:
             # Try replying in Discord

@@ -31,10 +31,17 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # Invite link with required permissions
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
-PROPOSAL_DURATION_SECONDS = 10  # 3 days is 259200
+# How long will each proposal be active
+PROPOSAL_DURATION_SECONDS = 5  # 3 days is 259200
+# Default lazy consensus threshold
+LAZY_CONSENSUS_THRESHOLD = 2
 # Time interval between checking if it's time to approve a proposal
 APPROVAL_SLEEP_SECONDS = 10
-LAZY_CONSENSUS_THRESHOLD = 2
+# Time interval between starting the bot and running the recovery; it's needed in order to make sure
+#  the client methods will become available (otherwise methods such as client.get_channel may fail).
+#  Recommended value based on observations - 5-10 sec. During this time (as well as while recovery runs),
+#  the bot will reject all proposals and votes for the sake of data integrity.
+SLEEP_BEFORE_RECOVERY_SECONDS = 7
 
 ROLE_IDS_ALLOWED = (1063903240925749389,)
 VOTING_CHANNEL_ID = 1067119414731886645
@@ -45,6 +52,7 @@ GRANT_PROPOSAL_COMMAND_NAME = 'propose'
 PROPOSAL_COMMAND_ALIASES = ['lazy', 'suggest', 'prop', 'consensus']
 GRANT_APPLY_COMMAND_NAME = 'grant'
 HELP_COMMAND_NAME = 'help-lazy'
+HELP_COMMAND_ALIASES = ['lazy-help']
 EXPORT_COMMAND_NAME = 'export'
 VOTERS_LIST_SEPARATOR = ", "
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
@@ -149,7 +157,11 @@ ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Looks like your proposal needs 
 ERROR_MESSAGE_INVALID_ROLE = "It's only for Layer 3 members, but don't worry if you're not quite there yet! Getting the Layer 3 role is like reaching the top of a mountain, but the view from the top is oh-so-worth it! Plus, think of all the cool features you'll have access to once you get there. Keep climbing, Eco-warrior! :mountain: :eco_heart:"
 ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED = "The {amount} grant for {mention} was applied, but I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author} is applied! However, I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
-PROPOSALS_PAUSED_RESPONSE = "Accepting new proposals was temporarily paused."
+
+# When functionality is paused
+PROPOSALS_PAUSED_RESPONSE = "Our proposal box is overflowing with awesome ideas! We're taking a little pause to catch up. But don't worry, we'll be back in action soon. Thanks for your patience!"
+PROPOSALS_PAUSED_RECOVERY_RESPONSE = "Bonjour! Our bot is taking a petit peu de repos to start the day off on the right foot. Don't worry, it's a short break - try again in just a minute!"
+VOTING_PAUSED_RECOVERY_RESPONSE = "Hey there! We're in the middle of a database recovery, which means we can't count your vote just yet. Give it a minute, and then come back and cast your ballot again!"
 
 # Help messages
 HELP_MESSAGE_NON_AUTHORIZED_USER = f"""
@@ -166,13 +178,13 @@ Here's how it works:
 - Have an idea but don't need a grant? Type whatever you want after "!propose":
 > !propose to run a community meeting tonight at 20 UTC
 
-- Your proposal will be sent straight to the `#L3-Voting` channel for all to see. And don't worry, you don't have to lift a finger after that - just make sure you explained your proposal clearly and let the magic happen! 🦥
+- Your proposal will be sent straight to the `#l3-voting` channel for all to see. And don't worry, you don't have to lift a finger after that - just make sure you explained your proposal clearly and let the magic happen! 🦥
 
 - After {int(PROPOSAL_DURATION_SECONDS / 60 / 60)} hours, if there's less than {LAZY_CONSENSUS_THRESHOLD} dissenters, BAM! You've got the green light. If you requested a grant, it will be automatically applied. 🚀 I will keep you all updated.
 
-- If you disagree to any proposal, add the {CANCEL_EMOJI_UNICODE} reaction to it in `#L3-Voting`. Don't worry, you can change your mind later (unless it's too late). Bonus points if you tell us why you're against it! ⏱️
+- If you disagree to any proposal, add the {CANCEL_EMOJI_UNICODE} reaction to it in `#l3-voting`. Don't worry, you can change your mind later (unless it's too late). Bonus points if you tell us why you're against it! ⏱️
 
-- Also, if you change your mind regarding your own proposal, just add {CANCEL_EMOJI_UNICODE} to it in `#L3-Voting` and poof! It's gone. Magic! 🎩
+- Also, if you change your mind regarding your own proposal, just add {CANCEL_EMOJI_UNICODE} to it in `#l3-voting` and poof! It's gone. Magic! 🎩
 
 Before submitting a proposal, make sure to clearly explain the background and details of the proposal. Clearly state what actions will be taken if the proposal is approved. Avoid vague descriptions and submit proposals in the appropriate channel (such as `#layer3-points-granting`) to avoid cluttering the public channels. Use the lazy consensus responsibly.
 
@@ -182,11 +194,9 @@ For power users:
 - Some shortcuts of `!propose` are: {", ".join(PROPOSAL_COMMAND_ALIASES)}
 - Run `!export` to receive analytics.
 
-For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The project is looking for contributors and teammates.
-
-{GITHUB_PROJECT_URL}
+For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The project is looking for contributors and teammates: {GITHUB_PROJECT_URL}
 """
-HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, you're adding your vote to the wrong message! It's like trying to put a puzzle piece in the wrong spot, it just doesn't fit! 😕 To make your vote count, please head to the correct voting message: {voting_link}."
+HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on a wrong message! 😕 To make your vote count, please head to the voting message in #l3-voting: {voting_link}."
 
 # =====================
 # Proposals with grants

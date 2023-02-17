@@ -31,6 +31,14 @@ class DBUtil:
     session_history = None
     session_lock_history = asyncio.Lock()
 
+    # The lock used during recovery to stop accepting proposals and voting
+    recovery_lock = asyncio.Lock()
+
+    def is_recovery(self):
+        if DBUtil.recovery_lock.locked():
+            return True
+        return False
+
     def connect_db(self):
         if DBUtil.engine is None:
             DBUtil.engine = create_engine(f"sqlite:///{DB_PATH}")
