@@ -1,6 +1,7 @@
 import discord
 import logging
 import sys
+from datetime import datetime
 
 # Function overloading
 from multipledispatch import dispatch
@@ -117,13 +118,21 @@ def validate_grantless_proposal(new_proposal):
         raise ValueError(
             f"is_grantless should be bool, got {type(new_proposal.is_grantless)} instead: {new_proposal.is_grantless}"
         )
-    if not isinstance(new_proposal.timer, int):
+    if not isinstance(new_proposal.submitted_at, datetime):
         raise ValueError(
-            f"timer should be an int, got {type(new_proposal.timer)} instead: {new_proposal.timer}"
+            f"submitted_at should be datetime, got {type(new_proposal.submitted_at)} instead: {new_proposal.submitted_at}"
+        )
+    if not isinstance(new_proposal.closed_at, datetime):
+        raise ValueError(
+            f"closed_at should be datetime, got {type(new_proposal.closed_at)} instead: {new_proposal.closed_at}"
         )
     if not isinstance(new_proposal.bot_response_message_id, int):
         raise ValueError(
             f"bot_response_message_id should be an int, got {type(new_proposal.bot_response_message_id)} instead: {new_proposal.bot_response_message_id}"
+        )
+    if not isinstance(new_proposal.threshold, int):
+        raise ValueError(
+            f"threshold should be an int, got {type(new_proposal.threshold)} instead: {new_proposal.threshold}"
         )
 
 

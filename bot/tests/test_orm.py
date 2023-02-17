@@ -19,14 +19,12 @@ class TestGrantProposals(unittest.TestCase):
             mention="@user",
             amount=100,
             description="Test proposal",
-            timer=0,
         )
 
         self.assertEqual(proposal.message_id, 1)
         self.assertEqual(proposal.mention, "@user")
         self.assertEqual(proposal.amount, 100)
         self.assertEqual(proposal.description, "Test proposal")
-        self.assertEqual(proposal.timer, 0)
         self.assertEqual(proposal.channel_id, 1)
 
     def test_grant_proposals_add_to_db(self):
@@ -35,7 +33,6 @@ class TestGrantProposals(unittest.TestCase):
             mention="@user",
             amount=100,
             description="Test proposal",
-            timer=0,
             channel_id=1,
         )
         self.session.add(proposal)
@@ -52,7 +49,6 @@ class TestGrantProposals(unittest.TestCase):
             mention="test_user",
             amount=100,
             description="test_description",
-            timer=60,
         )
         voters = [Voters(user_id=i, grant_proposal=grant_proposal) for i in range(5)]
         self.session.add(grant_proposal)
@@ -87,7 +83,6 @@ class TestVoters(unittest.TestCase):
             mention="test_user",
             amount=100,
             description="test_description",
-            timer=60,
         )
         voter = Voters(user_id=1, grant_proposal=grant_proposal)
 
@@ -101,7 +96,6 @@ class TestVoters(unittest.TestCase):
             mention="test_user",
             amount=100,
             description="test_description",
-            timer=60,
         )
         voter = Voters(user_id=1, grant_proposal=grant_proposal)
         self.session.add(voter)
@@ -118,7 +112,6 @@ class TestVoters(unittest.TestCase):
             mention="test_user",
             amount=100,
             description="test_description",
-            timer=60,
         )
         voters = [Voters(user_id=i, grant_proposal=grant_proposal) for i in range(5)]
         self.session.add(grant_proposal)

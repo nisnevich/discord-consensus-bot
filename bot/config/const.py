@@ -31,8 +31,9 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # Invite link with required permissions
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
-GRANT_PROPOSAL_TIMER_SECONDS = 20000  # 3 days is 259200
-GRANT_PROPOSAL_TIMER_SLEEP_SECONDS = 1
+PROPOSAL_DURATION_SECONDS = 10  # 3 days is 259200
+# Time interval between checking if it's time to approve a proposal
+APPROVAL_SLEEP_SECONDS = 10
 LAZY_CONSENSUS_THRESHOLD = 2
 
 ROLE_IDS_ALLOWED = (1063903240925749389,)
@@ -167,7 +168,7 @@ Here's how it works:
 
 - Your proposal will be sent straight to the `#L3-Voting` channel for all to see. And don't worry, you don't have to lift a finger after that - just make sure you explained your proposal clearly and let the magic happen! 🦥
 
-- After {int(GRANT_PROPOSAL_TIMER_SECONDS / 60 / 60)} hours, if there's less than {LAZY_CONSENSUS_THRESHOLD} dissenters, BAM! You've got the green light. If you requested a grant, it will be automatically applied. 🚀 I will keep you all updated.
+- After {int(PROPOSAL_DURATION_SECONDS / 60 / 60)} hours, if there's less than {LAZY_CONSENSUS_THRESHOLD} dissenters, BAM! You've got the green light. If you requested a grant, it will be automatically applied. 🚀 I will keep you all updated.
 
 - If you disagree to any proposal, add the {CANCEL_EMOJI_UNICODE} reaction to it in `#L3-Voting`. Don't worry, you can change your mind later (unless it's too late). Bonus points if you tell us why you're against it! ⏱️
 

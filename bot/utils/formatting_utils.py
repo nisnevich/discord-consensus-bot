@@ -20,7 +20,8 @@ def get_discord_timestamp_plus_delta(delta_seconds: int, timestamp_string="<t:{t
     if not match:
         raise ValueError("timestamp_string must contain the string '{timestamp}'")
 
-    # Get the current date and time in UTC
+    # Get the current local date and time (Discord will convert the timestamp into the local time of
+    # each specific user)
     now = datetime.now()
     # Add delta_seconds to the current date and time
     later = now + timedelta(seconds=delta_seconds)

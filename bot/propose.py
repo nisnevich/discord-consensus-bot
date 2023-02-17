@@ -2,9 +2,9 @@ import asyncio
 import logging
 import typing
 import discord
-import datetime
 import os
 from discord.ext import commands
+from datetime import datetime, timedelta
 
 from bot.grant import grant
 from bot.config.const import *
@@ -35,25 +35,26 @@ client = get_discord_client()
 
 async def approve_proposal(voting_message_id):
     """
-    Loop until the timer reaches GRANT_PROPOSAL_TIMER_SECONDS days. Every minute, the timer is incremented by GRANT_PROPOSAL_TIMER_SLEEP_SECONDS seconds and updated in the database. If the timer ends, the grant proposal is approved and the entry is removed from the dictionary and database.
+    A coroutine that approves a proposal by checking if the time to approve has come and if the proposal hasn't been cancelled.
     """
     logger.info("Running approval coroutine for voting_message_id=%d", voting_message_id)
     try:
-        grant_proposal = get_proposal(voting_message_id)
+        proposal = get_proposal(voting_message_id)
     except ValueError as e:
         logger.error(f"Error while getting grant proposal: {e}")
         return
-    while grant_proposal.timer < GRANT_PROPOSAL_TIMER_SECONDS:
-        # If proposal was cancelled, it will be removed from dictionary (see on_raw_reaction_add)
+    while proposal.closed_at > datetime.utcnow():
+        # If proposal was cancelled, it will be removed from dictionary (see on_raw_reaction_add),
+        # so we should exit
         if not is_relevant_proposal(voting_message_id):
             return
-        await asyncio.sleep(GRANT_PROPOSAL_TIMER_SLEEP_SECONDS)
-        grant_proposal.timer += GRANT_PROPOSAL_TIMER_SLEEP_SECONDS
-        await db.commit()
+        # Sleep until the next check
+        await asyncio.sleep(APPROVAL_SLEEP_SECONDS)
     try:
-        # Double check to make sure proposal wasn't cancelled
+        # When the time has come, double check to make sure the proposal wasn't cancelled
         if not is_relevant_proposal(voting_message_id):
             return
+        # Apply the grant
         await grant(voting_message_id)
     except ValueError as e:
         logger.error(f"Error while removing grant proposal: {e}")
@@ -68,8 +69,8 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
     voting_channel = client.get_channel(VOTING_CHANNEL_ID)
     voting_message = await voting_channel.send(
         NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE.format(
-            countdown=get_discord_countdown_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
-            date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
+            countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
+            date_finish=get_discord_timestamp_plus_delta(PROPOSAL_DURATION_SECONDS),
             amount=get_amount_to_print(amount),
             amount_reaction=NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount),
             mention=mention.mention,
@@ -105,9 +106,11 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
         mention=mention.mention,
         amount=amount,
         description=description,
-        timer=0,
-        submitted_at=datetime.datetime.utcnow(),
+        # set the datetimes in UTC, to preserve a single timezone for calculations
+        submitted_at=datetime.utcnow(),
+        closed_at=datetime.utcnow() + timedelta(seconds=PROPOSAL_DURATION_SECONDS),
         bot_response_message_id=bot_response_message.id if bot_response_message else 0,
+        threshold=LAZY_CONSENSUS_THRESHOLD,
     )
     await add_proposal(new_grant_proposal, db)
 
@@ -125,8 +128,8 @@ async def proposal_grantless(ctx, original_message, description):
     voting_channel = client.get_channel(VOTING_CHANNEL_ID)
     voting_message = await voting_channel.send(
         NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
-            countdown=get_discord_countdown_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
-            date_finish=get_discord_timestamp_plus_delta(GRANT_PROPOSAL_TIMER_SECONDS),
+            countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
+            date_finish=get_discord_timestamp_plus_delta(PROPOSAL_DURATION_SECONDS),
             author=ctx.message.author.mention,
             threshold=LAZY_CONSENSUS_THRESHOLD,
             reaction=CANCEL_EMOJI_UNICODE,
@@ -157,9 +160,11 @@ async def proposal_grantless(ctx, original_message, description):
         mention=None,
         amount=None,
         description=description,
-        timer=0,
-        submitted_at=datetime.datetime.utcnow(),
+        # set the datetimes in UTC, to preserve a single timezone for calculations
+        submitted_at=datetime.utcnow(),
+        closed_at=datetime.utcnow() + timedelta(seconds=PROPOSAL_DURATION_SECONDS),
         bot_response_message_id=bot_response_message.id if bot_response_message else 0,
+        threshold=LAZY_CONSENSUS_THRESHOLD,
     )
     await add_proposal(new_grant_proposal, db)
 
@@ -171,7 +176,7 @@ async def proposal_grantless(ctx, original_message, description):
 @client.command(name=GRANT_PROPOSAL_COMMAND_NAME, aliases=PROPOSAL_COMMAND_ALIASES)
 async def propose_command(ctx, *args):
     f"""
-    Submit a grant proposal. The proposal will be approved after {GRANT_PROPOSAL_TIMER_SECONDS}
+    Submit a grant proposal. The proposal will be approved after {PROPOSAL_DURATION_SECONDS}
     seconds unless {LAZY_CONSENSUS_THRESHOLD} members with {ROLE_IDS_ALLOWED} roles react with
     {CANCEL_EMOJI_UNICODE} emoji to the proposal message which will be posted by the bot in the
     {VOTING_CHANNEL_ID} channel.

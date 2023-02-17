@@ -26,20 +26,33 @@ class Proposals(Base):
     __tablename__ = GRANT_PROPOSALS_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
+    # The id of the initial message that submitted a proposal
     message_id = Column(Integer)
+    # The id of the initial channel where the proposal was submitted
     channel_id = Column(Integer)
-    author = Column(Integer)
+    # The id of the author of the proposal
+    author = Column(String)
+    # The id of the voting message in the channel VOTING_CHANNEL_ID
     voting_message_id = Column(Integer)
+    # Defines whether the proposal has a grant or not
     is_grantless = Column(Boolean)
+    # Mention of a user to give a grant to (empty when is_grantless is true)
     mention = Column(String)
+    # Amount of the grant (empty when is_grantless is true)
     # Defining some constraints to avoid overflow
     amount = Column(Float, CheckConstraint('amount > -1000000000 AND amount < 1000000000'))
+    # The text description of the proposal (validated to fit between MIN_DESCRIPTION_LENGTH and MAX_DESCRIPTION_LENGTH)
     description = Column(String)
-    timer = Column(Integer)
-    threshold = Column(Integer)
+    # Date and time when the proposal was submitted
     submitted_at = Column(DateTime)
+    # Date and time when the proposal should be closed
+    closed_at = Column(DateTime)
     # This is only needed for some error handling, though very helpful for onboarding new users
     bot_response_message_id = Column(Integer)
+
+    # Reserved for later:
+    # Minimal number of voters against to cancel this proposal (instead of general LAZY_CONSENSUS_THRESHOLD)
+    threshold = Column(Integer)
 
     """
     In the next line, back_populates creates a bidirectional relationship between the two classes.
@@ -54,7 +67,7 @@ class Proposals(Base):
         self.voters = []
 
     def __repr__(self):
-        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, timer={self.timer}, submitted_at={self.submitted_at}, bot_response_message_id={self.bot_response_message_id})>"
+        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id})>"
 
 
 class Voters(Base):
@@ -94,10 +107,9 @@ class ProposalHistory(Proposals):
     id = Column(Integer, ForeignKey('proposals.id'), primary_key=True)
     result = Column(Integer, default=None)
     voting_message_url = Column(String)
-    closed_at = Column(DateTime)
 
     # Add an index on the result column to optimise read query perfomance
     __table_args__ = (Index("ix_result", result),)
 
     def __repr__(self):
-        return f"ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, timer={self.timer}, submitted_at={self.submitted_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url}, closed_at={self.closed_at})"
+        return f"ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url})"

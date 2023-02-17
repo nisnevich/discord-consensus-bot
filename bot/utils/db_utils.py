@@ -157,12 +157,7 @@ class DBUtil:
                 ProposalHistory(
                     **proposal_dict,
                     result=result.value,
-                    closed_at=datetime.datetime.utcnow(),
                     voting_message_url=voting_message.jump_url,
                 )
             )
             DBUtil.session_history.commit()
-
-    async def commit(self):
-        async with DBUtil.session_lock:
-            DBUtil.session.commit()
