@@ -32,7 +32,7 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 5  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 120  # 3 days is 259200
 # Default lazy consensus threshold
 LAZY_CONSENSUS_THRESHOLD = 2
 # Time interval between checking if it's time to approve a proposal

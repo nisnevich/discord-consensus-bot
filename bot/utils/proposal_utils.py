@@ -50,6 +50,10 @@ async def remove_voter(proposal, voter):
 
 
 def is_relevant_proposal(voting_message_id):
+    if not isinstance(voting_message_id, int):
+        raise ValueError(
+            f"voting_message_id should be an int, got {type(voting_message_id)} instead: {voting_message_id}"
+        )
     return voting_message_id in proposals
 
 
