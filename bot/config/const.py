@@ -34,7 +34,7 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # How long will each proposal be active
 PROPOSAL_DURATION_SECONDS = 259200  # 3 days is 259200
 # Default lazy consensus threshold
-LAZY_CONSENSUS_THRESHOLD = 6
+LAZY_CONSENSUS_THRESHOLD = 4
 # Time interval between checking if it's time to approve a proposal
 APPROVAL_SLEEP_SECONDS = 10
 # Time interval between starting the bot and running the recovery; it's needed in order to make sure
@@ -220,7 +220,7 @@ def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
 
 
 NEW_PROPOSAL_WITH_GRANT_SAME_CHANNEL_RESPONSE = """
-Alright, let's make this happen! You're proposing to give {mention} {amount} points, but watch out! If {threshold} or more big wigs from Layer 3 vote against it, the deal's off. Anyone who objects can make their voices heard here: {voting_link}
+Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Anyone who objects can vote here: {voting_link}
 """
 NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE = """
 :eco_kyep: :eco_rocket: **Active grant proposal!** {amount_reaction}
@@ -248,12 +248,12 @@ PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
 # Grantless proposals
 # =====================
 
-NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE = "Nice one, but let's see what the community thinks! Anyone who objects can make their voices heard here: {voting_link}"
+NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE = "Nice one, but let's see what the community thinks! Anyone who objects can vote here: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :eco_kyep: :eco_rocket: **Active proposal!** :eco_raised_hand:
-{countdown} this idea by {author} will have a green light, unless {threshold} members react with {reaction} to this message (for help type *!help-lazy*).
+{countdown} this idea by {author} will have a green light, unless {threshold} members react with {reaction} to this message. *If you need help, run !help-lazy command.*
 
-*Note: this is a grantless proposal. To allocate points, use '!propose @user amount reason', or other ways.*
+*Note: this proposal will not apply a grant. If you need to allocate points, use '!propose @user amount reason', or other ways.*
 
 `Suggestion:` {description}
 """
