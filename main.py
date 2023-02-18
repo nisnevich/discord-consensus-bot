@@ -65,6 +65,14 @@ async def sync_voters_db_with_discord(client, proposal):
             # Check if the user is a valid member to participate in voting
             if not await validate_roles(user):
                 return False
+            # Check if the user is the proposer himself, and then cancel
+            if proposal.author == user.mention:
+                # cancel_proposal will remove all voters, so we just run it and exit
+                logger.debug("The proposer voted against, cancelling")
+                await cancel_proposal(
+                    proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message
+                )
+                return
             x_reactors_valid.append(user)
 
     # Remove voters whose cancel reaction is not found on the message
@@ -82,14 +90,6 @@ async def sync_voters_db_with_discord(client, proposal):
                     # Make sure the voter still has permissions to vote, otherwise remove
                     if not await validate_roles(user):
                         is_valid_voter = False
-                    # Check if the user is the proposer himself, and then cancel
-                    elif proposal.author == user.mention:
-                        # cancel_proposal will remove all voters, so we just run it and exit
-                        logger.debug("The proposer voted against, cancelling")
-                        await cancel_proposal(
-                            proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message
-                        )
-                        return
                     voter_reacted = True
                     break
             if voter_reacted:
@@ -150,7 +150,7 @@ async def start_proposals_coroutines(client, pending_grant_proposals):
             await sync_voters_db_with_discord(client, proposal)
 
             # If the proposal wasn't removed add approval coroutine to event loop
-            if is_relevant_proposal(proposal):
+            if is_relevant_proposal(proposal.voting_message_id):
                 client.loop.create_task(approve_proposal(proposal.voting_message_id))
                 logger.info(
                     "Added task to event loop to approve voting_message_id=%d",
