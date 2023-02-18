@@ -72,6 +72,14 @@ async def validate_roles(user: User) -> bool:
         bool: True if the user has the required roles, False otherwise.
     """
 
+    try:
+        logger.debug(user.roles)
+    except AttributeError:
+        # When user DMs a bot with a command, there will not be "roles" available
+        logger.debug("User doesn't have a 'roles' attribute, rejecting")
+        logger.debug(user)
+        return False
+
     # Check if user has allowed role
     role = find(lambda r: r.id in ROLE_IDS_ALLOWED, user.roles)
     if role is None:

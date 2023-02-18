@@ -212,6 +212,7 @@ async def propose_command(ctx, *args):
         if not await validate_roles(ctx.message.author):
             await original_message.reply(ERROR_MESSAGE_INVALID_ROLE)
             logger.info("Unauthorized user. message_id=%d", original_message.id)
+            return
 
         if len(args) < 3:
             await original_message.reply(ERROR_MESSAGE_INVALID_COMMAND_FORMAT)
