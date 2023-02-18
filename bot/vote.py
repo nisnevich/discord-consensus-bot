@@ -190,7 +190,9 @@ async def cancel_proposal(proposal, reason, voting_message):
         await original_message.add_reaction(REACTION_ON_PROPOSAL_CANCELLED)
     # Reply in the original channel, unless it's not the voting channel itself (then not replying to avoid flooding)
     if original_message and voting_message.channel.id != original_message.channel.id:
-        await original_message.reply(response_to_proposer)
+        message = await original_message.reply(response_to_proposer)
+        # Remove embeds
+        await message.edit(suppress=True)
     # Edit the proposal in the voting channel; suppress=True will remove embeds
     await voting_message.edit(content=edit_in_voting_channel, suppress=True)
 
