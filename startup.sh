@@ -140,10 +140,14 @@ if [ $CONSENSUS_BACKUP_ENABLED -eq 1 ]; then
   
   echo "Verifying cron entries for backup scripts..."
 
+  # # Cron entry for runtime DB
+  # cron_entry_runtime="$CRON_RUNTIME_DB_BACKUP_SCHEDULE CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT /bin/bash $CONSENSUS_PROJECT_ROOT/backup_scripts/backup_runtime_db.sh >> $LOG_BACKUP_RUNTIME_FILE_PATH 2>&1"
+  # # Cron entry for history DB
+  # cron_entry_history="$CRON_HISTORY_DB_BACKUP_SCHEDULE CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT /bin/bash $CONSENSUS_PROJECT_ROOT/backup_scripts/backup_history_db.sh >> $LOG_BACKUP_HISTORY_FILE_PATH 2>&1"
   # Cron entry for runtime DB
-  cron_entry_runtime="$CRON_RUNTIME_DB_BACKUP_SCHEDULE CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT $CONSENSUS_PROJECT_ROOT/backup_scripts/backup_runtime_db.sh >> $LOG_BACKUP_RUNTIME_FILE_PATH 2>&1"
+  cron_entry_runtime="* * * * * CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT /bin/bash $CONSENSUS_PROJECT_ROOT/backup_scripts/backup_runtime_db.sh >> $LOG_BACKUP_RUNTIME_FILE_PATH 2>&1"
   # Cron entry for history DB
-  cron_entry_history="$CRON_HISTORY_DB_BACKUP_SCHEDULE CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT $CONSENSUS_PROJECT_ROOT/backup_scripts/backup_history_db.sh >> $LOG_BACKUP_HISTORY_FILE_PATH 2>&1"
+  cron_entry_history="* * * * * CONSENSUS_PROJECT_ROOT=$CONSENSUS_PROJECT_ROOT /bin/bash $CONSENSUS_PROJECT_ROOT/backup_scripts/backup_history_db.sh >> $LOG_BACKUP_HISTORY_FILE_PATH 2>&1"
 
   # Check if the cron entry for history db is already in the cron file
   if ! crontab -l | grep "$cron_entry_history"; then
