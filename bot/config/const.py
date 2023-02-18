@@ -154,7 +154,7 @@ ERROR_MESSAGE_INVALID_DESCRIPTION = "You know what they say, if you don't descri
 ERROR_MESSAGE_LENGTHY_DESCRIPTION = f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters. Like, who wants to read that much anyways?"
 ERROR_MESSAGE_SHORTY_DESCRIPTION = f"Less is not always more, my friend. A tiny bit more detailed description would be greatly appreciated."
 ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Looks like your proposal needs a little more time in English class. Let's make sure you described everything in the language of Shakespeare (English must be at least {100 * MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION}% of the text, but feel free to add a second language if you'd like. Just don't let it go over a total of {MAX_DESCRIPTION_LENGTH} characters, okay?)."
-ERROR_MESSAGE_INVALID_ROLE = "It's only for Layer 3 members, but don't worry if you're not quite there yet! Getting the Layer 3 role is like reaching the top of a mountain, but the view from the top is oh-so-worth it! Plus, think of all the cool features you'll have access to once you get there. Keep climbing, Eco-warrior! :mountain: :eco_heart:"
+ERROR_MESSAGE_INVALID_ROLE = "Sorry, you need Layer 3 role to use this command. Type `!help-lazy` to learn more about the bot in DM."
 ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED = "The {amount} grant for {mention} was applied, but I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author} is applied! However, I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 
@@ -165,7 +165,13 @@ VOTING_PAUSED_RECOVERY_RESPONSE = "Hey there! We're in the middle of a database 
 
 # Help messages
 HELP_MESSAGE_NON_AUTHORIZED_USER = f"""
-Listen up, my elite friend! This bot is for the exclusive use of the Layer 3 squad. It's like a secret handshake for making quick and easy decisions. Want to know more about it? Check out our top secret files on {GITHUB_PROJECT_URL}. But shhh, don't tell anyone else about it! 🤫
+Unfortunately, you don't have a Layer 3 role which is needed to use Consensus bot on Eco server.
+
+The bot can be used in other communities as well. If you're interested in learning more about it, check out the project page at {GITHUB_PROJECT_URL}.
+
+The bot is an open-source project under MIT license. Contributions are welcome! See "Contributing" section on GitHub if you're interested.
+
+Also looking for teammates! If you possess expertise in Python and are excited about the project, please don't hesitate to reach out {RESPONSIBLE_MENTION}. Also looking for QA automation engineers onboard.
 """
 HELP_MESSAGE_AUTHORIZED_USER = f"""
 Hey there, are you ready to shake things up? Look no further, because the !propose command is here to save the day! 🎆

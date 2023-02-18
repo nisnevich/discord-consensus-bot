@@ -10,6 +10,7 @@ from bot.config.const import (
     HELP_COMMAND_NAME,
     DEFAULT_LOG_LEVEL,
     EXPORT_COMMAND_NAME,
+    REACTION_ON_BOT_MENTION,
     EMPTY_ANALYTICS_VALUE,
     HELP_COMMAND_ALIASES,
 )
@@ -66,8 +67,7 @@ async def export(ctx):
         # Reply to a non-authorized user
         if not await validate_roles(ctx.message.author):
             # Adding greetings and "cancelled" reactions
-            await original_message.add_reaction(REACTION_ON_BOT_MENTION)
-            await original_message.add_reaction(CANCEL_EMOJI_UNICODE)
+            await ctx.message.add_reaction(REACTION_ON_BOT_MENTION)
             # Sending response in DM
             await ctx.author.send(HELP_MESSAGE_NON_AUTHORIZED_USER)
             return
