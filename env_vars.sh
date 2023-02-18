@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Backup is only needed to be enabled on prod, so this variable should be 1 only in the prod branch, unless it's used for testing purposes
-export CONSENSUS_BACKUP_ENABLED=1
+export CONSENSUS_BACKUP_ENABLED=0
 export GOOGLE_CLOUD_PROJECT_NAME="consensus-bot-377809"
 
 # Backup runtime DB every hour
