@@ -86,7 +86,7 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
     if voting_channel.id != ctx.message.channel.id:
         bot_response_message = await original_message.reply(
             NEW_PROPOSAL_WITH_GRANT_SAME_CHANNEL_RESPONSE.format(
-                author=ctx.message.author.mention,
+                amount=get_amount_to_print(amount),
                 mention=mention.mention,
                 voting_link=voting_message.jump_url,
             )
