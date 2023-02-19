@@ -189,6 +189,7 @@ async def propose_command(ctx, *args):
         logger.debug("Proposal received: %s", full_text)
 
         original_message = await ctx.fetch_message(ctx.message.id)
+        await original_message.add_reaction(REACTION_GREETINGS)
 
         # A reserve mechanism to stop accepting new proposals
         if os.path.exists(STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME):

@@ -10,9 +10,11 @@ from bot.config.const import (
     HELP_COMMAND_NAME,
     DEFAULT_LOG_LEVEL,
     EXPORT_COMMAND_NAME,
-    REACTION_ON_BOT_MENTION,
+    REACTION_GREETINGS,
     EMPTY_ANALYTICS_VALUE,
     HELP_COMMAND_ALIASES,
+    CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS,
+    REACTION_ON_REPLIED_DM,
 )
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.discord_utils import get_discord_client, get_message, get_user_by_id_or_mention
@@ -33,8 +35,14 @@ client = get_discord_client()
 @client.command(name=HELP_COMMAND_NAME, aliases=HELP_COMMAND_ALIASES)
 async def help(ctx):
     try:
-        # Remove the help request message
-        await ctx.message.delete()
+        # Remove the help request message (only in channels that are allowed for bot to manage messages/reactions)
+        if ctx.message.channel.id in CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS:
+            await ctx.message.delete()
+        # Otherwise only add "replied in dm" reaction
+        else:
+            await ctx.message.add_reaction(REACTION_GREETINGS)
+            await ctx.message.add_reaction(REACTION_ON_REPLIED_DM)
+
         # Reply to a non-authorized user
         if not await validate_roles(ctx.message.author):
             await ctx.author.send(HELP_MESSAGE_NON_AUTHORIZED_USER)
@@ -64,16 +72,22 @@ async def help(ctx):
 @client.command(name=EXPORT_COMMAND_NAME)
 async def export(ctx):
     try:
+        # Remove the message requesting the analytics (only in channels that are allowed for bot to manage messages/reactions)
+        if ctx.message.channel.id in CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS:
+            await ctx.message.delete()
+        # Otherwise only add "replied in dm" reaction
+        else:
+            await ctx.message.add_reaction(REACTION_GREETINGS)
+            await ctx.message.add_reaction(REACTION_ON_REPLIED_DM)
+
         # Reply to a non-authorized user
         if not await validate_roles(ctx.message.author):
             # Adding greetings and "cancelled" reactions
-            await ctx.message.add_reaction(REACTION_ON_BOT_MENTION)
+            await ctx.message.add_reaction(REACTION_GREETINGS)
+            await ctx.message.add_reaction(REACTION_ON_REPLIED_DM)
             # Sending response in DM
             await ctx.author.send(HELP_MESSAGE_NON_AUTHORIZED_USER)
             return
-
-        # Remove the message requesting the analytics
-        await ctx.message.delete()
 
         accepted_proposals = (
             DBUtil.session_history.query(ProposalHistory)
