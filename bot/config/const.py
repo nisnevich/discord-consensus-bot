@@ -30,18 +30,18 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 
 # Required Discord permissions: 415538474048
 
+# Beta values
 # How long will each proposal be active
 PROPOSAL_DURATION_SECONDS = 120  # 3 days is 259200
 # Default lazy consensus threshold
 LAZY_CONSENSUS_THRESHOLD = 1
-
-# Beta values
 ROLE_IDS_ALLOWED = (1050411665755226192,)
 VOTING_CHANNEL_ID = 1069357639802302484
 GRANT_APPLY_CHANNEL_ID = 1069357820392259587
 # Important note: the bot MUST have permission to remove reactions in VOTING_CHANNEL_ID ("Manage Emojis and Stickers", int 1073741824). If someone votes during DB recovery, it's critical to remove the vote (exception will be thrown if bot can't do so).
 # Instead of using this array, we could simply check if the bot has permissions to delete messages or remove reactions, but in Eco the permissions are controlled with a third-party solution, so it's more reliable to simply list channels that were agreed to have permissions
-CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS = [908013508308893748, 1067119414731886645]
+# For beta, the channels are testing and l3-voting
+CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS = [1069357639802302484, 1069378370665709579]
 
 # =====================
 # Bot related constants
