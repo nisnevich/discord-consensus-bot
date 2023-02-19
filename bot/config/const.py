@@ -24,17 +24,29 @@ NLTK_DATASETS = ['averaged_perceptron_tagger', 'punkt', 'wordnet', 'words']
 # urls
 GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bot"
 
-# =====================
-# Bot related constants
-# =====================
+# =++===============
+# Critical constants
+# ====++============
 
-# Invite link with required permissions
-# https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
+# Required Discord permissions: 415538474048
 
 # How long will each proposal be active
 PROPOSAL_DURATION_SECONDS = 120  # 3 days is 259200
 # Default lazy consensus threshold
 LAZY_CONSENSUS_THRESHOLD = 1
+
+# Beta values
+ROLE_IDS_ALLOWED = (1050411665755226192,)
+VOTING_CHANNEL_ID = 1069357639802302484
+GRANT_APPLY_CHANNEL_ID = 1069357820392259587
+# Important note: the bot MUST have permission to remove reactions in VOTING_CHANNEL_ID ("Manage Emojis and Stickers", int 1073741824). If someone votes during DB recovery, it's critical to remove the vote (exception will be thrown if bot can't do so).
+# Instead of using this array, we could simply check if the bot has permissions to delete messages or remove reactions, but in Eco the permissions are controlled with a third-party solution, so it's more reliable to simply list channels that were agreed to have permissions
+CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS = [908013508308893748, 1067119414731886645]
+
+# =====================
+# Bot related constants
+# =====================
+
 # Time interval between checking if it's time to approve a proposal
 APPROVAL_SLEEP_SECONDS = 5
 # Time interval between starting the bot and running the recovery; it's needed in order to make sure
@@ -42,11 +54,6 @@ APPROVAL_SLEEP_SECONDS = 5
 #  Recommended value based on observations - 5-10 sec. During this time (as well as while recovery runs),
 #  the bot will reject all proposals and votes for the sake of data integrity.
 SLEEP_BEFORE_RECOVERY_SECONDS = 7
-
-# Beta values
-ROLE_IDS_ALLOWED = (1050411665755226192,)
-VOTING_CHANNEL_ID = 1069357639802302484
-GRANT_APPLY_CHANNEL_ID = 1069357820392259587
 
 DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
@@ -67,12 +74,15 @@ STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock"
 EMPTY_ANALYTICS_VALUE = "n/a"
 
 # Emoji
-REACTION_ON_BOT_MENTION = "👋"  # wave
 # When the proposal is accepted, the bot will
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 REACTION_ON_PROPOSAL_CANCELLED = "🍃"  # leaves
 CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
 EMOJI_HOORAY = "🎉"
+# Greetings are used mostly with new users and when replying in DM
+REACTION_GREETINGS = "👋"  # wave
+# Reaction for !help and !export messages in channels where the bot can't remove the message
+REACTION_ON_REPLIED_DM = "💬"  # speech balloon
 HEART_EMOJI_LIST = [
     "❤️",
     "♥️",
@@ -168,11 +178,11 @@ VOTING_PAUSED_RECOVERY_RESPONSE = "Hey there! We're in the middle of a database 
 HELP_MESSAGE_NON_AUTHORIZED_USER = f"""
 Unfortunately, you don't have a Layer 3 role which is needed to use Consensus bot on Eco server.
 
-The bot can be used in other communities as well. If you're interested in learning more about it, check out the project page at {GITHUB_PROJECT_URL}.
+If you're interested in learning more about the project, check out {GITHUB_PROJECT_URL}
 
 The bot is an open-source project under MIT license. Contributions are welcome! See "Contributing" section on GitHub if you're interested.
 
-Also looking for teammates! If you possess expertise in Python and are excited about the project, please don't hesitate to reach out {RESPONSIBLE_MENTION}. Also looking for QA automation engineers onboard.
+Also looking for teammates! If you possess expertise in Python and are excited about the project, please don't hesitate to reach out {RESPONSIBLE_MENTION}. Also looking for a QA automation engineer onboard.
 """
 HELP_MESSAGE_AUTHORIZED_USER = f"""
 Hey there, are you ready to shake things up? Look no further, because the !propose command is here to save the day! 🎆
@@ -221,7 +231,7 @@ def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
 
 
 NEW_PROPOSAL_WITH_GRANT_SAME_CHANNEL_RESPONSE = """
-Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Anyone who objects can vote here: {voting_link}
+Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Layer 3 members who object can vote here: {voting_link}
 """
 NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE = """
 :eco_kyep: :eco_rocket: **Active grant proposal!** {amount_reaction}
@@ -249,7 +259,7 @@ PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
 # Grantless proposals
 # =====================
 
-NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE = "Nice one, but let's see what the community thinks! Anyone who objects can vote here: {voting_link}"
+NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can vote here: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :eco_kyep: :eco_rocket: **Active proposal!** :eco_raised_hand:
 {countdown} this idea by {author} will have a green light, unless {threshold} members react with {reaction} to this message. *If you need help, run !help-lazy command.*
