@@ -78,7 +78,7 @@ REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 REACTION_ON_PROPOSAL_CANCELLED = "🍃"  # leaves
 CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
 EMOJI_HOORAY = "🎉"
-# Greetings is used mostly when replying in DM
+# Greetings are used mostly with new users and when replying in DM
 REACTION_GREETINGS = "👋"  # wave
 # Reaction for !help and !export messages in channels where the bot can't remove the message
 REACTION_ON_REPLIED_DM = "💬"  # speech balloon

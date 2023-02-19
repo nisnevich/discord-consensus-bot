@@ -189,10 +189,10 @@ async def propose_command(ctx, *args):
         logger.debug("Proposal received: %s", full_text)
 
         original_message = await ctx.fetch_message(ctx.message.id)
-        await original_message.add_reaction(REACTION_GREETINGS)
 
         # A reserve mechanism to stop accepting new proposals
         if os.path.exists(STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME):
+            await original_message.add_reaction(REACTION_GREETINGS)
             await original_message.reply(PROPOSALS_PAUSED_RESPONSE)
             logger.info(
                 "Rejecting the proposal from %s because a stopcock file is detected.",
@@ -202,6 +202,7 @@ async def propose_command(ctx, *args):
 
         # Don't accept proposal if recovery is in progress
         if db.is_recovery():
+            await original_message.add_reaction(REACTION_GREETINGS)
             await original_message.reply(PROPOSALS_PAUSED_RECOVERY_RESPONSE)
             logger.info(
                 "Rejecting the proposal from %s because recovery is in progress.",
@@ -211,11 +212,13 @@ async def propose_command(ctx, *args):
 
         # Validate that the user is allowed to use the command
         if not await validate_roles(ctx.message.author):
+            await original_message.add_reaction(REACTION_GREETINGS)
             await original_message.reply(ERROR_MESSAGE_INVALID_ROLE)
             logger.info("Unauthorized user. message_id=%d", original_message.id)
             return
 
         if len(args) < 3:
+            await original_message.add_reaction(REACTION_GREETINGS)
             await original_message.reply(ERROR_MESSAGE_INVALID_COMMAND_FORMAT)
             logger.info(
                 "Invalid command format. message_id=%d, invalid value=%s",
