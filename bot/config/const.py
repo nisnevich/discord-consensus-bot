@@ -53,7 +53,7 @@ APPROVAL_SLEEP_SECONDS = 10
 #  the client methods will become available (otherwise methods such as client.get_channel may fail).
 #  Recommended value based on observations - 5-10 sec. During this time (as well as while recovery runs),
 #  the bot will reject all proposals and votes for the sake of data integrity.
-SLEEP_BEFORE_RECOVERY_SECONDS = 7
+SLEEP_BEFORE_RECOVERY_SECONDS = 15
 
 DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
