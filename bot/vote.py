@@ -45,6 +45,11 @@ async def is_valid_voting_reaction(payload):
 
     reaction_channel = guild.get_channel(payload.channel_id)
 
+    # A hotfix for discord forums (the None channel is returned when a reaction is added to a message in a forum; though it works fine in other functions that use ctx.message.channel.id, such as propose)
+    if not reaction_channel:
+        logger.debug("Seems like a forum message.")
+        return
+
     # When adding reaction, check if the user has attempted to vote on a wrong message - either the original proposer message, or the bots reply to it, associated with an active proposal though (in order to help onboard new users)
     if payload.event_type == "REACTION_ADD":
         incorrect_reaction_proposal = get_proposal_initiated_by(payload.message_id)
