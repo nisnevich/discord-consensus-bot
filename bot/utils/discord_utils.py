@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from typing import Optional
 
-from bot.config.const import DISCORD_COMMAND_PREFIX
+from bot.config.const import DISCORD_COMMAND_PREFIX, EcoEmoji
 
 client = None
 
@@ -61,3 +61,13 @@ async def get_user_by_id_or_mention(id_or_mention):
         user_id = int(id_or_mention)
     user = await client.fetch_user(user_id)
     return user
+
+
+async def get_custom_emoji(name: EcoEmoji):
+    # FIXME when discord client is init, load custom emojis and save them in order to retrieve when
+    # needed
+    # Provide an interface and implement this method to retrieve emojis
+    if name == EcoEmoji.KYEP:
+        emoji_kyep = client.get_emoji(EcoEmoji.KYEP)
+        emoji_rocket = client.get_emoji(EcoEmoji.ROCKET)
+        emoji_amount = (client.get_emoji(NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount)),)

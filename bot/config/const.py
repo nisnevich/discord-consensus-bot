@@ -204,6 +204,21 @@ For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The pro
 """
 HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on a wrong message! 😕 To make your vote count, please head to the voting message in #l3-voting: {voting_link}."
 
+
+# FIXME integrate custom emojis in all of these messages (at least 6 of them including dicts):
+# NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE  PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE  NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE  GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE
+# FIXME check if there are any more custom emojis that I didn't find
+# FIXME replace custom emojis in "hearts"
+class EcoEmoji(Enum):
+    KYEP = "eco_kyep"
+    ROCKET = "eco_rocket"
+    RAISED_HAND = "eco_raised_hand"
+    POINTS = "points"
+    ECO_BAG = "eco_bag"
+    ECO_BAG_BIG = "eco_bag_big"
+    THINK = "think"
+
+
 # =====================
 # Proposals with grants
 # =====================
@@ -211,19 +226,19 @@ HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on
 
 def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
     if amount < 1000:
-        return ":points:"
+        return EcoEmoji.POINTS
     if amount < 5000:
-        return ":eco_bag:"
-    if amount < 20000:
-        return ":eco_bag_big::eco_bag_big:"
-    return ":eco_bag_big::eco_bag_big::eco_bag_big::eco_bag_big::eco_bag_big:"
+        return EcoEmoji.ECO_BAG
+    #  if amount < 20000:
+    return EcoEmoji.ECO_BAG_BIG
+    #  return ":eco_bag_big::eco_bag_big::eco_bag_big::eco_bag_big::eco_bag_big:"
 
 
 NEW_PROPOSAL_WITH_GRANT_SAME_CHANNEL_RESPONSE = """
 Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Anyone who objects can vote here: {voting_link}
 """
 NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE = """
-:eco_kyep: :eco_rocket: **Active grant proposal!** {amount_reaction}
+{emoji_kyep} {emoji_rocket} **Active grant proposal!** {amount_reaction}
 {countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message. *If you need help, run !help-lazy command.*
 `Proposed by:` {author}
 `Goal:` {description}
@@ -240,8 +255,8 @@ PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL = {
 }
 PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given and {mention} is now richer by {amount} points!",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :eco_Peace:",
-    ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal. :think:",
+    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. {emoji_eco_peace}",
+    ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal. {emoji_think}",
 }
 
 # =====================
@@ -250,7 +265,7 @@ PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
 
 NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE = "Nice one, but let's see what the community thinks! Anyone who objects can vote here: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:eco_kyep: :eco_rocket: **Active proposal** (no grant) :eco_raised_hand:
+{emoji_kyep} {emoji_rocket} **Active proposal** (no grant) {emoji_raised_hand}
 {countdown} this idea by {author} will have a green light, unless {threshold} members react with {reaction} to this message. *If you need help, run !help-lazy command.*
 
 `Suggestion:` {description}
@@ -267,6 +282,6 @@ GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL = {
 }
 GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The proposal has been accepted!",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :eco_Peace:",
-    ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal. :think:",
+    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. {emoji_eco_peace}",
+    ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal. {emoji_think}",
 }

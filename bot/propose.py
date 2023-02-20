@@ -66,6 +66,11 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
     if not await validate_grant_message(original_message, mention, amount, description):
         return
 
+    # FIXME save emojis when loading the discord client
+    emoji_kyep = client.get_emoji(EcoEmoji.KYEP)
+    emoji_rocket = client.get_emoji(EcoEmoji.ROCKET)
+    emoji_amount = (client.get_emoji(NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount)),)
+
     # Add proposal to the voting channel
     voting_channel = client.get_channel(VOTING_CHANNEL_ID)
     voting_message = await voting_channel.send(
@@ -73,7 +78,9 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
             countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
             date_finish=get_discord_timestamp_plus_delta(PROPOSAL_DURATION_SECONDS),
             amount=get_amount_to_print(amount),
-            amount_reaction=NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount),
+            emoji_kyep=emoji_kyep,
+            emoji_rocket=emoji_rocket,
+            amount_reaction=emoji_amount,
             mention=mention.mention,
             author=ctx.message.author.mention,
             threshold=LAZY_CONSENSUS_THRESHOLD,
