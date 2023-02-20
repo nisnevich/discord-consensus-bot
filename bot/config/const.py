@@ -50,10 +50,6 @@ CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS = [1069357639802302484, 1069378
 # Invite link with required permissions
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
-# How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
-# Default lazy consensus threshold
-LAZY_CONSENSUS_THRESHOLD = 2
 # Time interval between checking if it's time to approve a proposal
 APPROVAL_SLEEP_SECONDS = 5
 # Time interval between starting the bot and running the recovery; it's needed in order to make sure
