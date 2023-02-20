@@ -24,6 +24,21 @@ NLTK_DATASETS = ['averaged_perceptron_tagger', 'punkt', 'wordnet', 'words']
 # urls
 GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bot"
 
+# =++===============
+# Critical constants
+# ====++============
+
+# Required Discord permissions: 415538474048
+
+# How long will each proposal be active
+PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
+# Default lazy consensus threshold
+LAZY_CONSENSUS_THRESHOLD = 2
+
+ROLE_IDS_ALLOWED = (1063903240925749389,)
+VOTING_CHANNEL_ID = 1067119414731886645
+GRANT_APPLY_CHANNEL_ID = 1067127829654937692
+
 # =====================
 # Bot related constants
 # =====================
@@ -31,10 +46,6 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # Invite link with required permissions
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
-# How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
-# Default lazy consensus threshold
-LAZY_CONSENSUS_THRESHOLD = 2
 # Time interval between checking if it's time to approve a proposal
 APPROVAL_SLEEP_SECONDS = 10
 # Time interval between starting the bot and running the recovery; it's needed in order to make sure
@@ -42,10 +53,6 @@ APPROVAL_SLEEP_SECONDS = 10
 #  Recommended value based on observations - 5-10 sec. During this time (as well as while recovery runs),
 #  the bot will reject all proposals and votes for the sake of data integrity.
 SLEEP_BEFORE_RECOVERY_SECONDS = 7
-
-ROLE_IDS_ALLOWED = (1063903240925749389,)
-VOTING_CHANNEL_ID = 1067119414731886645
-GRANT_APPLY_CHANNEL_ID = 1067127829654937692
 
 DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
