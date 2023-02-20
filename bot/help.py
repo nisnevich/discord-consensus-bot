@@ -62,7 +62,7 @@ async def help(ctx):
         logger.critical(
             "Unexpected error in %s while sending help, channel=%s, message=%s, user=%s",
             __name__,
-            ctx.message.channel.id,
+            ctx.message.channel.id if ctx.message.channel else None,
             ctx.message.id,
             ctx.message.author.mention,
             exc_info=True,
@@ -147,7 +147,7 @@ async def export(ctx):
         logger.critical(
             "Unexpected error in %s while exporting analytical data, channel=%s, message=%s, user=%s",
             __name__,
-            ctx.message.channel.id,
+            ctx.message.channel.id if ctx.message.channel else None,
             ctx.message.id,
             ctx.message.author.mention,
             exc_info=True,
