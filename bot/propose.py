@@ -2,6 +2,7 @@ import asyncio
 import logging
 import typing
 import discord
+import re
 import os
 from discord.ext import commands
 from datetime import datetime, timedelta
@@ -185,8 +186,9 @@ async def propose_command(ctx, *args):
     """
 
     try:
-        full_text = " ".join(args)
-        logger.debug("Proposal received: %s", full_text)
+        # Get the entire message content
+        message_content = ctx.message.content
+        logger.debug("Proposal received: %s", message_content)
 
         original_message = await ctx.fetch_message(ctx.message.id)
 
@@ -248,12 +250,35 @@ async def propose_command(ctx, *args):
                         amount,
                     )
                     return
-                description = " ".join(args[2:])
+
+                # Retrieve description including line breaks. Regex skips 3 words and one or more spaces after each of them (command name, mention amount), and takes everything else
+                match = re.search(r"^\!\S+\s+\S+\s+\S+\s+([\w\W]+)$", message_content)
+                if not match:
+                    await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
+                    logger.critical(
+                        "Can't retrieve description from a proposal while it should be there."
+                    )
+                    return
+                description = match.group(1)
+
+                # Process the proposal
                 await proposal_with_grant(ctx, original_message, mention, amount, description)
 
         if is_grantless:
             logger.debug("Received a grantless proposal.")
-            await proposal_grantless(ctx, original_message, full_text)
+
+            # Retrieve description. Regex skips a word and one or more spaces (command name), and takes everything else
+            match = re.search(r"^\!\S+\s+([\w\W]+)$", message_content)
+            if not match:
+                await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
+                logger.critical(
+                    "Can't retrieve description from a proposal while it should be there."
+                )
+                return
+            description = match.group(1)
+
+            # Process the grantless proposal
+            await proposal_grantless(ctx, original_message, description)
 
     except Exception as e:
         try:
