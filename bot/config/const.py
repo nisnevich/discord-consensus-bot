@@ -250,10 +250,8 @@ PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
 
 NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE = "Nice one, but let's see what the community thinks! Anyone who objects can vote here: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:eco_kyep: :eco_rocket: **Active proposal!** :eco_raised_hand:
+:eco_kyep: :eco_rocket: **Active proposal** (no grant) :eco_raised_hand:
 {countdown} this idea by {author} will have a green light, unless {threshold} members react with {reaction} to this message. *If you need help, run !help-lazy command.*
-
-*Note: this proposal will not apply a grant. If you need to allocate points, use '!propose @user amount reason', or other ways.*
 
 `Suggestion:` {description}
 """
