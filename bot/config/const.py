@@ -47,6 +47,13 @@ CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS = [1069357639802302484, 1069378
 # Bot related constants
 # =====================
 
+# Invite link with required permissions
+# https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
+
+# How long will each proposal be active
+PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
+# Default lazy consensus threshold
+LAZY_CONSENSUS_THRESHOLD = 2
 # Time interval between checking if it's time to approve a proposal
 APPROVAL_SLEEP_SECONDS = 5
 # Time interval between starting the bot and running the recovery; it's needed in order to make sure
@@ -203,7 +210,7 @@ Here's how it works:
 
 - Also, if you change your mind regarding your own proposal, just add {CANCEL_EMOJI_UNICODE} to it in `#l3-voting` and poof! It's gone. Magic! 🎩
 
-Before submitting a proposal, make sure to clearly explain the background and details of the proposal. Clearly state what actions will be taken if the proposal is approved. Avoid vague descriptions and submit proposals in the appropriate channel (such as `#layer3-points-granting`) to avoid cluttering the public channels. Use the lazy consensus responsibly.
+Before submitting a proposal, make sure to explain the background and details of it. Use the lazy consensus responsibly. *Clearly state what actions will be taken if the proposal is approved.* Avoid vague descriptions, and submit proposals in the appropriate channel (e.g. the channel of your activity or #l3-season-1-activities). The bot will create a post in #l3-voting once you send a proposal.
 
 So, don't be shy and get those creative juices flowing! Let's make Eco the best it can be with some fresh ideas! 🌟
 
@@ -222,22 +229,20 @@ HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on
 
 def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
     if amount < 1000:
-        return ":points:"
+        return ":moneybag:"
     if amount < 5000:
-        return ":eco_bag:"
+        return ":moneybag::moneybag:"
     if amount < 20000:
-        return ":eco_bag_big::eco_bag_big:"
-    return ":eco_bag_big::eco_bag_big::eco_bag_big::eco_bag_big::eco_bag_big:"
+        return ":moneybag::moneybag::moneybag:"
+    return ":moneybag::moneybag::moneybag::moneybag::moneybag:"
 
 
 NEW_PROPOSAL_WITH_GRANT_SAME_CHANNEL_RESPONSE = """
 Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Layer 3 members who object can vote here: {voting_link}
 """
 NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE = """
-:eco_kyep: :eco_rocket: **Active grant proposal!** {amount_reaction}
-{countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message. *If you need help, run !help-lazy command.*
-`Proposed by:` {author}
-`Goal:` {description}
+:rocket:{amount_reaction} **Active grant proposal** by {author}
+{countdown} will grant {amount} points to {mention}: {description}
 """  # Another version: {author} proposed giving {amount} points to {mention}. {threshold} votes against will cancel it. Use {reaction} to vote before {date_finish}.
 PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
 The {amount} points grant for {mention} suggested by {author} {result}
@@ -251,8 +256,8 @@ PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL = {
 }
 PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given and {mention} is now richer by {amount} points!",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :eco_Peace:",
-    ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal. :think:",
+    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
+    ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
 }
 
 # =====================
@@ -261,12 +266,8 @@ PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
 
 NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can vote here: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:eco_kyep: :eco_rocket: **Active proposal!** :eco_raised_hand:
-{countdown} this idea by {author} will have a green light, unless {threshold} members react with {reaction} to this message. *If you need help, run !help-lazy command.*
-
-*Note: this proposal will not apply a grant. If you need to allocate points, use '!propose @user amount reason', or other ways.*
-
-`Suggestion:` {description}
+:rocket: **Active proposal** (no grant) by {author}
+{countdown}: {description}
 """
 GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
 The proposal by {author} {result}
@@ -280,6 +281,6 @@ GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL = {
 }
 GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The proposal has been accepted!",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :eco_Peace:",
-    ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal. :think:",
+    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
+    ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
 }
