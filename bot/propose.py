@@ -267,7 +267,7 @@ async def propose_command(ctx, *args):
         logger.critical(
             "Unexpected error in %s while adding proposal, channel=%s, message=%s, user=%s",
             __name__,
-            ctx.message.channel.id,
+            ctx.message.channel.id if ctx.message.channel else None,
             ctx.message.id,
             ctx.message.author.mention,
             exc_info=True,
