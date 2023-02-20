@@ -247,10 +247,8 @@ NEW_PROPOSAL_WITH_GRANT_SAME_CHANNEL_RESPONSE = """
 Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Layer 3 members who object can vote here: {voting_link}
 """
 NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE = """
-:rocket:{amount_reaction} **Active grant proposal!**
-{countdown} I will grant `{amount}` points to {mention}, unless {threshold} members react with {reaction} to this message. *If you need help, run !help-lazy command.*
-`Proposed by:` {author}
-`Goal:` {description}
+:rocket:{amount_reaction} **Active grant proposal** by {author}
+{countdown} will grant {amount} points to {mention}: {description}
 """  # Another version: {author} proposed giving {amount} points to {mention}. {threshold} votes against will cancel it. Use {reaction} to vote before {date_finish}.
 PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
 The {amount} points grant for {mention} suggested by {author} {result}
@@ -274,10 +272,8 @@ PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
 
 NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can vote here: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:rocket: **Active proposal** (no grant)
-{countdown} this idea by {author} will have a green light, unless {threshold} members react with {reaction} to this message. *If you need help, run !help-lazy command.*
-
-`Suggestion:` {description}
+:rocket: **Active proposal** (no grant) by {author}
+{countdown}: {description}
 """
 GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
 The proposal by {author} {result}
