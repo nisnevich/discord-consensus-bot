@@ -209,7 +209,7 @@ Here's how it works:
 
 - Also, if you change your mind regarding your own proposal, just add {CANCEL_EMOJI_UNICODE} to it in `#l3-voting` and poof! It's gone. Magic! 🎩
 
-Before submitting a proposal, make sure to clearly explain the background and details of the proposal. Clearly state what actions will be taken if the proposal is approved. Avoid vague descriptions and submit proposals in the appropriate channel (such as `#layer3-points-granting`) to avoid cluttering the public channels. Use the lazy consensus responsibly.
+Before submitting a proposal, make sure to explain the background and details of it. Use the lazy consensus responsibly. *Clearly state what actions will be taken if the proposal is approved.* Avoid vague descriptions, and submit proposals in the appropriate channel (e.g. the channel of your activity or #l3-season-1-activities). The bot will create a post in #l3-voting once you send a proposal.
 
 So, don't be shy and get those creative juices flowing! Let's make Eco the best it can be with some fresh ideas! 🌟
 
