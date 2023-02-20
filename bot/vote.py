@@ -54,9 +54,10 @@ async def is_valid_voting_reaction(payload):
     if payload.event_type == "REACTION_ADD":
         incorrect_reaction_proposal = get_proposal_initiated_by(payload.message_id)
         if incorrect_reaction_proposal:
-            # Remove reaction from the message, in order not to confuse other members
-            reaction_message = await reaction_channel.fetch_message(payload.message_id)
-            await reaction_message.remove_reaction(payload.emoji, member)
+            # Remove reaction from the message (only in channels that are allowed for bot to manage messages/reactions), in order not to confuse other members
+            if reaction_channel.id in CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS:
+                reaction_message = await reaction_channel.fetch_message(payload.message_id)
+                await reaction_message.remove_reaction(payload.emoji, member)
 
             # Retrieve the relevant voting message to send link to the user
             voting_message = await get_message(
@@ -246,7 +247,9 @@ async def on_raw_reaction_add(payload):
             dm_channel = await member.create_dm()
             await dm_channel.send(VOTING_PAUSED_RECOVERY_RESPONSE)
 
-            # Removing the reaction
+            # Removing the reaction. Not checking for permissions to remove because they must be set
+            # otherwise error should be thrown (this code should only run if the reaction was added
+            # to the voting channel)
             reaction_message = await get_message(client, payload.channel_id, payload.message_id)
             await reaction_message.remove_reaction(payload.emoji, member)
 
