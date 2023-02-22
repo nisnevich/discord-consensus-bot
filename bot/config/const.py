@@ -31,9 +31,9 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # Required Discord permissions: 415538474048
 
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 25  # 3 days is 259200
 # Default lazy consensus threshold
-LAZY_CONSENSUS_THRESHOLD = 2
+LAZY_CONSENSUS_THRESHOLD = 1
 
 ROLE_IDS_ALLOWED = (1063903240925749389,)
 VOTING_CHANNEL_ID = 1067119414731886645
@@ -50,7 +50,7 @@ CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS = [908013508308893748, 10671194
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
 # Time interval between checking if it's time to approve a proposal
-APPROVAL_SLEEP_SECONDS = 10
+APPROVAL_SLEEP_SECONDS = 5
 # Time interval between starting the bot and running the recovery; it's needed in order to make sure
 #  the client methods will become available (otherwise methods such as client.get_channel may fail).
 #  Recommended value based on observations - 5-10 sec. During this time (as well as while recovery runs),
@@ -189,7 +189,9 @@ Also looking for teammates! If you possess expertise in Python and are excited a
 HELP_MESSAGE_AUTHORIZED_USER = f"""
 Hey there, are you ready to shake things up? Look no further, because the !propose command is here to save the day! 🎆
 
-Here's how it works:
+Check out the user guide by @facts parade: https://www.figma.com/proto/DMbNXBh5XP22GDycrenu1e/Consensus-Bot?node-id=1%3A86&scaling=min-zoom&page-id=0%3A1
+
+Shortly, here's how it works:
 
 - Need a grant? Type anywhere: `!propose @username amount reason`. For example:
 > !propose @JohnSnow 100 for saving the kingdom
@@ -217,13 +219,22 @@ For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The pro
 """
 HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on a wrong message! 😕 To make your vote count, please head to the voting message in #l3-voting: {voting_link}."
 
+# ======================
+# General proposal texts
+# ======================
+
+PROPOSAL_CANCELLED_VOTING_CHANNEL = {
+    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Proposal cancelled due to opposition from {threshold} members - {voters_list}: {link_to_original_message}",
+    ProposalResult.CANCELLED_BY_PROPOSER: ":leaves: Proposal cancelled by author ({author}): {link_to_original_message}",
+}
+
 # =====================
 # Proposals with grants
 # =====================
 
 
 def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
-    if amount < 1000:
+    if amount < 1500:
         return ":moneybag:"
     if amount < 5000:
         return ":moneybag::moneybag:"
@@ -232,24 +243,21 @@ def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
     return ":moneybag::moneybag::moneybag::moneybag::moneybag:"
 
 
-NEW_PROPOSAL_WITH_GRANT_SAME_CHANNEL_RESPONSE = """
+# Active voting
+NEW_GRANT_PROPOSAL_RESPONSE = """
 Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Layer 3 members who object can vote here: {voting_link}
 """
-NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE = """
+NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :rocket:{amount_reaction} **Active grant proposal** by {author}
 {countdown} will grant {amount} points to {mention}: {description}
-"""  # Another version: {author} proposed giving {amount} points to {mention}. {threshold} votes against will cancel it. Use {reaction} to vote before {date_finish}.
-PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
-The {amount} points grant for {mention} suggested by {author} {result}
-Goal: {description}
-*It was proposed here: {link_to_original_message}*
 """
-PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL = {
-    ProposalResult.ACCEPTED: "has been given! :tada:",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "has been cancelled due to opposition from {threshold} members: {voters_list}",
-    ProposalResult.CANCELLED_BY_PROPOSER: "has been cancelled by the proposer. :leaves:",
-}
-PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
+
+# Finished voting
+GRANT_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT = """
+:tada: Granted {amount} points to {mention}: {description}
+*Proposed by {author}: {link_to_original_message}*
+"""
+GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given and {mention} is now richer by {amount} points!",
     ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
@@ -259,21 +267,18 @@ PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
 # Grantless proposals
 # =====================
 
-NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can vote here: {voting_link}"
+# Active voting
+NEW_GRANTLESS_PROPOSAL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can vote here: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :rocket: **Active proposal** (no grant) by {author}
 {countdown}: {description}
 """
-GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
-The proposal by {author} {result}
-Suggestion: {description}
-*It was proposed here: {link_to_original_message}*
+
+# Finished voting
+GRANTLESS_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT = """
+:tada: Accepted proposal of {author}: {description}
+*Proposed here: {link_to_original_message}*
 """
-GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL = {
-    ProposalResult.ACCEPTED: "has been accepted! :tada:",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "has been cancelled due to opposition from {threshold} members: {voters_list}",
-    ProposalResult.CANCELLED_BY_PROPOSER: "has been cancelled by the proposer. :leaves:",
-}
 GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The proposal has been accepted!",
     ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
