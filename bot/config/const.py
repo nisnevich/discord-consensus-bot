@@ -190,9 +190,7 @@ Also looking for teammates! If you possess expertise in Python and are excited a
 HELP_MESSAGE_AUTHORIZED_USER = f"""
 Hey there, are you ready to shake things up? Look no further, because the !propose command is here to save the day! 🎆
 
-Check out the user guide by @facts parade: https://www.figma.com/proto/DMbNXBh5XP22GDycrenu1e/Consensus-Bot?node-id=1%3A86&scaling=min-zoom&page-id=0%3A1
-
-Shortly, here's how it works:
+Here's how it works:
 
 - Need a grant? Type anywhere: `!propose @username amount reason`. For example:
 > !propose @JohnSnow 100 for saving the kingdom
@@ -213,7 +211,7 @@ Before submitting a proposal, make sure to explain the background and details of
 So, don't be shy and get those creative juices flowing! Let's make Eco the best it can be with some fresh ideas! 🌟
 
 For power users:
-- Some shortcuts of `!propose` are: {", ".join(PROPOSAL_COMMAND_ALIASES)}
+- Some shortcuts of `!propose` are: {", ".join(PROPOSAL_COMMAND_ALIASES)}.
 - Run `!export` to receive analytics.
 
 For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The project is looking for contributors and teammates: {GITHUB_PROJECT_URL}
