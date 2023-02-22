@@ -69,15 +69,12 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
     # Add proposal to the voting channel
     voting_channel = client.get_channel(VOTING_CHANNEL_ID)
     voting_message = await voting_channel.send(
-        NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE.format(
-            countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
-            date_finish=get_discord_timestamp_plus_delta(PROPOSAL_DURATION_SECONDS),
-            amount=get_amount_to_print(amount),
+        NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
             amount_reaction=NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount),
-            mention=mention.mention,
             author=ctx.message.author.mention,
-            threshold=LAZY_CONSENSUS_THRESHOLD,
-            reaction=CANCEL_EMOJI_UNICODE,
+            countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
+            amount=get_amount_to_print(amount),
+            mention=mention.mention,
             description=description,
         )
     )
@@ -86,7 +83,7 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
     bot_response_message = None
     if voting_channel.id != ctx.message.channel.id:
         bot_response_message = await original_message.reply(
-            NEW_PROPOSAL_WITH_GRANT_SAME_CHANNEL_RESPONSE.format(
+            NEW_GRANT_PROPOSAL_RESPONSE.format(
                 amount=get_amount_to_print(amount),
                 mention=mention.mention,
                 voting_link=voting_message.jump_url,
@@ -127,10 +124,7 @@ async def proposal_grantless(ctx, original_message, description):
     voting_message = await voting_channel.send(
         NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
             countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
-            date_finish=get_discord_timestamp_plus_delta(PROPOSAL_DURATION_SECONDS),
             author=ctx.message.author.mention,
-            threshold=LAZY_CONSENSUS_THRESHOLD,
-            reaction=CANCEL_EMOJI_UNICODE,
             description=description,
         )
     )
@@ -139,8 +133,7 @@ async def proposal_grantless(ctx, original_message, description):
     bot_response_message = None
     if voting_channel.id != ctx.message.channel.id:
         bot_response_message = await original_message.reply(
-            NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE.format(
-                threshold=LAZY_CONSENSUS_THRESHOLD,
+            NEW_GRANTLESS_PROPOSAL_RESPONSE.format(
                 voting_link=voting_message.jump_url,
             )
         )
