@@ -35,7 +35,7 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 PROPOSAL_DURATION_SECONDS = 172800  # 3 days is 259200
 # Default lazy consensus threshold
 LAZY_CONSENSUS_THRESHOLD = 4
-ROLE_IDS_ALLOWED = (812675567438659624,)
+ROLE_IDS_ALLOWED = (812675567438659624, 1038497110754086913, 768558990149156896)
 VOTING_CHANNEL_ID = 1060864279303172136
 GRANT_APPLY_CHANNEL_ID = 1066350422949908540
 # Important note: the bot MUST have permission to remove reactions in VOTING_CHANNEL_ID ("Manage Emojis and Stickers", int 1073741824). If someone votes during DB recovery, it's critical to remove the vote (exception will be thrown if bot can't do so).
