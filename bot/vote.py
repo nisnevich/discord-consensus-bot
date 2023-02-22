@@ -142,53 +142,38 @@ async def cancel_proposal(proposal, reason, voting_message):
 
     # Filling the response messages with different arguments based on the reason of cancelling
     if reason == ProposalResult.CANCELLED_BY_PROPOSER:
-        if not proposal.is_grantless:
-            response_to_proposer = PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE[reason].format(
-                author=mention_author
-            )
-            result_message = PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL[reason].format()
-        else:
+        if proposal.is_grantless:
             response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
                 author=mention_author
             )
-            result_message = GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL[reason].format()
+        else:
+            response_to_proposer = GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
+                author=mention_author
+            )
         log_message = "(by the proposer)"
     elif reason == ProposalResult.CANCELLED_BY_REACHING_THRESHOLD:
-        if not proposal.is_grantless:
-            response_to_proposer = PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE[reason].format(
-                author=mention_author,
-                threshold=LAZY_CONSENSUS_THRESHOLD,
-                voting_link=link_to_voting_message,
-            )
-            result_message = PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL[reason].format(
-                threshold=LAZY_CONSENSUS_THRESHOLD, voters_list=list_of_voters
-            )
-        else:
+        if proposal.is_grantless:
             response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
                 author=mention_author,
                 threshold=LAZY_CONSENSUS_THRESHOLD,
                 voting_link=link_to_voting_message,
             )
-            result_message = GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL[reason].format(
-                threshold=LAZY_CONSENSUS_THRESHOLD, voters_list=list_of_voters
+        else:
+            response_to_proposer = GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
+                author=mention_author,
+                threshold=LAZY_CONSENSUS_THRESHOLD,
+                voting_link=link_to_voting_message,
             )
         log_message = "(by reaching threshold)"
-    if not proposal.is_grantless:
-        edit_in_voting_channel = PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL_EDITED_MESSAGE.format(
-            result=result_message,
-            amount=amount_of_allocation,
-            mention=mention_receiver,
-            author=mention_author,
-            description=description_of_proposal,
-            # TODO#9 if link_to_initial_proposer_message is None, message should be different
-            link_to_original_message=link_to_initial_proposer_message,
+
+    if reason == ProposalResult.CANCELLED_BY_PROPOSER:
+        edit_in_voting_channel = PROPOSAL_CANCELLED_VOTING_CHANNEL[reason].format(
+            author=mention_author, link_to_original_message=link_to_initial_proposer_message
         )
-    else:
-        edit_in_voting_channel = GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE.format(
-            result=result_message,
-            author=mention_author,
-            description=description_of_proposal,
-            # TODO#9 if link_to_initial_proposer_message is None, message should be different
+    elif reason == ProposalResult.CANCELLED_BY_REACHING_THRESHOLD:
+        edit_in_voting_channel = PROPOSAL_CANCELLED_VOTING_CHANNEL[reason].format(
+            threshold=LAZY_CONSENSUS_THRESHOLD,
+            voters_list=list_of_voters,
             link_to_original_message=link_to_initial_proposer_message,
         )
 

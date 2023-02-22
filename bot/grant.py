@@ -75,7 +75,7 @@ async def grant(voting_message_id):
         if original_message and (voting_channel.id != original_channel.id):
             if not proposal.is_grantless:
                 await original_message.reply(
-                    PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE[result].format(
+                    GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[result].format(
                         mention=proposal.mention,
                         amount=get_amount_to_print(proposal.amount),
                     )
@@ -92,13 +92,10 @@ async def grant(voting_message_id):
 
         # Update the proposal results in the voting channel
         if voting_message:
-            if not proposal.is_grantless:
+            if proposal.is_grantless:
                 await voting_message.edit(
-                    content=PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL_EDITED_MESSAGE.format(
-                        amount=get_amount_to_print(proposal.amount),
-                        mention=proposal.mention,
+                    content=GRANTLESS_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT.format(
                         author=proposal.author,
-                        result=PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL[result],
                         description=proposal.description,
                         # TODO#9 if original_message is None, message should be different
                         link_to_original_message=link_to_original_message,
@@ -107,10 +104,11 @@ async def grant(voting_message_id):
                 )
             else:
                 await voting_message.edit(
-                    content=GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE.format(
-                        author=proposal.author,
-                        result=GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL[result],
+                    content=GRANT_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT.format(
+                        amount=get_amount_to_print(proposal.amount),
+                        mention=proposal.mention,
                         description=proposal.description,
+                        author=proposal.author,
                         # TODO#9 if original_message is None, message should be different
                         link_to_original_message=link_to_original_message,
                     ),
