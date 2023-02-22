@@ -217,12 +217,21 @@ Before submitting a proposal, make sure to explain the background and details of
 So, don't be shy and get those creative juices flowing! Let's make Eco the best it can be with some fresh ideas! 🌟
 
 For power users:
-- Some shortcuts of `!propose` are: {", ".join(PROPOSAL_COMMAND_ALIASES)}
+- Some shortcuts of `!propose` are: {", ".join(PROPOSAL_COMMAND_ALIASES)}.
 - Run `!export` to receive analytics.
 
 For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The project is looking for contributors and teammates: {GITHUB_PROJECT_URL}
 """
 HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on a wrong message! 😕 To make your vote count, please head to the voting message in #l3-voting: {voting_link}."
+
+# ======================
+# General proposal texts
+# ======================
+
+PROPOSAL_CANCELLED_VOTING_CHANNEL = {
+    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Proposal cancelled due to opposition from {threshold} members - {voters_list}: {link_to_original_message}",
+    ProposalResult.CANCELLED_BY_PROPOSER: ":leaves: Proposal cancelled by author ({author}): {link_to_original_message}",
+}
 
 # =====================
 # Proposals with grants
@@ -230,7 +239,7 @@ HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on
 
 
 def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
-    if amount < 1000:
+    if amount < 1500:
         return ":moneybag:"
     if amount < 5000:
         return ":moneybag::moneybag:"
@@ -239,24 +248,21 @@ def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
     return ":moneybag::moneybag::moneybag::moneybag::moneybag:"
 
 
-NEW_PROPOSAL_WITH_GRANT_SAME_CHANNEL_RESPONSE = """
+# Active voting
+NEW_GRANT_PROPOSAL_RESPONSE = """
 Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Layer 3 members who object can vote here: {voting_link}
 """
-NEW_PROPOSAL_WITH_GRANT_VOTING_CHANNEL_MESSAGE = """
+NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :rocket:{amount_reaction} **Active grant proposal** by {author}
 {countdown} will grant {amount} points to {mention}: {description}
-"""  # Another version: {author} proposed giving {amount} points to {mention}. {threshold} votes against will cancel it. Use {reaction} to vote before {date_finish}.
-PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
-The {amount} points grant for {mention} suggested by {author} {result}
-Goal: {description}
-*It was proposed here: {link_to_original_message}*
 """
-PROPOSAL_WITH_GRANT_RESULT_VOTING_CHANNEL = {
-    ProposalResult.ACCEPTED: "has been given! :tada:",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "has been cancelled due to opposition from {threshold} members: {voters_list}",
-    ProposalResult.CANCELLED_BY_PROPOSER: "has been cancelled by the proposer. :leaves:",
-}
-PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
+
+# Finished voting
+GRANT_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT = """
+:tada: Granted {amount} points to {mention}: {description}
+*Proposed by {author}: {link_to_original_message}*
+"""
+GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given and {mention} is now richer by {amount} points!",
     ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
@@ -266,21 +272,18 @@ PROPOSAL_WITH_GRANT_RESULT_PROPOSER_RESPONSE = {
 # Grantless proposals
 # =====================
 
-NEW_GRANTLESS_PROPOSAL_SAME_CHANNEL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can vote here: {voting_link}"
+# Active voting
+NEW_GRANTLESS_PROPOSAL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can vote here: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :rocket: **Active proposal** (no grant) by {author}
 {countdown}: {description}
 """
-GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL_EDITED_MESSAGE = """
-The proposal by {author} {result}
-Suggestion: {description}
-*It was proposed here: {link_to_original_message}*
+
+# Finished voting
+GRANTLESS_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT = """
+:tada: Accepted proposal of {author}: {description}
+*Proposed here: {link_to_original_message}*
 """
-GRANTLESS_PROPOSAL_RESULT_VOTING_CHANNEL = {
-    ProposalResult.ACCEPTED: "has been accepted! :tada:",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "has been cancelled due to opposition from {threshold} members: {voters_list}",
-    ProposalResult.CANCELLED_BY_PROPOSER: "has been cancelled by the proposer. :leaves:",
-}
 GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The proposal has been accepted!",
     ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
