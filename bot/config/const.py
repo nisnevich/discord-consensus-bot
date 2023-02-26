@@ -79,6 +79,7 @@ EMPTY_ANALYTICS_VALUE = "n/a"
 # When the proposal is accepted, the bot will
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 REACTION_ON_PROPOSAL_CANCELLED = "🍃"  # leaves
+REACTION_VOTING_DEFAULT_POSITIVE = "👀"  # eyes
 CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
 EMOJI_HOORAY = "🎉"
 # Greetings are used mostly with new users and when replying in DM
