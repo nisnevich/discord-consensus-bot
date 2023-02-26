@@ -109,6 +109,10 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
     )
     await add_proposal(new_grant_proposal, db)
 
+    # Add tick and cross reactions to the voting message after adding proposal to DB. Reactions are
+    # added for the convenience of the users; tick doesn't have any functional meaning ATM
+    await voting_message.add_reaction(REACTION_VOTING_DEFAULT_POSITIVE)
+
     # Run the approval coroutine
     client.loop.create_task(approve_proposal(voting_message.id))
     logger.info("Added task to event loop to approve message_id=%d", voting_message.id)
@@ -158,6 +162,10 @@ async def proposal_grantless(ctx, original_message, description):
         threshold=LAZY_CONSENSUS_THRESHOLD,
     )
     await add_proposal(new_grant_proposal, db)
+
+    # Add tick and cross reactions to the voting message after adding proposal to DB. Reactions are
+    # added for the convenience of the users; tick doesn't have any functional meaning ATM
+    await voting_message.add_reaction(REACTION_VOTING_DEFAULT_POSITIVE)
 
     # Run the approval coroutine
     client.loop.create_task(approve_proposal(voting_message.id))
