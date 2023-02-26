@@ -77,6 +77,7 @@ REACTION_ON_BOT_MENTION = "👋"  # wave
 # When the proposal is accepted, the bot will
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 REACTION_ON_PROPOSAL_CANCELLED = "🍃"  # leaves
+REACTION_VOTING_DEFAULT_POSITIVE = "👀"  # eyes
 CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
 EMOJI_HOORAY = "🎉"
 HEART_EMOJI_LIST = [
