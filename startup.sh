@@ -213,6 +213,8 @@ sudo ufw default deny outgoing
 sudo ufw allow from any to any port 22 proto tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
+sudo ufw allow out 80/tcp
+sudo ufw allow out 443/tcp
 sudo ufw enable
 
 
