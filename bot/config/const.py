@@ -70,7 +70,7 @@ RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's resp
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 MIN_DESCRIPTION_LENGTH = 30  # just some common sense value
 MAX_PROPOSAL_AMOUNT = 100000000
-MIN_PROPOSAL_AMOUNT = 250
+MIN_PROPOSAL_AMOUNT = 500
 MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
 
 STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock"
