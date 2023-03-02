@@ -72,6 +72,8 @@ MAX_PROPOSAL_AMOUNT = 100000000
 MIN_PROPOSAL_AMOUNT = 250
 MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
 
+# To keep voting channel clean, all human messages can be removed from there; a help message will be sent over to user - HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL
+REMOVE_HUMAN_MESSAGES_FROM_VOTING_CHANNEL = True
 STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock"
 EMPTY_ANALYTICS_VALUE = "n/a"
 
@@ -217,6 +219,7 @@ For power users:
 For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The project is looking for contributors and teammates: {GITHUB_PROJECT_URL}
 """
 HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on a wrong message! 😕 To make your vote count, please head to the voting message in #l3-voting: {voting_link}."
+HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL = "Hi there! Your message was removed from `#l3-voting`, because it was decided to leave the channel opened only for messages by bots (for example, EasyPoll can write there too, but not humans). This is to maintain the channel cleaner, so others can simply see all active votings. Please use `#l3-general` or other channels to post your message. The decision was made here: https://discord.com/channels/768556386404794448/1060864279303172136/1077580065648427060"
 
 # ======================
 # General proposal texts
@@ -244,7 +247,7 @@ def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
 
 # Active voting
 NEW_GRANT_PROPOSAL_RESPONSE = """
-Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Layer 3 members who object can vote here: {voting_link}
+Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Layer 3 members who object can add ❌ here: {voting_link}
 """
 NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :rocket:{amount_reaction} **Active grant proposal** by {author}
@@ -267,7 +270,7 @@ GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
 # =====================
 
 # Active voting
-NEW_GRANTLESS_PROPOSAL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can vote here: {voting_link}"
+NEW_GRANTLESS_PROPOSAL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can add ❌ here: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :rocket: **Active proposal** (no grant) by {author}
 {countdown}: {description}
