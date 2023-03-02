@@ -238,7 +238,7 @@ def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
 
 # Active voting
 NEW_GRANT_PROPOSAL_RESPONSE = """
-Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Layer 3 members who object can vote here: {voting_link}
+Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Layer 3 members who object can add ❌ here: {voting_link}
 """
 NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :rocket:{amount_reaction} **Active grant proposal** by {author}
@@ -261,7 +261,7 @@ GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
 # =====================
 
 # Active voting
-NEW_GRANTLESS_PROPOSAL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can vote here: {voting_link}"
+NEW_GRANTLESS_PROPOSAL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can add ❌ here: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :rocket: **Active proposal** (no grant) by {author}
 {countdown}: {description}
