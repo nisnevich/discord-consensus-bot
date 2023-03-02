@@ -13,6 +13,9 @@ from bot.config.const import (
     REACTION_ON_BOT_MENTION,
     EMPTY_ANALYTICS_VALUE,
     HELP_COMMAND_ALIASES,
+    HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL,
+    VOTING_CHANNEL_ID,
+    REMOVE_HUMAN_MESSAGES_FROM_VOTING_CHANNEL,
 )
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.discord_utils import get_discord_client, get_message, get_user_by_id_or_mention
@@ -28,6 +31,23 @@ logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
 client = get_discord_client()
+
+
+@client.event
+async def on_message(message):
+    # If the author is not bot, and the message is written in the voting channel, remove the message and DM user, explaining why
+    # This is to maintain the channel cleaner
+    if (
+        REMOVE_HUMAN_MESSAGES_FROM_VOTING_CHANNEL
+        and message.channel.id == VOTING_CHANNEL_ID
+        and not message.author.bot
+    ):
+        await message.author.send(HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL)
+        await message.delete()
+        return
+
+    # Process commands (the @client.event decorator intercepts all messages)
+    await client.process_commands(message)
 
 
 @client.command(name=HELP_COMMAND_NAME, aliases=HELP_COMMAND_ALIASES)
