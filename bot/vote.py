@@ -1,5 +1,6 @@
 import discord
 import asyncio
+from datetime import datetime, timedelta
 
 from bot.config.logging_config import log_handler, console_handler
 from bot.config.const import *
@@ -16,8 +17,8 @@ from bot.utils.proposal_utils import (
 )
 from bot.utils.db_utils import DBUtil
 from bot.utils.validation import validate_roles
-from bot.utils.discord_utils import get_discord_client, get_message
-from bot.utils.formatting_utils import get_amount_to_print
+from bot.utils.discord_utils import get_discord_client, get_message, send_dm
+from bot.utils.formatting_utils import get_amount_to_print, get_discord_countdown_plus_delta
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -289,7 +290,20 @@ async def on_raw_reaction_add(payload):
             await cancel_proposal(
                 proposal, ProposalResult.CANCELLED_BY_REACHING_THRESHOLD, voting_message
             )
-
+        # If not, DM user notifying that his vote was counted
+        else:
+            await send_dm(
+                payload.guild_id,
+                payload.user_id,
+                HELP_MESSAGE_VOTED_AGAINST.format(
+                    author=proposal.author,
+                    countdown=get_discord_countdown_plus_delta(
+                        proposal.closed_at - datetime.utcnow()
+                    ),
+                    cancel_emoji=CANCEL_EMOJI_UNICODE,
+                    voting_link=voting_message.jump_url,
+                ),
+            )
     except Exception as e:
         try:
             # Try replying in Discord
