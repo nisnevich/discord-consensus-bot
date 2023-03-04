@@ -8,6 +8,9 @@ client = None
 
 
 async def get_members_count_with_role(client: discord.Client, role_id: int):
+    """
+    Returns the number of members that have the specified role in the server the client is connected to.
+    """
     # Get the guild (server) the client is connected to
     guild = client.guilds[0]
     # Get the role with the specified ID
@@ -19,8 +22,26 @@ async def get_members_count_with_role(client: discord.Client, role_id: int):
 
 
 async def get_message(client: discord.Client, channel_id: int, message_id: int):
+    """
+    Returns the message with the specified ID from the specified channel.
+    """
     channel = client.get_channel(channel_id)
     return await channel.fetch_message(message_id)
+
+
+async def send_dm(guild_id, user_id, text):
+    """
+    DMs a user with a specified message text, and removes embeds from it (they take space and don't
+    make much sense).
+    """
+    guild = client.get_guild(guild_id)
+    member = guild.get_member(user_id)
+    # Open DM with user
+    dm_channel = await member.create_dm()
+    # Send message
+    message = await dm_channel.send(text)
+    # Remove embeds from the message
+    await message.edit(suppress=True)
 
 
 def get_discord_client(
