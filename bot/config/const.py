@@ -16,6 +16,8 @@ DB_HISTORY_PATH = os.path.join(PROJECT_ROOT, "consensus-bot-history.db")
 GRANT_PROPOSALS_TABLE_NAME = "proposals"
 VOTERS_TABLE_NAME = "voters"
 PROPOSAL_HISTORY_TABLE_NAME = 'proposal_history'
+FREE_FUNDING_BALANCES_TABLE_NAME = "free_funding_balance"
+FREE_FUNDING_TRANSACTIONS_TABLE_NAME = "free_funding_transaction_history"
 
 # nltk datasets to download
 NLTK_DATASETS_DIR = f"{PROJECT_ROOT}/nltk"
@@ -58,8 +60,10 @@ DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
 PROPOSAL_COMMAND_ALIASES = ['lazy', 'suggest', 'prop', 'consensus']
 GRANT_APPLY_COMMAND_NAME = 'grant'
+FREE_FUNDING_COMMAND_NAME = 'tips'
+FREE_FUNDING_COMMAND_ALIASES = ['personal']
 HELP_COMMAND_NAME = 'help-lazy'
-HELP_COMMAND_ALIASES = ['lazy-help']
+HELP_COMMAND_ALIASES = ['lazy-help', 'help-consensus', 'consensus-help', 'help-tips', 'tips-help']
 EXPORT_COMMAND_NAME = 'export'
 VOTERS_LIST_SEPARATOR = ", "
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
@@ -71,7 +75,11 @@ MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
 
 # To keep voting channel clean, all human messages can be removed from there; a help message will be sent over to user - HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL
 REMOVE_HUMAN_MESSAGES_FROM_VOTING_CHANNEL = True
-STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock"
+# When this file is created in the project root, new lazy consensus proposals will be rejected
+STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock_lazy"
+# When this file is created in the project root, free funding transactions will be rejected
+STOP_ACCEPTING_FREE_FUNDING_TRANSACTIONS_FLAG_FILE_NAME = "stopcock_free"
+# This value is inserted in spreadsheets when a cell value is missing
 EMPTY_ANALYTICS_VALUE = "n/a"
 
 # Emoji
@@ -129,7 +137,7 @@ class ProposalResult(Enum):
 # Messages texts
 # ==============
 
-# Validation error messages
+# Lazy consensus validation error messages
 GRANT_COMMAND_MESSAGE = """
 {prefix}{grant_command} {mention} {amount} {description}. Voting: {voting_url}
 """
@@ -168,10 +176,15 @@ ERROR_MESSAGE_INVALID_ROLE = "Sorry, you need Layer 3 role to use this command. 
 ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED = "The {amount} grant for {mention} was applied, but I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author} is applied! However, I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 
+# Free funding validation error messages
+ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT = "Oopsie! Wrong command format. Use it like `!send`, but always add description so people know what you're up to. For more info, check out `!help-tips`."
+
 # When functionality is paused
 PROPOSALS_PAUSED_RESPONSE = "Our proposal box is overflowing with awesome ideas! We're taking a little pause to catch up. But don't worry, we'll be back in action soon. Thanks for your patience!"
 PROPOSALS_PAUSED_RECOVERY_RESPONSE = "Bonjour! Our bot is taking a petit peu de repos to start the day off on the right foot. Don't worry, it's a short break - try again in just a minute!"
 VOTING_PAUSED_RECOVERY_RESPONSE = "Hey there! We're in the middle of a database recovery, which means we can't count your vote just yet. Give it a minute, and then come back and cast your ballot again!"
+FREE_FUNDING_PAUSED_RESPONSE = "Sending 'tips' was temporarily paused."
+FREE_FUNDING_PAUSED_RECOVERY_RESPONSE = "Bonjour! Our bot is taking a petit peu de repos to start the day off on the right foot. Don't worry, it's a short break - try again in just a minute!"
 
 # Help messages
 HELP_MESSAGE_NON_AUTHORIZED_USER = f"""

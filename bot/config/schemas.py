@@ -113,3 +113,31 @@ class ProposalHistory(Proposals):
 
     def __repr__(self):
         return f"ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url})"
+
+
+class FreeFundingBalance(Base):
+    __tablename__ = FREE_FUNDING_BALANCES_TABLE_NAME
+
+    id = Column(Integer, primary_key=True)
+    # The id of the user who sends transactions
+    author = Column(String)
+    # The remaining balance of the user
+    balance = Column(Integer)
+
+    # TODO write repr for two tables
+
+
+class FreeFundingTransaction(Base):
+    __tablename__ = FREE_FUNDING_TRANSACTIONS_TABLE_NAME
+
+    id = Column(Integer, primary_key=True)
+    # The id of the user who sends transactions
+    author = Column(String)
+    # Comma-separated list of user mentions to whom funds were sent
+    mention = Column(String)
+    # Amount of funds to send (defining some constraints to avoid overflow)
+    amount = Column(Float, CheckConstraint('amount > -1000000000 AND amount < 1000000000'))
+    # The text description of the transaction (validated to fit between MIN_DESCRIPTION_LENGTH and MAX_DESCRIPTION_LENGTH)
+    description = Column(String)
+    # Date and time when the transaction was performed
+    submitted_at = Column(DateTime)

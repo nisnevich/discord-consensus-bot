@@ -66,6 +66,10 @@ class DBUtil:
             Base.metadata.create_all(DBUtil.engine)
         else:
             logger.info("Table already exist: %s", VOTERS_TABLE_NAME)
+        if not DBUtil.engine.has_table(FREE_FUNDING_BALANCES_TABLE_NAME):
+            Base.metadata.create_all(DBUtil.engine)
+        else:
+            logger.info("Table already exist: %s", FREE_FUNDING_BALANCES_TABLE_NAME)
 
         # Creating tables that are used for history and analytics
         if not DBUtil.engine_history.has_table(GRANT_PROPOSALS_TABLE_NAME):
@@ -80,6 +84,10 @@ class DBUtil:
             Base.metadata.create_all(DBUtil.engine_history)
         else:
             logger.info("Table already exist: %s", PROPOSAL_HISTORY_TABLE_NAME)
+        if not DBUtil.engine_history.has_table(FREE_FUNDING_TRANSACTIONS_TABLE_NAME):
+            Base.metadata.create_all(DBUtil.engine_history)
+        else:
+            logger.info("Table already exist: %s", FREE_FUNDING_TRANSACTIONS_TABLE_NAME)
 
     def load_pending_grant_proposals(self) -> Query:
         return DBUtil.session.query(Proposals)
@@ -129,7 +137,7 @@ class DBUtil:
             list.remove(orm_object)
             DBUtil.session.commit()
 
-    async def add_history_item(self, proposal, result):
+    async def add_proposals_history_item(self, proposal, result):
         """
         Adds a proposal to the ProposalHistory table after it has been processed.
 
