@@ -31,9 +31,9 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 # Required Discord permissions: 415538474048
 
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 50000  # 3 days is 259200
 # Default lazy consensus threshold
-LAZY_CONSENSUS_THRESHOLD = 1
+LAZY_CONSENSUS_THRESHOLD = 2
 
 ROLE_IDS_ALLOWED = (1063903240925749389,)
 VOTING_CHANNEL_ID = 1067119414731886645
@@ -220,7 +220,7 @@ For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The pro
 """
 HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on a wrong message! 😕 To make your vote count, please head to the voting message in #l3-voting: {voting_link}."
 HELP_MESSAGE_VOTED_AGAINST = """
-Your vote against a proposal of {author} has been counted. The voting will end {countdown}. Make sure to explain why you're against it, be clear, concise and respectful.
+Your vote against a proposal of {author} has been counted. The voting ends {countdown}. Make sure to explain why you're against it, be clear, concise and respectful.
 If you change your mind after talking to the author, remember to remove {cancel_emoji} from {voting_link}.
 """
 HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL = "Hi there! Your message was removed from `#l3-voting`, because it was decided to leave the channel opened only for messages by bots (for example, EasyPoll can write there too, but not humans). This is to maintain the channel cleaner, so others can simply see all active votings. Please use `#l3-general` or other channels to post your message. The decision was made here: https://discord.com/channels/768556386404794448/1060864279303172136/1077580065648427060"
