@@ -2,7 +2,8 @@
 
 # Backup is only needed to be enabled on prod, so this variable should be 1 only in the prod branch, unless it's used for testing purposes
 export CONSENSUS_BACKUP_ENABLED=0
-export GOOGLE_CLOUD_PROJECT_NAME="consensus-bot-377809"
+export PROJECT_NAME="eco-main"
+export AWS_S3_BUCKET_NAME="consensus-bot-backups"
 
 # Backup runtime DB every hour
 export CRON_RUNTIME_DB_BACKUP_SCHEDULE="0 * * * *"
