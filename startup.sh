@@ -73,8 +73,7 @@ print_section "Verifying PM2 installation..."
 
 # Install npm if it's not already installed
 if ! command -v npm &> /dev/null; then
-  curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-  sudo apt-get install -y nodejs
+  sudo apt-get install -y nodejs npm
 else
   echo "NodeJS is already installed."
 fi

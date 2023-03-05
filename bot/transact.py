@@ -122,6 +122,8 @@ async def free_funding_transact_command(ctx, *args):
             logger.info("Unauthorized user. message_id=%d", original_message.id)
             return
 
+        # TODO if the message is a reply, and there's no mention, send to the replier; otherwise use mention
+
         # Less than 3 args means the input is certainly wrong (mention, amount, and some description of the transaction is required)
         if len(args) < 3:
             await original_message.reply(ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT)
