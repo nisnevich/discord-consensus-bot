@@ -69,7 +69,9 @@ VOTERS_LIST_SEPARATOR = ", "
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 MIN_DESCRIPTION_LENGTH = 30  # just some common sense value
-MAX_PROPOSAL_AMOUNT = 100000000
+# Maximal amount in any transaction (used primarily to avoid overflow, but also as a limit to unreasonably high amounts)
+MAX_TRANSACTION_AMOUNT = 100000000
+# Minimal amount of lazy consensus grant proposal
 MIN_PROPOSAL_AMOUNT = 250
 MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
 
@@ -161,13 +163,11 @@ ERROR_MESSAGE_INVALID_COMMAND_FORMAT = "Oopsie! The command format is as importa
 ERROR_MESSAGE_INVALID_USER = (
     "Hmmm, that user doesn't seem to be around here. Did you check under the couch?"
 )
-ERROR_MESSAGE_INVALID_AMOUNT = (
-    "The amount must be a positive number. Example: `!propose @mention 100 for a giant robot.`"
-)
+ERROR_MESSAGE_INVALID_AMOUNT = "The amount must be a positive number."
 ERROR_MESSAGE_NEGATIVE_AMOUNT = "Hold on, {amount} is not enough to even buy a pack of gum. The amount has to be positive, my friend."
 ERROR_MESSAGE_OVERFLOW_AMOUNT = "Whoa there, looks like you're trying to request a whopper of a number! Better try again with a smaller amount before the numbers run away from us!"
 ERROR_MESSAGE_LITTLE_AMOUNT = f"Whoa there, it looks like you're trying to vote for a pocket change. Minimum amount: {MIN_PROPOSAL_AMOUNT}."
-ERROR_MESSAGE_EMPTY_AMOUNT = "The amount is like the cherry on top of a sundae, without it, your proposal just isn't sweet enough. `!propose @mention 100 for a unicorn farm.`"
+ERROR_MESSAGE_EMPTY_AMOUNT = "The amount is like the cherry on top of a sundae, without it, your proposal just isn't sweet enough."
 ERROR_MESSAGE_INVALID_DESCRIPTION = "You know what they say, if you don't describe your grant proposal, how will anyone know how awesome it is? `!propose @mention 100 for a giant robot.`"
 ERROR_MESSAGE_LENGTHY_DESCRIPTION = f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters. Like, who wants to read that much anyways?"
 ERROR_MESSAGE_SHORTY_DESCRIPTION = f"Less is not always more, my friend. A tiny bit more detailed description would be greatly appreciated."

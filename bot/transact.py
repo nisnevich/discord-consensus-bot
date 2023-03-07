@@ -16,7 +16,7 @@ from bot.utils.proposal_utils import (
     is_relevant_proposal,
 )
 from bot.config.logging_config import log_handler, console_handler
-from bot.utils.validation import validate_roles, validate_grant_message, validate_grantless_message
+from bot.utils.validation import validate_roles, validate_free_transaction
 from bot.utils.discord_utils import get_discord_client
 from bot.utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
@@ -34,7 +34,11 @@ db = DBUtil()
 client = get_discord_client()
 
 
-async def send_transaction(ctx, mentions, amount, description):
+async def send_transaction(ctx, original_message, mentions, amount, description):
+    # Validity checks
+    if not await validate_free_transaction(original_message, mention, amount, description):
+        return
+
     # Check if member is in DB, otherwise add it
     author_id = str(ctx.author.id)
     author_balance = session.query(FreeFundingBalance).filter_by(author=author_id).first()
@@ -153,7 +157,7 @@ async def free_funding_transact_command(ctx, *args):
             amount = match.group(2)
             description = match.group(3)
 
-            send_transaction(ctx, mentions, amount, description)
+            send_transaction(ctx, original_message, mentions, amount, description)
 
     except Exception as e:
         try:
