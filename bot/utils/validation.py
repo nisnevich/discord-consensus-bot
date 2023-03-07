@@ -1,5 +1,5 @@
 from discord import User
-from discord.utils import find
+from discord.utils import find, get
 
 import nltk
 from nltk.corpus import words
@@ -147,14 +147,38 @@ async def validate_amount(original_message, amount):
 
 
 async def validate_free_transaction(
-    original_message, mentions, amount: float, description: str
+    original_message, author, author_balance, mentions, amount: float, description: str
 ) -> bool:
     # Check if mentions are valid
-    if not validate_mentions(original_message, mentions):
+    if not await validate_mentions(original_message, mentions):
         return False
 
     # Check if amount is valid
-    if not validate_amount(original_message, amount):
+    if not await validate_amount(original_message, amount):
+        return False
+
+    # Users can't send points to themselves
+    if author in mentions:
+        await original_message.reply(ERROR_MESSAGE_FREE_TRANSACTION_TO_YOURSELF)
+        logger.info(
+            "Attempted to send points to himself. message_id=%d, invalid value=%s",
+            original_message.id,
+            original_message.content,
+        )
+        return False
+
+    # Check if the balance is enough
+    total_amount = amount * len(mentions)
+    if total_amount > author_balance.balance:
+        await original_message.reply(
+            ERROR_MESSAGE_NOT_ENOUGH_BALANCE.format(balance=author_balance.balance)
+        )
+        logger.info(
+            "Not enough balance. message_id=%d, invalid value=%d, remaining balance=%d",
+            original_message.id,
+            total_amount,
+            author_balance.balance,
+        )
         return False
 
     # With free transactions, we don't restrict description (it may even be empty), except that it should be short enough not to overflow Discord API restrictions (the limit is about 1500-2000)

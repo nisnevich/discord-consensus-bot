@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Query
 from sqlalchemy import create_engine
 
-from bot.config.schemas import Base, Proposals, ProposalHistory
+from bot.config.schemas import Base, Proposals, ProposalHistory, FreeFundingBalance
 from bot.config.logging_config import log_handler, console_handler
 from bot.config.const import *
 from bot.utils.discord_utils import get_discord_client, get_message, get_user_by_id_or_mention
@@ -89,6 +89,9 @@ class DBUtil:
         else:
             logger.info("Table already exist: %s", FREE_FUNDING_TRANSACTIONS_TABLE_NAME)
 
+    def get_user_free_funding_balance(self, author_mention) -> Query:
+        return DBUtil.session.query(FreeFundingBalance).filter_by(author=author_mention).first()
+
     def load_pending_grant_proposals(self) -> Query:
         return DBUtil.session.query(Proposals)
 
@@ -136,6 +139,11 @@ class DBUtil:
         async with DBUtil.session_lock:
             list.remove(orm_object)
             DBUtil.session.commit()
+
+    async def add_free_transactions_history_item(self, transaction):
+        async with DBUtil.session_lock_history:
+            DBUtil.session_history.add(transaction)
+            DBUtil.session_history.commit()
 
     async def add_proposals_history_item(self, proposal, result):
         """

@@ -36,6 +36,8 @@ GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bo
 PROPOSAL_DURATION_SECONDS = 30  # 3 days is 259200
 # Default lazy consensus threshold
 LAZY_CONSENSUS_THRESHOLD = 1
+# A total number of free funding for each person per season
+TIPS_LIMIT_PERSON_PER_SEASON = 3000
 
 ROLE_IDS_ALLOWED = (1063903240925749389,)
 VOTING_CHANNEL_ID = 1067119414731886645
@@ -84,13 +86,38 @@ STOP_ACCEPTING_FREE_FUNDING_TRANSACTIONS_FLAG_FILE_NAME = "stopcock_free"
 # This value is inserted in spreadsheets when a cell value is missing
 EMPTY_ANALYTICS_VALUE = "n/a"
 
-# Emoji
+
+class ProposalResult(Enum):
+    ACCEPTED = 0
+    CANCELLED_BY_REACHING_THRESHOLD = 1
+    CANCELLED_BY_PROPOSER = 2
+
+    def __str__(self):
+        if self.value == ProposalResult.ACCEPTED.value:
+            return 'Accepted'
+        elif self.value == ProposalResult.CANCELLED_BY_REACHING_THRESHOLD.value:
+            return 'Cancelled by reaching threshold'
+        elif self.value == ProposalResult.CANCELLED_BY_PROPOSER.value:
+            return 'Cancelled by proposer'
+
+
+# =============
+# === Emoji ===
+# =============
+
+# Lazy consensus emoji
 REACTION_ON_BOT_MENTION = "👋"  # wave
 # When the proposal is accepted, the bot will
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 REACTION_ON_PROPOSAL_CANCELLED = "🍃"  # leaves
 REACTION_VOTING_DEFAULT_POSITIVE = "👀"  # eyes
 CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
+
+# Free funding emoji
+REACTION_ON_TRANSACTION_SUCCEED = "✅"  # green tick
+REACTION_ON_TRANSACTION_FAILED = "❌"  # red cross
+
+# Other emoji
 EMOJI_HOORAY = "🎉"
 HEART_EMOJI_LIST = [
     "❤️",
@@ -119,20 +146,6 @@ HEART_EMOJI_LIST = [
     "❤️‍🔥",
     "😘",
 ]
-
-
-class ProposalResult(Enum):
-    ACCEPTED = 0
-    CANCELLED_BY_REACHING_THRESHOLD = 1
-    CANCELLED_BY_PROPOSER = 2
-
-    def __str__(self):
-        if self.value == ProposalResult.ACCEPTED.value:
-            return 'Accepted'
-        elif self.value == ProposalResult.CANCELLED_BY_REACHING_THRESHOLD.value:
-            return 'Cancelled by reaching threshold'
-        elif self.value == ProposalResult.CANCELLED_BY_PROPOSER.value:
-            return 'Cancelled by proposer'
 
 
 # ==============
@@ -178,6 +191,10 @@ ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author}
 
 # Free funding validation error messages
 ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT = "Oopsie! Wrong command format. Use it like `!send`, but always add description so people know what you're up to. For more info, check out `!help-tips`."
+ERROR_MESSAGE_FREE_TRANSACTION_TO_YOURSELF = "I'm sorry, Dave. I'm afraid I can't let you do that. Sending tips to yourself is not allowed. https://www.youtube.com/watch?v=ARJ8cAGm6JE"  # Alternative: Can't send points to yourself, sorry! But I'm sure there's someone out there who deserves some recognition from you.
+ERROR_MESSAGE_NOT_ENOUGH_BALANCE = (
+    "Your funds are feeling a bit low. You only have {balance} to spare."
+)
 
 # When functionality is paused
 PROPOSALS_PAUSED_RESPONSE = "Our proposal box is overflowing with awesome ideas! We're taking a little pause to catch up. But don't worry, we'll be back in action soon. Thanks for your patience!"

@@ -17,6 +17,8 @@ from bot.config.const import (
     GRANT_PROPOSALS_TABLE_NAME,
     VOTERS_TABLE_NAME,
     PROPOSAL_HISTORY_TABLE_NAME,
+    FREE_FUNDING_TRANSACTIONS_TABLE_NAME,
+    FREE_FUNDING_BALANCES_TABLE_NAME,
 )
 
 Base = declarative_base()
@@ -122,7 +124,7 @@ class FreeFundingBalance(Base):
     # The id of the user who sends transactions
     author = Column(String)
     # The remaining balance of the user
-    balance = Column(Integer)
+    balance = Column(Float)
 
     # TODO write repr for two tables
 
@@ -134,7 +136,7 @@ class FreeFundingTransaction(Base):
     # The id of the user who sends transactions
     author = Column(String)
     # Comma-separated list of user mentions to whom funds were sent
-    mention = Column(String)
+    mentions = Column(String)
     # Amount of funds to send (defining some constraints to avoid overflow)
     amount = Column(Float, CheckConstraint('amount > -1000000000 AND amount < 1000000000'))
     # The text description of the transaction (validated to fit between MIN_DESCRIPTION_LENGTH and MAX_DESCRIPTION_LENGTH)

@@ -23,7 +23,7 @@ from bot.utils.formatting_utils import (
     get_discord_countdown_plus_delta,
     get_amount_to_print,
 )
-from bot.config.schemas import Proposals
+from bot.config.schemas import FreeFundingBalance, FreeFundingTransaction
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -35,57 +35,45 @@ client = get_discord_client()
 
 
 async def send_transaction(ctx, original_message, mentions, amount, description):
-    # Validity checks
-    if not await validate_free_transaction(original_message, mention, amount, description):
-        return
-
     # Check if member is in DB, otherwise add it
-    author_id = str(ctx.author.id)
-    author_balance = session.query(FreeFundingBalance).filter_by(author=author_id).first()
+    author_mention = str(ctx.message.author.mention)
+    author_balance = db.get_user_free_funding_balance(author_mention)
     if not author_balance:
-        author_balance = FreeFundingBalance(author=author_id, balance=1000)
-        session.add(author_balance)
-        session.commit()
+        author_balance = FreeFundingBalance(
+            author=author_mention, balance=TIPS_LIMIT_PERSON_PER_SEASON
+        )
+        db.add(author_balance)
 
-    # Check if transaction can be sent, otherwise reply to user and return
-    if not mentions:
-        await ctx.send("Please mention at least one user to send funds to.")
-        return
-
-    if len(mentions) > 5:
-        await ctx.send("You can only send funds to up to 5 users at once.")
-        return
-
-    total_amount = float(amount) * len(mentions)
-    if total_amount > author_balance.balance:
-        await ctx.send("You do not have enough funds to send this transaction.")
+    # Validity checks
+    if not await validate_free_transaction(
+        original_message, ctx.message.author.mention, author_balance, mentions, amount, description
+    ):
+        await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
         return
 
     # Send transaction and substitute from DB
-    transaction_time = datetime.now()
-    for mention in mentions:
-        mention_id = mention.strip("<@!>")
-        recipient_balance = session.query(FreeFundingBalance).filter_by(author=mention_id).first()
-        if not recipient_balance:
-            recipient_balance = FreeFundingBalance(author=mention_id, balance=0)
-            session.add(recipient_balance)
+    author_balance.balance -= amount
+    db.session.commit()
 
-        recipient_balance.balance += float(amount)
-        author_balance.balance -= float(amount)
-
-        # Add transaction to history
-        transaction = FreeFundingTransaction(
-            author=author_id,
-            mention=mention,
-            amount=float(amount),
+    # Add transaction to history
+    await db.add_free_transactions_history_item(
+        FreeFundingTransaction(
+            author=author_mention,
+            mentions=mentions,
+            amount=amount,
             description=description,
-            submitted_at=transaction_time,
+            submitted_at=datetime.now(),
         )
-        session.add(transaction)
+    )
+    await ctx.message.add_reaction(REACTION_ON_TRANSACTION_SUCCEED)
 
-    session.commit()
-    await ctx.send(
-        f"Transaction successful. {total_amount:.2f} points were sent to {len(mentions)} users."
+    logger.info(
+        "Successfully sent free funding. author=%s, remaining balance=%d, total_sum=%d, mentions=%s, message_id=%d",
+        author_mention,
+        author_balance.balance,
+        amount * len(mentions),
+        mentions,
+        original_message.id,
     )
 
 
@@ -105,6 +93,7 @@ async def free_funding_transact_command(ctx, *args):
         # A reserve mechanism to stop accepting transactions
         if os.path.exists(STOP_ACCEPTING_FREE_FUNDING_TRANSACTIONS_FLAG_FILE_NAME):
             await original_message.reply(FREE_FUNDING_PAUSED_RESPONSE)
+            await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
             logger.info(
                 "Rejecting the transaction from %s because a stopcock file is detected.",
                 ctx.message.author.mention,
@@ -114,6 +103,7 @@ async def free_funding_transact_command(ctx, *args):
         # Don't accept transactions if recovery is in progress
         if db.is_recovery():
             await original_message.reply(FREE_FUNDING_PAUSED_RECOVERY_RESPONSE)
+            await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
             logger.info(
                 "Rejecting the transaction from %s because recovery is in progress.",
                 ctx.message.author.mention,
@@ -123,14 +113,17 @@ async def free_funding_transact_command(ctx, *args):
         # Validate that the user is allowed to use the command
         if not await validate_roles(ctx.message.author):
             await original_message.reply(ERROR_MESSAGE_INVALID_ROLE)
+            await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
             logger.info("Unauthorized user. message_id=%d", original_message.id)
             return
 
+        # TODO if !tips is used without arguments, return the user balance
         # TODO if the message is a reply, and there's no mention, send to the replier; otherwise use mention
 
         # Less than 3 args means the input is certainly wrong (mention, amount, and some description of the transaction is required)
         if len(args) < 3:
             await original_message.reply(ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT)
+            await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
             logger.info(
                 "Invalid command format. message_id=%d, invalid value=%s",
                 original_message.id,
@@ -146,6 +139,7 @@ async def free_funding_transact_command(ctx, *args):
             )
             if not match:
                 await original_message.reply(ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT)
+                await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
                 logger.info(
                     "Invalid command format. message_id=%d, invalid value=%s",
                     original_message.id,
@@ -153,11 +147,11 @@ async def free_funding_transact_command(ctx, *args):
                 )
                 return
 
-            mentions = " ".split(match.group(1))
-            amount = match.group(2)
+            mentions = match.group(1).split()
+            amount = float(match.group(2))
             description = match.group(3)
 
-            send_transaction(ctx, original_message, mentions, amount, description)
+            await send_transaction(ctx, original_message, mentions, amount, description)
 
     except Exception as e:
         try:
