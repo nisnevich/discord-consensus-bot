@@ -190,33 +190,6 @@ if [ ! -f /requirements.txt ]; then
   done
 fi
 
-
-# ==================================
-# Security
-# ==================================
-
-print_section "Enabling firewall..."
-
-# Check if ufw is already installed
-if ! command -v ufw &> /dev/null
-then
-    # Install ufw if it's not installed
-    sudo apt update
-    sudo apt install ufw -y
-fi
-
-# Enable firewall
-sudo ufw default deny incoming
-sudo ufw default deny outgoing
-# from "any" is best to replace with IP of your machine
-sudo ufw allow from any to any port 22 proto tcp
-sudo ufw allow 80/tcp
-sudo ufw allow 443/tcp
-sudo ufw allow out 80/tcp
-sudo ufw allow out 443/tcp
-sudo ufw enable
-
-
 # =========
 # Run tests
 # =========
