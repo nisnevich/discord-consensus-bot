@@ -35,7 +35,7 @@ client = get_discord_client()
 
 
 async def send_transaction(ctx, original_message, mentions, amount, description):
-    # Check if member is in DB, otherwise add it
+    # Check if member is in DB, otherwise add it (roles should have already been checked before calling this method)
     author_mention = str(ctx.message.author.mention)
     author_balance = db.get_user_free_funding_balance(author_mention)
     if not author_balance:
@@ -44,16 +44,44 @@ async def send_transaction(ctx, original_message, mentions, amount, description)
         )
         db.add(author_balance)
 
-    # Validity checks
+    # Validity checks (including whether the author has sufficient funds, that's why we do it after retreiving the balance)
     if not await validate_free_transaction(
         original_message, ctx.message.author.mention, author_balance, mentions, amount, description
     ):
         await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
         return
 
-    # Send transaction and substitute from DB
+    # Substitute from DB
     author_balance.balance -= amount
     db.session.commit()
+
+    # Send transaction (we only do so after substracting the balance, because if we first send, and then error occurs while adding to DB, we don't have control over Accountant to revert the transaction)
+    grant_message = GRANT_COMMAND_FREE_FUNDING_MESSAGE.format(
+        prefix=DISCORD_COMMAND_PREFIX,
+        grant_command=GRANT_APPLY_COMMAND_NAME,
+        mentions=mentions,
+        amount=get_amount_to_print(amount),
+        description=description,
+        author=author_mention,
+        balance=author_balance.balance,
+        tips_url=original_message.jump_url,
+    )
+    try:
+        channel = client.get_channel(GRANT_APPLY_CHANNEL_ID)
+        message = await channel.send(grant_message)
+        # Remove embeds
+        await message.edit(suppress=True)
+    except Exception as e:
+        await ctx.message.channel.send(
+            f"Could not apply grant. cc {RESPONSIBLE_MENTION}",
+        )
+        logger.critical(
+            "An error occurred while sending grant message, message_id=%d",
+            original_message.id,
+            exc_info=True,
+        )
+        # Throwing exception further because if the grant failed to apply, we don't want to do anything else
+        raise e
 
     # Add transaction to history
     await db.add_free_transactions_history_item(

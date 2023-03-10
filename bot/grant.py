@@ -37,12 +37,13 @@ async def grant(voting_message_id):
         # Applying the grant if the proposal isn't grantless
         if not proposal.is_grantless:
             # Construct the grant message
-            grant_message = GRANT_COMMAND_MESSAGE.format(
+            grant_message = GRANT_COMMAND_LAZY_CONSENSUS_MESSAGE.format(
                 prefix=DISCORD_COMMAND_PREFIX,
                 grant_command=GRANT_APPLY_COMMAND_NAME,
                 mention=proposal.mention,
                 amount=get_amount_to_print(proposal.amount),
                 description=proposal.description,
+                author=proposal.author,
                 voting_url=voting_message.jump_url,
             )
 

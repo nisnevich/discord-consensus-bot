@@ -152,10 +152,14 @@ HEART_EMOJI_LIST = [
 # Messages texts
 # ==============
 
-# Lazy consensus validation error messages
-GRANT_COMMAND_MESSAGE = """
-{prefix}{grant_command} {mention} {amount} {description}. Voting: {voting_url}
+GRANT_COMMAND_LAZY_CONSENSUS_MESSAGE = """
+{prefix}{grant_command} {mention} {amount} {description}. Requested by {author}, approved via lazy consensus. Voting: {voting_url}
 """
+GRANT_COMMAND_FREE_FUNDING_MESSAGE = """
+{prefix}{grant_command} {mentions} {amount} {description}. Tips sent by {author} ({balance} points remaining): {tips_url}
+"""
+
+# Lazy consensus validation error messages
 COMMAND_FORMAT_RESPONSE = """
 Hey there, {author}! It looks like you're trying to use the !propose command, but something's not quite right with the syntax. No worries though, I've got you covered.
 
