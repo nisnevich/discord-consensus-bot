@@ -37,12 +37,27 @@ client = get_discord_client()
 
 @client.command(name=RESET_BALANCE_COMMAND_NAME)
 async def reset_free_funding(ctx, *args):
-    if SERVER_ENVIRONMENT != ServerEnvironment.PROD:
+    """
+    Reset the free funding balance of the author. Used solely for testing purposes on dev/beta environments.
+    """
+    if SERVER_ENVIRONMENT == ServerEnvironment.PROD:
         await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
         await ctx.message.reply("This command isn't available on the main server.")
         return
 
-    # TODO reset individual free funding
+    # Reset the free funding balance of the author
+    author = ctx.message.author.mention
+    # Extract the balance
+    author_balance = db.get_user_free_funding_balance(author)
+    # Renew the balance
+    author_balance.balance = FREE_FUNDING_LIMIT_PERSON_PER_SEASON
+    # Reply to the user
+    await ctx.message.add_reaction(REACTION_ON_TRANSACTION_SUCCEED)
+    await ctx.message.reply("Your balance was reset, enjoy testing. :sunny:")
+    # Commit changes to DB
+    db.save()
+
+    logger.info("Balance reset for author=%s", author)
 
 
 async def send_transaction(ctx, original_message, mentions, amount, description):
