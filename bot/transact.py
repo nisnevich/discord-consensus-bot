@@ -162,10 +162,36 @@ async def free_funding_transact_command(ctx, *args):
             await send_free_funding_balance(ctx)
             return
 
-        # TODO if the message is a reply, and there's no mention, send to the replier; otherwise use mention
+        # Check for "simplified" format - if the message is a reply, and there's no mention, send funds to the author of the referenced message
+        if ctx.message.reference is not None:
+            # Check if the command doesn't have a mention - only amount, and optionally - description (as there's clearly a reference)
+            # The regex captures a command format that starts with DISCORD_COMMAND_PREFIX, followed by a word (command name) - "^{DISCORD_COMMAND_PREFIX}\w+\s+", followed by a numerical value (amount, may include dots as floating separators) - ([\d\.]+), and ends with any remaining characters (description) - ([\w\W]+)
+            match = re.search(
+                rf"^{DISCORD_COMMAND_PREFIX}\w+\s+([\d\.]+)\s*([\w\W]*)$",
+                message_content,
+            )
+            if match:
+                # Extract the parameters
+                amount = float(match.group(1))
+                description = match.group(2)
 
-        # Less than 3 args means the input is certainly wrong (mention, amount, and some description of the transaction is required)
-        if len(args) < 3:
+                # Retrieve the author of the original message
+                reply_message = await ctx.fetch_message(ctx.message.reference.message_id)
+                mentions = [reply_message.author.mention]
+
+                # Send the transaction
+                await send_transaction(ctx, original_message, mentions, amount, description)
+                return
+
+        # Check the command matches a default format: mentions amount description
+        # Description is obligatory as opposed to the "simplified" format above, because when there's no reference or description, how can one find out why the funds are sent?
+        # The regex captures a command format that starts with DISCORD_COMMAND_PREFIX, followed by a word (command name) - "^{DISCORD_COMMAND_PREFIX}\w+\s+", followed by one or more <@userid> mentions separated by whitespace - ((?:<@\d+>\s+)+), followed by a numerical value (amount, may include dots as floating separators) - ([\d\.]+), and ends with any remaining characters (description) - ([\w\W]+)
+        match = re.search(
+            rf"^{DISCORD_COMMAND_PREFIX}\w+\s+((?:<@\d+>\s+)+)([\d\.]+)\s+([\w\W]+)$",
+            message_content,
+        )
+        if not match:
+            # If the format doesn't match, reply that it's wrong
             await original_message.reply(ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT)
             await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
             logger.info(
@@ -175,27 +201,13 @@ async def free_funding_transact_command(ctx, *args):
             )
             return
 
-        if original_message.mentions:
-            # The regex captures a command format that starts with DISCORD_COMMAND_PREFIX, followed by a word (command name) - "^{DISCORD_COMMAND_PREFIX}\w+\s+", followed by one or more <@userid> mentions separated by whitespace - ((?:<@\d+>\s+)+), followed by a numerical value (amount, may include dots as floating separators) - ([\d\.]+), and ends with any remaining characters (description) - ([\w\W]+)
-            match = re.search(
-                rf"^{DISCORD_COMMAND_PREFIX}\w+\s+((?:<@\d+>\s+)+)([\d\.]+)\s+([\w\W]+)$",
-                message_content,
-            )
-            if not match:
-                await original_message.reply(ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT)
-                await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
-                logger.info(
-                    "Invalid command format. message_id=%d, invalid value=%s",
-                    original_message.id,
-                    original_message.content,
-                )
-                return
+        # Extract the parameters
+        mentions = match.group(1).split()
+        amount = float(match.group(2))
+        description = match.group(3)
 
-            mentions = match.group(1).split()
-            amount = float(match.group(2))
-            description = match.group(3)
-
-            await send_transaction(ctx, original_message, mentions, amount, description)
+        # Send the transaction
+        await send_transaction(ctx, original_message, mentions, amount, description)
 
     except Exception as e:
         try:
