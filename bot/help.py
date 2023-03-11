@@ -16,6 +16,8 @@ from bot.config.const import (
     HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL,
     VOTING_CHANNEL_ID,
     REMOVE_HUMAN_MESSAGES_FROM_VOTING_CHANNEL,
+    FREE_FUNDING_BALANCE_COMMAND_NAME,
+    FREE_FUNDING_BALANCE_ALIASES,
 )
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.discord_utils import get_discord_client, get_message, get_user_by_id_or_mention
@@ -30,6 +32,7 @@ logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
+db = DBUtil()
 client = get_discord_client()
 
 
@@ -48,6 +51,35 @@ async def on_message(message):
 
     # Process commands (the @client.event decorator intercepts all messages)
     await client.process_commands(message)
+
+
+@client.command(name=FREE_FUNDING_BALANCE_COMMAND_NAME, aliases=FREE_FUNDING_BALANCE_ALIASES)
+async def send_free_funding_balance(ctx):
+    try:
+        author_mention = str(ctx.message.author.mention)
+        author_balance = db.get_user_free_funding_balance(author_mention)
+        if author_balance:
+            await ctx.message.add_reaction(REACTION_ON_BOT_MENTION)
+            await ctx.message.reply(
+                f"You have {get_amount_to_print(author_balance.balance)} 'tips' remaining this season. Use the 'tips' command just like you would use 'send'."
+            )
+    except Exception as e:
+        try:
+            # Try replying in Discord
+            await ctx.message.reply(
+                f"An unexpected error occurred when sending free funding balance. cc {RESPONSIBLE_MENTION}"
+            )
+        except Exception as e:
+            logger.critical("Unable to reply in the chat that a critical error has occurred.")
+
+        logger.critical(
+            "Unexpected error in %s while sending help, channel=%s, message=%s, user=%s",
+            __name__,
+            ctx.message.channel.id if ctx.message.channel else None,
+            ctx.message.id,
+            ctx.message.author.mention,
+            exc_info=True,
+        )
 
 
 @client.command(name=HELP_COMMAND_NAME, aliases=HELP_COMMAND_ALIASES)

@@ -171,7 +171,9 @@ async def validate_free_transaction(
     total_amount = amount * len(mentions)
     if total_amount > author_balance.balance:
         await original_message.reply(
-            ERROR_MESSAGE_NOT_ENOUGH_BALANCE.format(balance=author_balance.balance)
+            ERROR_MESSAGE_NOT_ENOUGH_BALANCE.format(
+                balance=get_amount_to_print(author_balance.balance)
+            )
         )
         logger.info(
             "Not enough balance. message_id=%d, invalid value=%d, remaining balance=%d",

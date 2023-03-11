@@ -126,7 +126,8 @@ class FreeFundingBalance(Base):
     # The remaining balance of the user
     balance = Column(Float)
 
-    # TODO write repr for two tables
+    def __repr__(self):
+        return f"<FreeFundingBalance(id={self.id}, author='{self.author}', balance={self.balance})>"
 
 
 class FreeFundingTransaction(Base):
@@ -135,7 +136,7 @@ class FreeFundingTransaction(Base):
     id = Column(Integer, primary_key=True)
     # The id of the user who sends transactions
     author = Column(String)
-    # Comma-separated list of user mentions to whom funds were sent
+    # Comma-separated list of user mentions to whom funds were sent (the separator is defined in FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR)
     mentions = Column(String)
     # Amount of funds to send (defining some constraints to avoid overflow)
     amount = Column(Float, CheckConstraint('amount > -1000000000 AND amount < 1000000000'))
@@ -143,3 +144,6 @@ class FreeFundingTransaction(Base):
     description = Column(String)
     # Date and time when the transaction was performed
     submitted_at = Column(DateTime)
+
+    def __repr__(self):
+        return f"<FreeFundingTransaction(id={self.id}, author='{self.author}', mentions='{self.mentions}', amount={self.amount}, description='{self.description}', submitted_at='{self.submitted_at}')>"

@@ -24,6 +24,7 @@ from bot.utils.formatting_utils import (
     get_amount_to_print,
 )
 from bot.config.schemas import FreeFundingBalance, FreeFundingTransaction
+from bot.help import send_free_funding_balance
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -34,15 +35,26 @@ db = DBUtil()
 client = get_discord_client()
 
 
+@client.command(name=RESET_BALANCE_COMMAND_NAME)
+async def reset_free_funding(ctx, *args):
+    if SERVER_ENVIRONMENT != ServerEnvironment.PROD:
+        await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
+        await ctx.message.reply("This command isn't available on the main server.")
+        return
+
+    # TODO reset individual free funding
+
+
 async def send_transaction(ctx, original_message, mentions, amount, description):
     # Check if member is in DB, otherwise add it (roles should have already been checked before calling this method)
     author_mention = str(ctx.message.author.mention)
     author_balance = db.get_user_free_funding_balance(author_mention)
     if not author_balance:
+        logger.debug("Added free funding balance for author=%s", author_mention)
         author_balance = FreeFundingBalance(
-            author=author_mention, balance=TIPS_LIMIT_PERSON_PER_SEASON
+            author=author_mention, balance=FREE_FUNDING_LIMIT_PERSON_PER_SEASON
         )
-        db.add(author_balance)
+        await db.add(author_balance)
 
     # Validity checks (including whether the author has sufficient funds, that's why we do it after retreiving the balance)
     if not await validate_free_transaction(
@@ -51,19 +63,19 @@ async def send_transaction(ctx, original_message, mentions, amount, description)
         await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
         return
 
-    # Substitute from DB
-    author_balance.balance -= amount
-    db.session.commit()
+    # Substitute transaction from the users balance
+    author_balance.balance -= amount * len(mentions)
+    db.save()
 
-    # Send transaction (we only do so after substracting the balance, because if we first send, and then error occurs while adding to DB, we don't have control over Accountant to revert the transaction)
+    # Send the transaction (doing so after substracting the balance gives us more control, because if we first apply the grant, and then some error occurs while updating DB, we will not have control over Accountant to revert the transaction)
     grant_message = GRANT_COMMAND_FREE_FUNDING_MESSAGE.format(
         prefix=DISCORD_COMMAND_PREFIX,
         grant_command=GRANT_APPLY_COMMAND_NAME,
-        mentions=mentions,
+        mentions=" ".join(mentions),
         amount=get_amount_to_print(amount),
         description=description,
         author=author_mention,
-        balance=author_balance.balance,
+        balance=get_amount_to_print(author_balance.balance),
         tips_url=original_message.jump_url,
     )
     try:
@@ -87,8 +99,8 @@ async def send_transaction(ctx, original_message, mentions, amount, description)
     await db.add_free_transactions_history_item(
         FreeFundingTransaction(
             author=author_mention,
-            mentions=mentions,
-            amount=amount,
+            mentions=FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR.join(mentions),
+            amount=amount * len(mentions),
             description=description,
             submitted_at=datetime.now(),
         )
@@ -145,7 +157,11 @@ async def free_funding_transact_command(ctx, *args):
             logger.info("Unauthorized user. message_id=%d", original_message.id)
             return
 
-        # TODO if !tips is used without arguments, return the user balance
+        # If the command is used without arguments, return the user balance
+        if len(args) == 0:
+            await send_free_funding_balance(ctx)
+            return
+
         # TODO if the message is a reply, and there's no mention, send to the replier; otherwise use mention
 
         # Less than 3 args means the input is certainly wrong (mention, amount, and some description of the transaction is required)

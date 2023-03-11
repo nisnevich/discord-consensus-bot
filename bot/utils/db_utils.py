@@ -89,6 +89,9 @@ class DBUtil:
         else:
             logger.info("Table already exist: %s", FREE_FUNDING_TRANSACTIONS_TABLE_NAME)
 
+    def get_all_free_funding_balances(self, author_mention) -> Query:
+        return DBUtil.session.query(FreeFundingBalance)
+
     def get_user_free_funding_balance(self, author_mention) -> Query:
         return DBUtil.session.query(FreeFundingBalance).filter_by(author=author_mention).first()
 
@@ -185,3 +188,7 @@ class DBUtil:
                 )
             )
             DBUtil.session_history.commit()
+
+    async def save(self):
+        async with DBUtil.session_lock:
+            DBUtil.session.commit()

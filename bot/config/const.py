@@ -18,6 +18,7 @@ VOTERS_TABLE_NAME = "voters"
 PROPOSAL_HISTORY_TABLE_NAME = 'proposal_history'
 FREE_FUNDING_BALANCES_TABLE_NAME = "free_funding_balance"
 FREE_FUNDING_TRANSACTIONS_TABLE_NAME = "free_funding_transaction_history"
+FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR = ","
 
 # nltk datasets to download
 NLTK_DATASETS_DIR = f"{PROJECT_ROOT}/nltk"
@@ -26,18 +27,26 @@ NLTK_DATASETS = ['averaged_perceptron_tagger', 'punkt', 'wordnet', 'words']
 # urls
 GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bot"
 
-# =++===============
+
+class ServerEnvironment(Enum):
+    DEV = 0
+    BETA = 1
+    PROD = 2
+
+
+# ==================
 # Critical constants
-# ====++============
+# ==================
 
 # Required Discord permissions: 415538474048
 
+SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
 PROPOSAL_DURATION_SECONDS = 30  # 3 days is 259200
 # Default lazy consensus threshold
 LAZY_CONSENSUS_THRESHOLD = 1
 # A total number of free funding for each person per season
-TIPS_LIMIT_PERSON_PER_SEASON = 3000
+FREE_FUNDING_LIMIT_PERSON_PER_SEASON = 3000
 
 ROLE_IDS_ALLOWED = (1063903240925749389,)
 VOTING_CHANNEL_ID = 1067119414731886645
@@ -63,11 +72,15 @@ GRANT_PROPOSAL_COMMAND_NAME = 'propose'
 PROPOSAL_COMMAND_ALIASES = ['lazy', 'suggest', 'prop', 'consensus']
 GRANT_APPLY_COMMAND_NAME = 'grant'
 FREE_FUNDING_COMMAND_NAME = 'tips'
-FREE_FUNDING_COMMAND_ALIASES = ['personal']
+FREE_FUNDING_COMMAND_ALIASES = ['personal', 'free', 'my', 'easy', 'gift', 'love']
 HELP_COMMAND_NAME = 'help-lazy'
 HELP_COMMAND_ALIASES = ['lazy-help', 'help-consensus', 'consensus-help', 'help-tips', 'tips-help']
 EXPORT_COMMAND_NAME = 'export'
-VOTERS_LIST_SEPARATOR = ", "
+FREE_FUNDING_BALANCE_COMMAND_NAME = 'tips-balance'
+FREE_FUNDING_BALANCE_ALIASES = ['balance-tips', 'personal-balance', 'balance-personal']
+RESET_BALANCE_COMMAND_NAME = 'reset'
+
+VOTERS_LIST_SEPARATOR = ", "  # A separator between the dissenter nicknames in the list that is shown in the results of a cancelled proposal
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 MIN_DESCRIPTION_LENGTH = 30  # just some common sense value
@@ -197,7 +210,7 @@ ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author}
 ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT = "Oopsie! Wrong command format. Use it like `!send`, but always add description so people know what you're up to. For more info, check out `!help-tips`."
 ERROR_MESSAGE_FREE_TRANSACTION_TO_YOURSELF = "I'm sorry, Dave. I'm afraid I can't let you do that. Sending tips to yourself is not allowed. https://www.youtube.com/watch?v=ARJ8cAGm6JE"  # Alternative: Can't send points to yourself, sorry! But I'm sure there's someone out there who deserves some recognition from you.
 ERROR_MESSAGE_NOT_ENOUGH_BALANCE = (
-    "Your funds are feeling a bit low. You only have {balance} to spare."
+    "Sorry, your balance is not enough. You have {balance} 'tips' remaining this season."
 )
 
 # When functionality is paused
