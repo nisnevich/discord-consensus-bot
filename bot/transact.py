@@ -40,6 +40,7 @@ async def reset_free_funding(ctx, *args):
     """
     Reset the free funding balance of the author. Used solely for testing purposes on dev/beta environments.
     """
+    # Not allowing to run on the main server
     if SERVER_ENVIRONMENT == ServerEnvironment.PROD:
         await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
         await ctx.message.reply("This command isn't available on the main server.")
@@ -55,7 +56,7 @@ async def reset_free_funding(ctx, *args):
     await ctx.message.add_reaction(REACTION_ON_TRANSACTION_SUCCEED)
     await ctx.message.reply("Your balance was reset, enjoy testing. :sunny:")
     # Commit changes to DB
-    db.save()
+    await db.save()
 
     logger.info("Balance reset for author=%s", author)
 
@@ -80,7 +81,7 @@ async def send_transaction(ctx, original_message, mentions, amount, description)
 
     # Substitute transaction from the users balance
     author_balance.balance -= amount * len(mentions)
-    db.save()
+    await db.save()
 
     # Send the transaction (doing so after substracting the balance gives us more control, because if we first apply the grant, and then some error occurs while updating DB, we will not have control over Accountant to revert the transaction)
     grant_message = GRANT_COMMAND_FREE_FUNDING_MESSAGE.format(
