@@ -2,6 +2,7 @@ import logging
 import csv
 import io
 import discord
+from openpyxl import Workbook
 
 from bot.config.const import (
     HELP_MESSAGE_NON_AUTHORIZED_USER,
@@ -18,13 +19,14 @@ from bot.config.const import (
     REMOVE_HUMAN_MESSAGES_FROM_VOTING_CHANNEL,
     FREE_FUNDING_BALANCE_COMMAND_NAME,
     FREE_FUNDING_BALANCE_ALIASES,
+    FREE_FUNDING_BALANCE_MESSAGE,
 )
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.discord_utils import get_discord_client, get_message, get_user_by_id_or_mention
 from bot.utils.validation import validate_roles
 from bot.utils.db_utils import DBUtil
 from bot.utils.formatting_utils import get_amount_to_print
-from bot.config.schemas import ProposalHistory
+from bot.config.schemas import ProposalHistory, FreeFundingTransaction, FreeFundingBalance
 from bot.config.const import ProposalResult, VOTING_CHANNEL_ID
 
 logger = logging.getLogger(__name__)
@@ -56,12 +58,24 @@ async def on_message(message):
 @client.command(name=FREE_FUNDING_BALANCE_COMMAND_NAME, aliases=FREE_FUNDING_BALANCE_ALIASES)
 async def send_free_funding_balance(ctx):
     try:
+        # Reply to a non-authorized user
+        if not await validate_roles(ctx.message.author):
+            # Adding greetings and "cancelled" reactions
+            await ctx.message.add_reaction(REACTION_ON_BOT_MENTION)
+            # Sending response in DM
+            await ctx.author.send(HELP_MESSAGE_NON_AUTHORIZED_USER)
+            return
+
+        # Retrieve the authors balance
         author_mention = str(ctx.message.author.mention)
         author_balance = db.get_user_free_funding_balance(author_mention)
         if author_balance:
+            # Reply with the balance
             await ctx.message.add_reaction(REACTION_ON_BOT_MENTION)
             await ctx.message.reply(
-                f"You have {get_amount_to_print(author_balance.balance)} 'tips' remaining this season. Use the 'tips' command just like you would use 'send'."
+                FREE_FUNDING_BALANCE_MESSAGE.format(
+                    balance=get_amount_to_print(author_balance.balance)
+                )
             )
     except Exception as e:
         try:
@@ -121,7 +135,7 @@ async def export(ctx):
             # Adding greetings and "cancelled" reactions
             await ctx.message.add_reaction(REACTION_ON_BOT_MENTION)
             # Sending response in DM
-            await ctx.author.send(HELP_MESSAGE_NON_AUTHORIZED_USER)
+            await ctx.message.reply(HELP_MESSAGE_NON_AUTHORIZED_USER)
             return
 
         # Remove the message requesting the analytics
@@ -132,13 +146,13 @@ async def export(ctx):
             .filter(ProposalHistory.result == ProposalResult.ACCEPTED.value)
             .all()
         )
-        if len(accepted_proposals) == 0:
-            await ctx.author.send("No proposals were accepted yet.")
-            return
 
-        file = io.StringIO()
-        writer = csv.DictWriter(
-            file,
+        wb = Workbook()
+        page1 = wb.active
+        page1.title = "Lazy Consensus"
+
+        writer_lazy_proposals = csv.DictWriter(
+            page1,
             fieldnames=[
                 "Discord link",
                 "When completed (UTC time)",
@@ -149,11 +163,21 @@ async def export(ctx):
                 "Description",
             ],
         )
-        writer.writeheader()
+        writer_lazy_proposals.writeheader()
+
+        page2 = wb.create_sheet(title="Tips Balances")
+        writer_balance = csv.DictWriter(page2, fieldnames=["Author", "Balance"])
+        writer_balance.writeheader()
+
+        page3 = wb.create_sheet(title="Tips History")
+        writer_free_transactions = csv.DictWriter(
+            page3, fieldnames=["Author", "mentions", "amount", "description", "submitted_at"]
+        )
+        writer_free_transactions.writeheader()
 
         for proposal in accepted_proposals:
             logger.debug("Exporting %s", proposal)
-            writer.writerow(
+            writer_lazy_proposals.writerow(
                 {
                     "Discord link": f'=HYPERLINK("{proposal.voting_message_url}", "Open in Discord")',
                     "When completed (UTC time)": proposal.closed_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -169,9 +193,28 @@ async def export(ctx):
                 }
             )
 
+        # Export all rows from FreeFundingBalance
+        for balance in await db.filter(FreeFundingBalance):
+            writer_balance.writerow({"Author": balance.author, "Balance": balance.balance})
+
+        # Export all rows from FreeFundingTransaction
+        for transaction in await db.filter(FreeFundingTransaction):
+            writer_free_transactions.writerow(
+                {
+                    "Author": transaction.author,
+                    "mentions": transaction.mentions,
+                    "amount": transaction.amount,
+                    "description": transaction.description,
+                    "submitted_at": transaction.submitted_at.strftime("%Y-%m-%d %H:%M:%S"),
+                }
+            )
+
+        # write the workbook to memory
+        file = BytesIO()
+        wb.save(file)
         file.seek(0)
 
-        await ctx.author.send(file=discord.File(file, filename="proposal_history.csv"))
+        await ctx.channel.send(file=discord.File(file, filename="analytics.xlsx"))
 
     except Exception as e:
         try:

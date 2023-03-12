@@ -89,9 +89,6 @@ class DBUtil:
         else:
             logger.info("Table already exist: %s", FREE_FUNDING_TRANSACTIONS_TABLE_NAME)
 
-    def get_all_free_funding_balances(self, author_mention) -> Query:
-        return DBUtil.session.query(FreeFundingBalance)
-
     def get_user_free_funding_balance(self, author_mention) -> Query:
         return DBUtil.session.query(FreeFundingBalance).filter_by(author=author_mention).first()
 
@@ -106,10 +103,13 @@ class DBUtil:
         for proposal in pending_grant_proposals:
             logger.info(proposal)
 
-    async def filter(self, table, condition):
+    async def filter(self, table, condition=None):
         async with DBUtil.session_lock:
             query = DBUtil.session.query(table)
-            return query.filter(condition).first()
+            if condition:
+                return query.filter(condition).first()
+            else:
+                return query
 
     async def add(self, orm_object):
         """

@@ -165,6 +165,7 @@ HEART_EMOJI_LIST = [
 # Messages texts
 # ==============
 
+# Grant apply messages
 GRANT_COMMAND_LAZY_CONSENSUS_MESSAGE = """
 {prefix}{grant_command} {mention} {amount} {description}. Requested by {author}, approved via lazy consensus. Voting: {voting_url}
 """
@@ -265,6 +266,9 @@ Your vote against a proposal of {author} has been counted. The voting ends {coun
 If you change your mind after talking to the author, remember to remove {cancel_emoji} from {voting_link}.
 """
 HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL = "Hi there! Your message was removed from `#l3-voting`, because it was decided to leave the channel opened only for messages by bots (for example, EasyPoll can write there too, but not humans). This is to maintain the channel cleaner, so others can simply see all active votings. Please use `#l3-general` or other channels to post your message. The decision was made here: https://discord.com/channels/768556386404794448/1060864279303172136/1077580065648427060"
+
+# Free funding messages
+FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season. Use the 'tips' command just like you would use 'send'."
 
 # ======================
 # General proposal texts
