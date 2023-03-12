@@ -271,7 +271,7 @@ HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL = "Hi there! Your message was removed f
 EXPORT_CHANNEL_REPLY = "Here you go! You'll find three tabs in the document - lazy consensus history, tips balances and tips history. "
 
 # Free funding messages
-FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season. Use the 'tips' command just like you would use 'send'."
+FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season. Use the '!tips' command just like you would use '!send'."
 
 # ======================
 # General proposal texts
