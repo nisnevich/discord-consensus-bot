@@ -107,9 +107,6 @@ EMPTY_ANALYTICS_VALUE = "n/a"
 # The name of the file sent to user with !export command
 EXPORT_DATA_FILENAME = "analytics.xlsx"
 
-<<<<<<< HEAD
-# Emoji
-=======
 
 class ProposalResult(Enum):
     ACCEPTED = 0
@@ -131,7 +128,6 @@ class ProposalResult(Enum):
 
 # Lazy consensus emoji
 REACTION_ON_BOT_MENTION = "👋"  # wave
->>>>>>> main
 # When the proposal is accepted, the bot will
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 REACTION_ON_PROPOSAL_CANCELLED = "🍃"  # leaves
