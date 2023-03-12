@@ -2,25 +2,12 @@ import logging
 import csv
 import io
 import discord
-from openpyxl import Workbook
+import openpyxl
+from openpyxl.styles import Font
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
-from bot.config.const import (
-    HELP_MESSAGE_NON_AUTHORIZED_USER,
-    HELP_MESSAGE_AUTHORIZED_USER,
-    RESPONSIBLE_MENTION,
-    HELP_COMMAND_NAME,
-    DEFAULT_LOG_LEVEL,
-    EXPORT_COMMAND_NAME,
-    REACTION_ON_BOT_MENTION,
-    EMPTY_ANALYTICS_VALUE,
-    HELP_COMMAND_ALIASES,
-    HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL,
-    VOTING_CHANNEL_ID,
-    REMOVE_HUMAN_MESSAGES_FROM_VOTING_CHANNEL,
-    FREE_FUNDING_BALANCE_COMMAND_NAME,
-    FREE_FUNDING_BALANCE_ALIASES,
-    FREE_FUNDING_BALANCE_MESSAGE,
-)
+from bot.config.const import *
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.discord_utils import get_discord_client, get_message, get_user_by_id_or_mention
 from bot.utils.validation import validate_roles
@@ -127,6 +114,150 @@ async def help(ctx):
         )
 
 
+def define_columns(page, columns):
+    """
+    Columns are defined the same way for each page, with bold headers.
+    """
+    # Write the column names to the worksheet and set column widths
+    for col_num, column in enumerate(columns, 1):
+        column_letter = get_column_letter(col_num)
+        column_header = column["header"]
+        column_width = column["width"]
+        page.column_dimensions[column_letter].width = column_width
+        page.cell(row=1, column=col_num, value=column_header).font = Font(bold=True)
+
+
+async def write_lazy_consensus_history(page):
+    # Define column names and widths
+    columns = [
+        {"header": "Discord link", "width": 15},
+        {"header": "When completed (UTC time)", "width": 28},
+        {"header": "Author", "width": 15},
+        {"header": "Grant given to", "width": 15},
+        {"header": "Amount", "width": 10},
+        {"header": "Description", "width": 100},
+    ]
+    # Enable the columns in the page
+    define_columns(page, columns)
+
+    # Retrieve all accepted proposals
+    accepted_proposals = await db.filter(
+        ProposalHistory,
+        condition=(ProposalHistory.result == ProposalResult.ACCEPTED.value),
+    )
+    # Loop over each accepted proposal and add a row to the worksheet
+    for row_num, proposal in enumerate(accepted_proposals.all(), 2):
+        # Discord URL
+        discord_link = proposal.voting_message_url
+        page.cell(row=row_num, column=1).value = discord_link
+        page.cell(row=row_num, column=1).hyperlink = discord_link
+        # Date
+        page.cell(row=row_num, column=2, value=proposal.closed_at.strftime("%Y-%m-%d %H:%M:%S"))
+        # Author
+        page.cell(row=row_num, column=3, value=str(proposal.author))
+        # Mention
+        page.cell(
+            row=row_num,
+            column=4,
+            value=str(proposal.mention) if proposal.mention is not None else EMPTY_ANALYTICS_VALUE,
+        )
+        # Amount
+        page.cell(
+            row=row_num,
+            column=5,
+            value=str(get_amount_to_print(proposal.amount))
+            if proposal.amount is not None
+            else EMPTY_ANALYTICS_VALUE,
+        )
+        # Description
+        page.cell(row=row_num, column=6, value=str(proposal.description))
+
+
+async def write_free_funding_balance(page):
+    # Define column names and widths
+    columns = [
+        {"header": "Author", "width": 15},
+        {"header": "Remaining balance", "width": 20},
+    ]
+    # Enable the columns in the page
+    define_columns(page, columns)
+    # Write a note in the corner
+    page.cell(
+        row=1, column=3, value="Note: only users that have used tips in this season are listed here"
+    ).font = Font(italic=True)
+
+    # Retrieve all balances
+    all_balances = await db.filter(FreeFundingBalance, is_history=False)
+
+    # Loop over each users balance and add a row to the worksheet
+    for row_num, balance in enumerate(all_balances.all(), 2):
+        # Author
+        page.cell(row=row_num, column=1, value=str(balance.nickname))
+        # Amount
+        page.cell(row=row_num, column=2, value=str(get_amount_to_print(balance.balance)))
+
+
+async def write_free_funding_transactions(page):
+    # Define column names and widths
+    columns = [
+        {"header": "Discord link", "width": 15},
+        {"header": "UTC time", "width": 20},
+        {"header": "Author", "width": 15},
+        {"header": "Sent to", "width": 20},
+        {"header": "Total amount", "width": 15},
+        {"header": "Description", "width": 100},
+    ]
+    # Enable the columns in the page
+    define_columns(page, columns)
+
+    # Retrieve all transactions
+    all_transactions = await db.filter(FreeFundingTransaction)
+
+    # Loop over each transaction and add a row to the worksheet
+    for row_num, transaction in enumerate(all_transactions.all(), 2):
+        # Discord URL
+        discord_link = transaction.message_url
+        page.cell(row=row_num, column=1).value = discord_link
+        page.cell(row=row_num, column=1).hyperlink = discord_link
+        # Date
+        page.cell(
+            row=row_num, column=2, value=transaction.submitted_at.strftime("%Y-%m-%d %H:%M:%S")
+        )
+        # Author
+        page.cell(row=row_num, column=3, value=str(transaction.author))
+        # Mentions
+        page.cell(row=row_num, column=4, value=str(transaction.mentions))
+        # Total amount
+        page.cell(row=row_num, column=5, value=str(get_amount_to_print(transaction.total_amount)))
+        # Description
+        page.cell(row=row_num, column=6, value=str(transaction.description))
+
+
+async def export_xlsx():
+    # Create a new Excel workbook and worksheet
+    wb = openpyxl.Workbook()
+
+    # Create a page with a history of all lazy consensus proposals
+    lazy_history_page = wb.active
+    lazy_history_page.title = "Lazy Consensus History"
+    await write_lazy_consensus_history(lazy_history_page)
+
+    # Create a page with free funding balances of all members
+    free_funding_balance_page = wb.create_sheet(title="Tips Balances")
+    await write_free_funding_balance(free_funding_balance_page)
+
+    # Create a page with all free funding transactions
+    free_funding_history_page = wb.create_sheet(title="Tips Transactions")
+    await write_free_funding_transactions(free_funding_history_page)
+
+    # Save the Excel workbook to a temporary file
+    temp_file = io.BytesIO()
+    wb.save(temp_file)
+    temp_file.seek(0)
+
+    return temp_file, EXPORT_DATA_FILENAME
+
+
 @client.command(name=EXPORT_COMMAND_NAME)
 async def export(ctx):
     try:
@@ -137,84 +268,16 @@ async def export(ctx):
             # Sending response in DM
             await ctx.message.reply(HELP_MESSAGE_NON_AUTHORIZED_USER)
             return
+        # Adding greetings reaction so to show that the command is being processed (it may take a couple of seconds waiting for the user)
+        await ctx.message.add_reaction(REACTION_ON_BOT_MENTION)
 
-        # Remove the message requesting the analytics
-        await ctx.message.delete()
-
-        accepted_proposals = (
-            DBUtil.session_history.query(ProposalHistory)
-            .filter(ProposalHistory.result == ProposalResult.ACCEPTED.value)
-            .all()
+        # Create the document
+        document, filename = await export_xlsx()
+        # Send the document to user
+        await ctx.message.reply(
+            EXPORT_CHANNEL_REPLY,
+            file=discord.File(document, filename=filename),
         )
-
-        wb = Workbook()
-        page1 = wb.active
-        page1.title = "Lazy Consensus"
-
-        writer_lazy_proposals = csv.DictWriter(
-            page1,
-            fieldnames=[
-                "Discord link",
-                "When completed (UTC time)",
-                "Author",
-                "Has grant",
-                "Given to",
-                "Amount",
-                "Description",
-            ],
-        )
-        writer_lazy_proposals.writeheader()
-
-        page2 = wb.create_sheet(title="Tips Balances")
-        writer_balance = csv.DictWriter(page2, fieldnames=["Author", "Balance"])
-        writer_balance.writeheader()
-
-        page3 = wb.create_sheet(title="Tips History")
-        writer_free_transactions = csv.DictWriter(
-            page3, fieldnames=["Author", "mentions", "amount", "description", "submitted_at"]
-        )
-        writer_free_transactions.writeheader()
-
-        for proposal in accepted_proposals:
-            logger.debug("Exporting %s", proposal)
-            writer_lazy_proposals.writerow(
-                {
-                    "Discord link": f'=HYPERLINK("{proposal.voting_message_url}", "Open in Discord")',
-                    "When completed (UTC time)": proposal.closed_at.strftime("%Y-%m-%d %H:%M:%S"),
-                    "Author": proposal.author,
-                    "Has grant": not proposal.is_grantless,
-                    "Given to": proposal.mention
-                    if proposal.mention is not None
-                    else EMPTY_ANALYTICS_VALUE,
-                    "Amount": get_amount_to_print(proposal.amount)
-                    if proposal.amount is not None
-                    else EMPTY_ANALYTICS_VALUE,
-                    "Description": proposal.description,
-                }
-            )
-
-        # Export all rows from FreeFundingBalance
-        for balance in await db.filter(FreeFundingBalance):
-            writer_balance.writerow({"Author": balance.author, "Balance": balance.balance})
-
-        # Export all rows from FreeFundingTransaction
-        for transaction in await db.filter(FreeFundingTransaction):
-            writer_free_transactions.writerow(
-                {
-                    "Author": transaction.author,
-                    "mentions": transaction.mentions,
-                    "amount": transaction.amount,
-                    "description": transaction.description,
-                    "submitted_at": transaction.submitted_at.strftime("%Y-%m-%d %H:%M:%S"),
-                }
-            )
-
-        # write the workbook to memory
-        file = BytesIO()
-        wb.save(file)
-        file.seek(0)
-
-        await ctx.channel.send(file=discord.File(file, filename="analytics.xlsx"))
 
     except Exception as e:
         try:

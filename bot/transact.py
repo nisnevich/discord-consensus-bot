@@ -22,6 +22,7 @@ from bot.utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
     get_discord_countdown_plus_delta,
     get_amount_to_print,
+    get_nickname_by_id_or_mention,
 )
 from bot.config.schemas import FreeFundingBalance, FreeFundingTransaction
 from bot.help import send_free_funding_balance
@@ -68,7 +69,9 @@ async def send_transaction(ctx, original_message, mentions, amount, description)
     if not author_balance:
         logger.debug("Added free funding balance for author=%s", author_mention)
         author_balance = FreeFundingBalance(
-            author=author_mention, balance=FREE_FUNDING_LIMIT_PERSON_PER_SEASON
+            author=author_mention,
+            nickname=await get_nickname_by_id_or_mention(author_mention),
+            balance=FREE_FUNDING_LIMIT_PERSON_PER_SEASON,
         )
         await db.add(author_balance)
 
@@ -83,7 +86,7 @@ async def send_transaction(ctx, original_message, mentions, amount, description)
     author_balance.balance -= amount * len(mentions)
     await db.save()
 
-    # Send the transaction (doing so after substracting the balance gives us more control, because if we first apply the grant, and then some error occurs while updating DB, we will not have control over Accountant to revert the transaction)
+    # Send the transaction (doing so after substracting the balance from DB gives us a bit more control, because if we first apply the grant, and then some error occurs while updating DB, we will not be able to revert the transaction since we don't control Accountant)
     grant_message = GRANT_COMMAND_FREE_FUNDING_MESSAGE.format(
         prefix=DISCORD_COMMAND_PREFIX,
         grant_command=GRANT_APPLY_COMMAND_NAME,
@@ -96,9 +99,9 @@ async def send_transaction(ctx, original_message, mentions, amount, description)
     )
     try:
         channel = client.get_channel(GRANT_APPLY_CHANNEL_ID)
-        message = await channel.send(grant_message)
+        grant_message = await channel.send(grant_message)
         # Remove embeds
-        await message.edit(suppress=True)
+        await grant_message.edit(suppress=True)
     except Exception as e:
         await ctx.message.channel.send(
             f"Could not apply grant. cc {RESPONSIBLE_MENTION}",
@@ -111,14 +114,19 @@ async def send_transaction(ctx, original_message, mentions, amount, description)
         # Throwing exception further because if the grant failed to apply, we don't want to do anything else
         raise e
 
+    # Convert all mentions to nicknames
+    receiver_nicknames = []
+    for mention in mentions:
+        receiver_nicknames.append(await get_nickname_by_id_or_mention(mention))
     # Add transaction to history
     await db.add_free_transactions_history_item(
         FreeFundingTransaction(
-            author=author_mention,
-            mentions=FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR.join(mentions),
-            amount=amount * len(mentions),
+            author=await get_nickname_by_id_or_mention(author_mention),
+            mentions=FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR.join(receiver_nicknames),
+            total_amount=amount * len(mentions),
             description=description,
             submitted_at=datetime.now(),
+            message_url=grant_message.jump_url,
         )
     )
     await ctx.message.add_reaction(REACTION_ON_TRANSACTION_SUCCEED)

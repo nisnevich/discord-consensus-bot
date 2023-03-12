@@ -18,7 +18,7 @@ VOTERS_TABLE_NAME = "voters"
 PROPOSAL_HISTORY_TABLE_NAME = "proposal_history"
 FREE_FUNDING_BALANCES_TABLE_NAME = "free_funding_balance"
 FREE_FUNDING_TRANSACTIONS_TABLE_NAME = "free_funding_transaction_history"
-FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR = ","
+FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR = ", "
 
 # nltk datasets to download
 NLTK_DATASETS_DIR = f"{PROJECT_ROOT}/nltk"
@@ -98,6 +98,8 @@ STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock_lazy"
 STOP_ACCEPTING_FREE_FUNDING_TRANSACTIONS_FLAG_FILE_NAME = "stopcock_free"
 # This value is inserted in spreadsheets when a cell value is missing
 EMPTY_ANALYTICS_VALUE = "n/a"
+# The name of the file sent to user with !export command
+EXPORT_DATA_FILENAME = "analytics.xlsx"
 
 
 class ProposalResult(Enum):
@@ -266,6 +268,7 @@ Your vote against a proposal of {author} has been counted. The voting ends {coun
 If you change your mind after talking to the author, remember to remove {cancel_emoji} from {voting_link}.
 """
 HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL = "Hi there! Your message was removed from `#l3-voting`, because it was decided to leave the channel opened only for messages by bots (for example, EasyPoll can write there too, but not humans). This is to maintain the channel cleaner, so others can simply see all active votings. Please use `#l3-general` or other channels to post your message. The decision was made here: https://discord.com/channels/768556386404794448/1060864279303172136/1077580065648427060"
+EXPORT_CHANNEL_REPLY = "Here you go! You'll find three tabs in the document - lazy consensus history, tips balances and tips history. "
 
 # Free funding messages
 FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season. Use the 'tips' command just like you would use 'send'."

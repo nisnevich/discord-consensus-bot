@@ -1,5 +1,21 @@
-from datetime import datetime, timedelta
 import re
+import discord
+
+from datetime import datetime, timedelta
+from bot.utils.discord_utils import get_user_by_id_or_mention
+
+
+async def get_nickname_by_id_or_mention(id_or_mention):
+    """
+    Returns a discord nickname of a user based on the user ID or mention, or None if it's not found.
+    """
+    # Retrieve the user
+    user = await get_user_by_id_or_mention(id_or_mention)
+    # Return the nickname if the user was found
+    if type(user) is discord.User:
+        return f"{user.name}#{user.discriminator}"
+    # Otherwise return None
+    return None
 
 
 def get_discord_timestamp_plus_delta(delta_seconds, timestamp_string="<t:{timestamp}>"):
