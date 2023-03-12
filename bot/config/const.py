@@ -15,7 +15,10 @@ DB_PATH = os.path.join(PROJECT_ROOT, "consensus-bot.db")
 DB_HISTORY_PATH = os.path.join(PROJECT_ROOT, "consensus-bot-history.db")
 GRANT_PROPOSALS_TABLE_NAME = "proposals"
 VOTERS_TABLE_NAME = "voters"
-PROPOSAL_HISTORY_TABLE_NAME = 'proposal_history'
+PROPOSAL_HISTORY_TABLE_NAME = "proposal_history"
+FREE_FUNDING_BALANCES_TABLE_NAME = "free_funding_balance"
+FREE_FUNDING_TRANSACTIONS_TABLE_NAME = "free_funding_transaction_history"
+FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR = ", "
 
 # nltk datasets to download
 NLTK_DATASETS_DIR = f"{PROJECT_ROOT}/nltk"
@@ -24,20 +27,32 @@ NLTK_DATASETS = ['averaged_perceptron_tagger', 'punkt', 'wordnet', 'words']
 # urls
 GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bot"
 
-# =++===============
+
+class ServerEnvironment(Enum):
+    DEV = 0
+    BETA = 1
+    PROD = 2
+
+
+# ==================
 # Critical constants
-# ====++============
+# ==================
 
 # Required Discord permissions: 415538474048
 
 # Prod values
+SERVER_ENVIRONMENT = ServerEnvironment.PROD
 # How long will each proposal be active
 PROPOSAL_DURATION_SECONDS = 172800  # 3 days is 259200
 # Default lazy consensus threshold
 LAZY_CONSENSUS_THRESHOLD = 4
+# A total number of free funding for each person per season
+FREE_FUNDING_LIMIT_PERSON_PER_SEASON = 3000
+
 ROLE_IDS_ALLOWED = (812675567438659624, 1038497110754086913, 768558990149156896)
 VOTING_CHANNEL_ID = 1060864279303172136
 GRANT_APPLY_CHANNEL_ID = 1066350422949908540
+
 # Important note: the bot MUST have permission to remove reactions in VOTING_CHANNEL_ID ("Manage Emojis and Stickers", int 1073741824). If someone votes during DB recovery, it's critical to remove the vote (exception will be thrown if bot can't do so).
 # Instead of using this array, we could simply check if the bot has permissions to delete messages or remove reactions, but in Eco the permissions are controlled with a third-party solution, so it's more reliable to simply list channels that were agreed to have permissions
 # As agreed with Dave, the allowed channels are l3-general and l3-voting (to avoid clutter in them)
@@ -62,28 +77,77 @@ DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
 PROPOSAL_COMMAND_ALIASES = ['lazy', 'suggest', 'prop', 'consensus']
 GRANT_APPLY_COMMAND_NAME = 'grant'
+FREE_FUNDING_COMMAND_NAME = 'tips'
+FREE_FUNDING_COMMAND_ALIASES = ['personal', 'free', 'my', 'easy', 'gift', 'love']
 HELP_COMMAND_NAME = 'help-lazy'
-HELP_COMMAND_ALIASES = ['lazy-help']
+HELP_COMMAND_ALIASES = ['lazy-help', 'help-consensus', 'consensus-help', 'help-tips', 'tips-help']
 EXPORT_COMMAND_NAME = 'export'
-VOTERS_LIST_SEPARATOR = ", "
+FREE_FUNDING_BALANCE_COMMAND_NAME = 'tips-balance'
+FREE_FUNDING_BALANCE_ALIASES = ['balance-tips', 'personal-balance', 'balance-personal']
+RESET_BALANCE_COMMAND_NAME = 'reset'
+
+VOTERS_LIST_SEPARATOR = ", "  # A separator between the dissenter nicknames in the list that is shown in the results of a cancelled proposal
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 MIN_DESCRIPTION_LENGTH = 30  # just some common sense value
+<<<<<<< HEAD
 MAX_PROPOSAL_AMOUNT = 100000000
 MIN_PROPOSAL_AMOUNT = 500
+=======
+# Maximal amount in any transaction (used primarily to avoid overflow, but also as a limit to unreasonably high amounts)
+MAX_TRANSACTION_AMOUNT = 100000000
+# Minimal amount of lazy consensus grant proposal
+MIN_PROPOSAL_AMOUNT = 250
+>>>>>>> main-eco
 MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
 
 # To keep voting channel clean, all human messages can be removed from there; a help message will be sent over to user - HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL
 REMOVE_HUMAN_MESSAGES_FROM_VOTING_CHANNEL = True
-STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock"
+# When this file is created in the project root, new lazy consensus proposals will be rejected
+STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock_lazy"
+# When this file is created in the project root, free funding transactions will be rejected
+STOP_ACCEPTING_FREE_FUNDING_TRANSACTIONS_FLAG_FILE_NAME = "stopcock_free"
+# This value is inserted in spreadsheets when a cell value is missing
 EMPTY_ANALYTICS_VALUE = "n/a"
+# The name of the file sent to user with !export command
+EXPORT_DATA_FILENAME = "analytics.xlsx"
 
+<<<<<<< HEAD
 # Emoji
+=======
+
+class ProposalResult(Enum):
+    ACCEPTED = 0
+    CANCELLED_BY_REACHING_THRESHOLD = 1
+    CANCELLED_BY_PROPOSER = 2
+
+    def __str__(self):
+        if self.value == ProposalResult.ACCEPTED.value:
+            return 'Accepted'
+        elif self.value == ProposalResult.CANCELLED_BY_REACHING_THRESHOLD.value:
+            return 'Cancelled by reaching threshold'
+        elif self.value == ProposalResult.CANCELLED_BY_PROPOSER.value:
+            return 'Cancelled by proposer'
+
+
+# =============
+# === Emoji ===
+# =============
+
+# Lazy consensus emoji
+REACTION_ON_BOT_MENTION = "👋"  # wave
+>>>>>>> main
 # When the proposal is accepted, the bot will
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 REACTION_ON_PROPOSAL_CANCELLED = "🍃"  # leaves
 REACTION_VOTING_DEFAULT_POSITIVE = "👀"  # eyes
 CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
+
+# Free funding emoji
+REACTION_ON_TRANSACTION_SUCCEED = "✅"  # green tick
+REACTION_ON_TRANSACTION_FAILED = "❌"  # red cross
+
+# Other emoji
 EMOJI_HOORAY = "🎉"
 # Greetings are used mostly with new users and when replying in DM
 REACTION_GREETINGS = "👋"  # wave
@@ -124,28 +188,19 @@ HEART_EMOJI_LIST = [
 ]
 
 
-class ProposalResult(Enum):
-    ACCEPTED = 0
-    CANCELLED_BY_REACHING_THRESHOLD = 1
-    CANCELLED_BY_PROPOSER = 2
-
-    def __str__(self):
-        if self.value == ProposalResult.ACCEPTED.value:
-            return 'Accepted'
-        elif self.value == ProposalResult.CANCELLED_BY_REACHING_THRESHOLD.value:
-            return 'Cancelled by reaching threshold'
-        elif self.value == ProposalResult.CANCELLED_BY_PROPOSER.value:
-            return 'Cancelled by proposer'
-
-
 # ==============
 # Messages texts
 # ==============
 
-# Validation error messages
-GRANT_COMMAND_MESSAGE = """
-{prefix}{grant_command} {mention} {amount} {description}. Voting: {voting_url}
+# Grant apply messages
+GRANT_COMMAND_LAZY_CONSENSUS_MESSAGE = """
+{prefix}{grant_command} {mention} {amount} {description}. Requested by {author}, approved via lazy consensus. Voting: {voting_url}
 """
+GRANT_COMMAND_FREE_FUNDING_MESSAGE = """
+{prefix}{grant_command} {mentions} {amount} {description}. Tips sent by {author} ({balance} points remaining): {tips_url}
+"""
+
+# Lazy consensus validation error messages
 COMMAND_FORMAT_RESPONSE = """
 Hey there, {author}! It looks like you're trying to use the !propose command, but something's not quite right with the syntax. No worries though, I've got you covered.
 
@@ -166,13 +221,11 @@ ERROR_MESSAGE_INVALID_COMMAND_FORMAT = "Oopsie! The command format is as importa
 ERROR_MESSAGE_INVALID_USER = (
     "Hmmm, that user doesn't seem to be around here. Did you check under the couch?"
 )
-ERROR_MESSAGE_INVALID_AMOUNT = (
-    "The amount must be a positive number. Example: `!propose @mention 100 for a giant robot.`"
-)
+ERROR_MESSAGE_INVALID_AMOUNT = "The amount must be a positive number."
 ERROR_MESSAGE_NEGATIVE_AMOUNT = "Hold on, {amount} is not enough to even buy a pack of gum. The amount has to be positive, my friend."
 ERROR_MESSAGE_OVERFLOW_AMOUNT = "Whoa there, looks like you're trying to request a whopper of a number! Better try again with a smaller amount before the numbers run away from us!"
 ERROR_MESSAGE_LITTLE_AMOUNT = f"Whoa there, it looks like you're trying to vote for a pocket change. Minimum amount: {MIN_PROPOSAL_AMOUNT}."
-ERROR_MESSAGE_EMPTY_AMOUNT = "The amount is like the cherry on top of a sundae, without it, your proposal just isn't sweet enough. `!propose @mention 100 for a unicorn farm.`"
+ERROR_MESSAGE_EMPTY_AMOUNT = "The amount is like the cherry on top of a sundae, without it, your proposal just isn't sweet enough."
 ERROR_MESSAGE_INVALID_DESCRIPTION = "You know what they say, if you don't describe your grant proposal, how will anyone know how awesome it is? `!propose @mention 100 for a giant robot.`"
 ERROR_MESSAGE_LENGTHY_DESCRIPTION = f"Please reduce the description length to less than {MAX_DESCRIPTION_LENGTH} characters. Like, who wants to read that much anyways?"
 ERROR_MESSAGE_SHORTY_DESCRIPTION = f"Less is not always more, my friend. A tiny bit more detailed description would be greatly appreciated."
@@ -181,10 +234,19 @@ ERROR_MESSAGE_INVALID_ROLE = "Sorry, you need Layer 3 role to use this command. 
 ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED = "The {amount} grant for {mention} was applied, but I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author} is applied! However, I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 
+# Free funding validation error messages
+ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT = "Oopsie! Wrong command format. Use it like `!send`, but always add description so people know what you're up to. For more info, check out `!help-tips`."
+ERROR_MESSAGE_FREE_TRANSACTION_TO_YOURSELF = "I'm sorry, Dave. I'm afraid I can't let you do that. Sending tips to yourself is not allowed. https://www.youtube.com/watch?v=ARJ8cAGm6JE"  # Alternative: Can't send points to yourself, sorry! But I'm sure there's someone out there who deserves some recognition from you.
+ERROR_MESSAGE_NOT_ENOUGH_BALANCE = (
+    "Sorry, your balance is not enough. You have {balance} 'tips' remaining this season."
+)
+
 # When functionality is paused
 PROPOSALS_PAUSED_RESPONSE = "Our proposal box is overflowing with awesome ideas! We're taking a little pause to catch up. But don't worry, we'll be back in action soon. Thanks for your patience!"
 PROPOSALS_PAUSED_RECOVERY_RESPONSE = "Bonjour! Our bot is taking a petit peu de repos to start the day off on the right foot. Don't worry, it's a short break - try again in just a minute!"
 VOTING_PAUSED_RECOVERY_RESPONSE = "Hey there! We're in the middle of a database recovery, which means we can't count your vote just yet. Give it a minute, and then come back and cast your ballot again!"
+FREE_FUNDING_PAUSED_RESPONSE = "Sending 'tips' was temporarily paused."
+FREE_FUNDING_PAUSED_RECOVERY_RESPONSE = "Bonjour! Our bot is taking a petit peu de repos to start the day off on the right foot. Don't worry, it's a short break - try again in just a minute!"
 
 # Help messages
 HELP_MESSAGE_NON_AUTHORIZED_USER = f"""
@@ -231,6 +293,10 @@ Your vote against a proposal of {author} has been counted. The voting ends {coun
 If you change your mind after talking to the author, remember to remove {cancel_emoji} from {voting_link}.
 """
 HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL = "Hi there! Your message was removed from `#l3-voting`, because it was decided to leave the channel opened only for messages by bots (for example, EasyPoll can write there too, but not humans). This is to maintain the channel cleaner, so others can simply see all active votings. Please use `#l3-general` or other channels to post your message. The decision was made here: https://discord.com/channels/768556386404794448/1060864279303172136/1077580065648427060"
+EXPORT_CHANNEL_REPLY = "Here you go! You'll find three tabs in the document - lazy consensus history, tips balances and tips history. "
+
+# Free funding messages
+FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season. Use the 'tips' command just like you would use 'send'."
 
 # ======================
 # General proposal texts
