@@ -90,15 +90,10 @@ VOTERS_LIST_SEPARATOR = ", "  # A separator between the dissenter nicknames in t
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 MIN_DESCRIPTION_LENGTH = 30  # just some common sense value
-<<<<<<< HEAD
-MAX_PROPOSAL_AMOUNT = 100000000
-MIN_PROPOSAL_AMOUNT = 500
-=======
 # Maximal amount in any transaction (used primarily to avoid overflow, but also as a limit to unreasonably high amounts)
 MAX_TRANSACTION_AMOUNT = 100000000
 # Minimal amount of lazy consensus grant proposal
 MIN_PROPOSAL_AMOUNT = 250
->>>>>>> main-eco
 MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION = 0.35
 
 # To keep voting channel clean, all human messages can be removed from there; a help message will be sent over to user - HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL
