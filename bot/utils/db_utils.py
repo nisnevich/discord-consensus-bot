@@ -8,10 +8,11 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Query
 from sqlalchemy import create_engine
 
-from bot.config.schemas import Base, Proposals, ProposalHistory
+from bot.config.schemas import Base, Proposals, ProposalHistory, FreeFundingBalance
 from bot.config.logging_config import log_handler, console_handler
 from bot.config.const import *
-from bot.utils.discord_utils import get_discord_client, get_message, get_user_by_id_or_mention
+from bot.utils.discord_utils import get_discord_client, get_message
+from bot.utils.formatting_utils import get_nickname_by_id_or_mention
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -66,6 +67,10 @@ class DBUtil:
             Base.metadata.create_all(DBUtil.engine)
         else:
             logger.info("Table already exist: %s", VOTERS_TABLE_NAME)
+        if not DBUtil.engine.has_table(FREE_FUNDING_BALANCES_TABLE_NAME):
+            Base.metadata.create_all(DBUtil.engine)
+        else:
+            logger.info("Table already exist: %s", FREE_FUNDING_BALANCES_TABLE_NAME)
 
         # Creating tables that are used for history and analytics
         if not DBUtil.engine_history.has_table(GRANT_PROPOSALS_TABLE_NAME):
@@ -80,6 +85,13 @@ class DBUtil:
             Base.metadata.create_all(DBUtil.engine_history)
         else:
             logger.info("Table already exist: %s", PROPOSAL_HISTORY_TABLE_NAME)
+        if not DBUtil.engine_history.has_table(FREE_FUNDING_TRANSACTIONS_TABLE_NAME):
+            Base.metadata.create_all(DBUtil.engine_history)
+        else:
+            logger.info("Table already exist: %s", FREE_FUNDING_TRANSACTIONS_TABLE_NAME)
+
+    def get_user_free_funding_balance(self, author_mention) -> Query:
+        return DBUtil.session.query(FreeFundingBalance).filter_by(author=author_mention).first()
 
     def load_pending_grant_proposals(self) -> Query:
         return DBUtil.session.query(Proposals)
@@ -92,10 +104,25 @@ class DBUtil:
         for proposal in pending_grant_proposals:
             logger.info(proposal)
 
-    async def filter(self, table, condition):
-        async with DBUtil.session_lock:
-            query = DBUtil.session.query(table)
-            return query.filter(condition).first()
+    async def filter(self, table, is_history=True, condition=None):
+        """
+        Filters the given ORM objects and returns a query (results should be retrieved using
+        statements like .all() or .first()). The DB is chosen depending on is_history parameter.
+        """
+        if is_history:
+            async with DBUtil.session_lock_history:
+                query = DBUtil.session_history.query(table)
+                if condition:
+                    return query.filter(condition)
+                else:
+                    return query
+        else:
+            async with DBUtil.session_lock:
+                query = DBUtil.session.query(table)
+                if condition:
+                    return query.filter(condition)
+                else:
+                    return query
 
     async def add(self, orm_object):
         """
@@ -129,7 +156,12 @@ class DBUtil:
             list.remove(orm_object)
             DBUtil.session.commit()
 
-    async def add_history_item(self, proposal, result):
+    async def add_free_transactions_history_item(self, transaction):
+        async with DBUtil.session_lock_history:
+            DBUtil.session_history.add(transaction)
+            DBUtil.session_history.commit()
+
+    async def add_proposals_history_item(self, proposal, result):
         """
         Adds a proposal to the ProposalHistory table after it has been processed.
 
@@ -140,15 +172,11 @@ class DBUtil:
         async with DBUtil.session_lock_history:
             # Before writing to DB, we should modify some values using Discord API for them to be quickly retrieved when exporting analytics
             # Converting author id to nickname
-            proposal.author = await get_user_by_id_or_mention(proposal.author)
-            if type(proposal.author) is discord.User:
-                proposal.author = f"{proposal.author.name}#{proposal.author.discriminator}"
+            proposal.author = await get_nickname_by_id_or_mention(proposal.author)
 
             # If the proposal has a grant, the mentioned person id will be converted to a nickname
             if not proposal.is_grantless:
-                proposal.mention = await get_user_by_id_or_mention(proposal.mention)
-                if type(proposal.mention) is discord.User:
-                    proposal.mention = f"{proposal.mention.name}#{proposal.mention.discriminator}"
+                proposal.mention = await get_nickname_by_id_or_mention(proposal.mention)
             # Retrieving voting message to save URL
             voting_message = await get_message(
                 client, VOTING_CHANNEL_ID, proposal.voting_message_id
@@ -169,3 +197,7 @@ class DBUtil:
                 )
             )
             DBUtil.session_history.commit()
+
+    async def save(self):
+        async with DBUtil.session_lock:
+            DBUtil.session.commit()

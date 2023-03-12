@@ -17,6 +17,8 @@ from bot.config.const import (
     GRANT_PROPOSALS_TABLE_NAME,
     VOTERS_TABLE_NAME,
     PROPOSAL_HISTORY_TABLE_NAME,
+    FREE_FUNDING_TRANSACTIONS_TABLE_NAME,
+    FREE_FUNDING_BALANCES_TABLE_NAME,
 )
 
 Base = declarative_base()
@@ -113,3 +115,41 @@ class ProposalHistory(Proposals):
 
     def __repr__(self):
         return f"ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url})"
+
+
+class FreeFundingBalance(Base):
+    __tablename__ = FREE_FUNDING_BALANCES_TABLE_NAME
+
+    id = Column(Integer, primary_key=True)
+    # The id of the user who sends transactions
+    author = Column(String)
+    # The nickname of the user who sends transactions (so that analytics will be retrieved quickly, without the need to query Discord for nicknames)
+    nickname = Column(String)
+    # The remaining balance of the user
+    balance = Column(Float)
+
+    def __repr__(self):
+        return f"<FreeFundingBalance(id={self.id}, author='{self.author}', balance={self.balance})>"
+
+
+class FreeFundingTransaction(Base):
+    __tablename__ = FREE_FUNDING_TRANSACTIONS_TABLE_NAME
+
+    id = Column(Integer, primary_key=True)
+    # The id of the user who sends transactions
+    author = Column(String)
+    # Comma-separated list of user mentions to whom funds were sent (the separator is defined in FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR)
+    mentions = Column(String)
+    # Total amount of funds - a sum of the amounts sent to each mentioned user (defining some constraints to avoid overflow)
+    total_amount = Column(
+        Float, CheckConstraint('total_amount > -1000000000 AND total_amount < 1000000000')
+    )
+    # The text description of the transaction (validated to fit between MIN_DESCRIPTION_LENGTH and MAX_DESCRIPTION_LENGTH)
+    description = Column(String)
+    # Date and time when the transaction was performed
+    submitted_at = Column(DateTime)
+    # URL of the message where transaction was send
+    message_url = Column(String)
+
+    def __repr__(self):
+        return f"<FreeFundingTransaction(id={self.id}, author='{self.author}', mentions='{self.mentions}', amount={self.total_amount}, description='{self.description}', submitted_at='{self.submitted_at}, message_url='{self.message_url}')>"
