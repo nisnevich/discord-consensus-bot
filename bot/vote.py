@@ -189,7 +189,7 @@ async def cancel_proposal(proposal, reason, voting_message):
     await voting_message.edit(content=edit_in_voting_channel, suppress=True)
 
     # Add history item for analytics
-    await db.add_history_item(proposal, reason)
+    await db.add_proposals_history_item(proposal, reason)
     logger.debug(
         "Added history item, voting_message_id=%d, result=%s",
         proposal.voting_message_id,

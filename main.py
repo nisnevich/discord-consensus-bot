@@ -23,11 +23,11 @@ from bot.config.const import (
 )
 from bot.config.schemas import Voters
 from bot.utils.dev_utils import measure_time_async
-from bot.vote import cancel_proposal
 
 # imports below are needed to make discord client aware of decorated methods
 from bot.propose import approve_proposal, propose_command
-from bot.vote import on_raw_reaction_add
+from bot.transact import free_funding_transact_command
+from bot.vote import cancel_proposal, on_raw_reaction_add
 from bot.help import help
 
 logger = logging.getLogger(__name__)

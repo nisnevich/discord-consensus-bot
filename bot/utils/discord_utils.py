@@ -74,11 +74,13 @@ async def get_user_by_id_or_mention(id_or_mention):
     Retrieves the nickname of a Discord user by either their user ID or mention.
 
     :param id_or_mention: The Discord user ID or mention (e.g. <@703574259401883728>)
-    :return: The user on the Discord server
+    :return: The user on the Discord server, or None if it couldn't be found
     """
+    # If mention was given, remove <@ and >
     if id_or_mention.startswith("<@") and id_or_mention.endswith(">"):
         user_id = int(id_or_mention[2:-1].strip("!"))
+    # Otherwise simply convert to int
     else:
         user_id = int(id_or_mention)
-    user = await client.fetch_user(user_id)
-    return user
+    # Retrieve the user
+    return await client.fetch_user(user_id)

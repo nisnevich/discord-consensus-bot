@@ -217,6 +217,7 @@ async def propose_command(ctx, *args):
             logger.info("Unauthorized user. message_id=%d", original_message.id)
             return
 
+        # Less than 3 args means the input is certainly wrong (mention, amount, and some description of the grant is required)
         if len(args) < 3:
             await original_message.reply(ERROR_MESSAGE_INVALID_COMMAND_FORMAT)
             logger.info(
@@ -227,8 +228,9 @@ async def propose_command(ctx, *args):
             return
 
         is_grantless = True
+        # If there are no mentions, consider grantless, otherwise check if it looks like grant request
         if original_message.mentions:
-            # If the first argument is a mention of a discord user - consider it a grant proposal (and validate accordingly)
+            # If the first argument is a mention of a discord user - consider it a grant proposal (and validate accordingly), otherwise grantless
             mention = original_message.mentions[0]
             # Converting mention to <@123> format, because in the arguments it's passed like that
             mention_id_str = "<@{}>".format(mention.id)

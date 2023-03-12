@@ -3,3 +3,5 @@ asynctest
 sqlalchemy~=1.4.46
 multipledispatch
 nltk
+path
+openpyxl
