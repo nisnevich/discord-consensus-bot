@@ -1,5 +1,5 @@
 from discord import User
-from discord.utils import find
+from discord.utils import find, get
 
 import nltk
 from nltk.corpus import words
@@ -87,6 +87,116 @@ async def validate_roles(user: User) -> bool:
     return True
 
 
+async def validate_mentions(original_message, mentions):
+    """
+    Validates mention(s) given in a command.
+    """
+    # Assume that the validation of the mention was done when parsing the command
+    # Only do some basic check
+    if mentions is None:
+        await original_message.reply(ERROR_MESSAGE_INVALID_USER)
+        logger.info(
+            "Invalid mentions. message_id=%d, invalid value=%s",
+            original_message.id,
+            original_message.content,
+        )
+        return False
+    return True
+
+
+async def validate_amount(original_message, amount):
+    """
+    Validates amount of a given transaction (emptiness and overflow checks).
+    """
+    # Check if amount is set
+    if not amount:
+        await original_message.reply(ERROR_MESSAGE_EMPTY_AMOUNT)
+        logger.info("Amount not set. message_id=%d, invalid value=%s", original_message.id, amount)
+        return False
+
+    # Check if amount is float
+    if not isinstance(amount, float):
+        await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
+        logger.info("Invalid amount. message_id=%d, invalid value=%s", original_message.id, amount)
+        return False
+
+    # Check if amount is a positive float
+    if float(amount) <= 0:
+        await original_message.reply(
+            ERROR_MESSAGE_NEGATIVE_AMOUNT.format(amount=get_amount_to_print(amount))
+        )
+        logger.info(
+            "Invalid amount, should be positive float. message_id=%d, invalid value=%s",
+            original_message.id,
+            amount,
+        )
+        return False
+
+    # Check if amount is not larger than a certain value to avoid overflow
+    if float(amount) > MAX_TRANSACTION_AMOUNT:
+        await original_message.reply(
+            ERROR_MESSAGE_OVERFLOW_AMOUNT.format(amount=get_amount_to_print(amount))
+        )
+        logger.info(
+            "Too large amount. message_id=%d, invalid value=%s",
+            original_message.id,
+            amount,
+        )
+        return False
+    return True
+
+
+async def validate_free_transaction(
+    original_message, author, author_balance, mentions, amount: float, description: str
+) -> bool:
+    # Check if mentions are valid
+    if not await validate_mentions(original_message, mentions):
+        return False
+
+    # Check if amount is valid
+    if not await validate_amount(original_message, amount):
+        return False
+
+    # Users can't send points to themselves
+    if author in mentions:
+        await original_message.reply(ERROR_MESSAGE_FREE_TRANSACTION_TO_YOURSELF)
+        logger.info(
+            "Attempted to send points to himself. message_id=%d, invalid value=%s",
+            original_message.id,
+            original_message.content,
+        )
+        return False
+
+    # Check if the balance is enough
+    total_amount = amount * len(mentions)
+    if total_amount > author_balance.balance:
+        await original_message.reply(
+            ERROR_MESSAGE_NOT_ENOUGH_BALANCE.format(
+                balance=get_amount_to_print(author_balance.balance)
+            )
+        )
+        logger.info(
+            "Not enough balance. message_id=%d, invalid value=%d, remaining balance=%d",
+            original_message.id,
+            total_amount,
+            author_balance.balance,
+        )
+        return False
+
+    # With free transactions, we don't restrict description (it may even be empty), except that it should be short enough not to overflow Discord API restrictions (the limit is about 1500-2000)
+    # check that the description is no longer than a certain amount of characters
+    if description and len(description) > MAX_DESCRIPTION_LENGTH:
+        await original_message.reply(ERROR_MESSAGE_LENGTHY_DESCRIPTION)
+        logger.info(
+            "Too long description, exceeds the limit of %s. message_id=%d, invalid value=%s",
+            MAX_DESCRIPTION_LENGTH,
+            original_message.id,
+            description,
+        )
+        return False
+    return True
+
+
 async def validate_grantless_message(original_message, description: str) -> bool:
     # check if the description is a non-empty string that has characters besides spaces
     if not description or not description.strip():
@@ -107,7 +217,6 @@ async def validate_grantless_message(original_message, description: str) -> bool
         )
         return False
 
-    print(len(description))
     # check that the description is longer than a certain amount of characters
     if len(description) < MIN_DESCRIPTION_LENGTH:
         await original_message.reply(ERROR_MESSAGE_SHORTY_DESCRIPTION)
@@ -150,51 +259,12 @@ async def validate_grant_message(
         original_message.mentions,
     )
 
-    # Assume that the validation of the mention was done when parsing the command
-    # Only do some basic check
-    if mention is None:
-        await original_message.reply(ERROR_MESSAGE_INVALID_USER)
-        logger.info(
-            "Invalid mention. message_id=%d, invalid value=%s",
-            original_message.id,
-            original_message.content,
-        )
+    # Check if mentions are valid
+    if not validate_mentions(original_message, mentions):
         return False
 
-    # Check if amount is set
-    if not amount:
-        await original_message.reply(ERROR_MESSAGE_EMPTY_AMOUNT)
-        logger.info("Amount not set. message_id=%d, invalid value=%s", original_message.id, amount)
-        return False
-
-    # Check if amount is float
-    if not isinstance(amount, float):
-        await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
-        logger.info("Invalid amount. message_id=%d, invalid value=%s", original_message.id, amount)
-        return False
-
-    # Check if amount is a positive float
-    if float(amount) <= 0:
-        await original_message.reply(
-            ERROR_MESSAGE_NEGATIVE_AMOUNT.format(amount=get_amount_to_print(amount))
-        )
-        logger.info(
-            "Invalid amount, should be positive float. message_id=%d, invalid value=%s",
-            original_message.id,
-            amount,
-        )
-        return False
-
-    # Check if amount is not larger than a certain value to avoid overflow
-    if float(amount) > MAX_PROPOSAL_AMOUNT:
-        await original_message.reply(
-            ERROR_MESSAGE_OVERFLOW_AMOUNT.format(amount=get_amount_to_print(amount))
-        )
-        logger.info(
-            "Too large amount. message_id=%d, invalid value=%s",
-            original_message.id,
-            amount,
-        )
+    # Check if amount is valid
+    if not validate_amount(original_message, amount):
         return False
 
     # Check if the amount is less than a certain value to avoid flooding the voting channel
