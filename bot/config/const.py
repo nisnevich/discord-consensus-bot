@@ -43,8 +43,10 @@ class ServerEnvironment(Enum):
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
 PROPOSAL_DURATION_SECONDS = 30  # 3 days is 259200
-# Default lazy consensus threshold
-LAZY_CONSENSUS_THRESHOLD = 1
+# Minimal number of voters "against" needed to cancel a proposal
+LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 1
+# Minimal number of voters "for" in order for a proposal to pass
+FULL_CONSENSUS_THRESHOLD_POSITIVE = 1
 # A total number of free funding for each person per season
 FREE_FUNDING_LIMIT_PERSON_PER_SEASON = 3000
 
@@ -114,16 +116,30 @@ EXPORT_DATA_FILENAME = "analytics.xlsx"
 
 class ProposalResult(Enum):
     ACCEPTED = 0
-    CANCELLED_BY_REACHING_THRESHOLD = 1
+    CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD = 1
     CANCELLED_BY_PROPOSER = 2
+    CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD = 3
 
     def __str__(self):
         if self.value == ProposalResult.ACCEPTED.value:
             return 'Accepted'
-        elif self.value == ProposalResult.CANCELLED_BY_REACHING_THRESHOLD.value:
-            return 'Cancelled by reaching threshold'
+        elif self.value == ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD.value:
+            return 'Cancelled by reaching threshold of votes against'
         elif self.value == ProposalResult.CANCELLED_BY_PROPOSER.value:
             return 'Cancelled by proposer'
+        elif self.value == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD.value:
+            return 'Cancelled by not reaching minimal supporting votes'
+
+
+class Vote(Enum):
+    YES = 0
+    NO = 1
+
+    def __str__(self):
+        if self.value == Vote.YES.value:
+            return 'YES'
+        elif self.value == Vote.NO.value:
+            return 'NO'
 
 
 # =============
@@ -136,7 +152,8 @@ REACTION_ON_BOT_MENTION = "👋"  # wave
 REACTION_ON_PROPOSAL_ACCEPTED = "✅"  # green tick
 REACTION_ON_PROPOSAL_CANCELLED = "🍃"  # leaves
 REACTION_VOTING_DEFAULT_POSITIVE = "👀"  # eyes
-CANCEL_EMOJI_UNICODE = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
+EMOJI_VOTING_NO = "❌"  # ❌ (:x: emoji), unicode: \U0000274C
+EMOJI_VOTING_YES = "✅"  # green tick
 
 # Free funding emoji
 REACTION_ON_TRANSACTION_SUCCEED = "✅"  # green tick
@@ -218,6 +235,7 @@ ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Looks like your proposal needs 
 ERROR_MESSAGE_INVALID_ROLE = "Sorry, you need Layer 3 role to use this command. Type `!help-lazy` to learn more about the bot in DM."
 ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED = "The {amount} grant for {mention} was applied, but I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author} is applied! However, I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
+ERROR_MESSAGE_AUTHOR_SUPPORTING_OWN_PROPOSAL = "Sorry, but supporting your own proposal is a no-no."
 
 # Free funding validation error messages
 ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT = "Oopsie! Wrong command format. Use it like `!send`, but always add description so people know what you're up to. For more info, check out `!help-tips`."
@@ -256,11 +274,11 @@ Here's how it works:
 
 - Your proposal will be sent straight to the `#l3-voting` channel for all to see. And don't worry, you don't have to lift a finger after that - just make sure you explained your proposal clearly and let the magic happen! 🦥
 
-- After {int(PROPOSAL_DURATION_SECONDS / 60 / 60)} hours, if there's less than {LAZY_CONSENSUS_THRESHOLD} dissenters, BAM! You've got the green light. If you requested a grant, it will be automatically applied. 🚀 I will keep you all updated.
+- After {int(PROPOSAL_DURATION_SECONDS / 60 / 60)} hours, if there's less than {LAZY_CONSENSUS_THRESHOLD_NEGATIVE} dissenters, BAM! You've got the green light. If you requested a grant, it will be automatically applied. 🚀 I will keep you all updated.
 
-- If you disagree to any proposal, add the {CANCEL_EMOJI_UNICODE} reaction to it in `#l3-voting`. Don't worry, you can change your mind later (unless it's too late). Bonus points if you tell us why you're against it! ⏱️
+- If you disagree to any proposal, add the {EMOJI_VOTING_NO} reaction to it in `#l3-voting`. Don't worry, you can change your mind later (unless it's too late). Bonus points if you tell us why you're against it! ⏱️
 
-- Also, if you change your mind regarding your own proposal, just add {CANCEL_EMOJI_UNICODE} to it in `#l3-voting` and poof! It's gone. Magic! 🎩
+- Also, if you change your mind regarding your own proposal, just add {EMOJI_VOTING_NO} to it in `#l3-voting` and poof! It's gone. Magic! 🎩
 
 Before submitting a proposal, make sure to explain the background and details of it. Use the lazy consensus responsibly. *Clearly state what actions will be taken if the proposal is approved.* Avoid vague descriptions, and submit proposals in the appropriate channel (e.g. the channel of your activity or #l3-season-1-activities). The bot will create a post in #l3-voting once you send a proposal.
 
@@ -288,8 +306,9 @@ FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season.
 # ======================
 
 PROPOSAL_CANCELLED_VOTING_CHANNEL = {
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Proposal cancelled due to opposition from {threshold} members - {voters_list}: {link_to_original_message}",
+    ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Proposal cancelled due to opposition from {threshold} members - {voters_list}: {link_to_original_message}",
     ProposalResult.CANCELLED_BY_PROPOSER: ":leaves: Proposal cancelled by author ({author}): {link_to_original_message}",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "The proposal has been canceled due to insufficient support - {supporters_number} vote(s) \"for\", but it needs as least {threshold}. {supporters_list}: {link_to_original_message}",
 }
 
 # =====================
@@ -323,8 +342,9 @@ GRANT_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT = """
 """
 GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given and {mention} is now richer by {amount} points!",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
+    ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Apologies, your proposal was cancelled due to insufficient support. However, please don't be discouraged and feel free to submit more proposals in the future. Your efforts are appreciated and we all hope to see more great ideas from you soon.",
 }
 
 # =====================
@@ -345,6 +365,7 @@ GRANTLESS_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT = """
 """
 GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The proposal has been accepted!",
-    ProposalResult.CANCELLED_BY_REACHING_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
+    ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Apologies, your proposal was cancelled due to insufficient support. However, please don't be discouraged and feel free to submit more proposals in the future. Your efforts are appreciated and we all hope to see more great ideas from you soon.",
 }

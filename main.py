@@ -9,14 +9,14 @@ from bot.utils.proposal_utils import (
     add_proposal,
     get_proposals_count,
     is_relevant_proposal,
-    get_voter,
+    find_matching_voter,
     add_voter,
     remove_voter,
 )
 from bot.utils.discord_utils import get_discord_client, get_message
 from bot.utils.validation import validate_roles
 from bot.config.const import (
-    CANCEL_EMOJI_UNICODE,
+    EMOJI_VOTING_NO,
     VOTING_CHANNEL_ID,
     SLEEP_BEFORE_RECOVERY_SECONDS,
     ProposalResult,
@@ -55,7 +55,7 @@ async def sync_voters_db_with_discord(client, proposal):
     x_reactions = [
         reaction
         for reaction in voting_message.reactions
-        if str(reaction.emoji) == CANCEL_EMOJI_UNICODE
+        if str(reaction.emoji) == EMOJI_VOTING_NO
     ]
     logger.debug(f"Reactions count: {len(x_reactions)}")
     x_reactors_valid = []
@@ -102,7 +102,7 @@ async def sync_voters_db_with_discord(client, proposal):
     # Process each valid user who added the cancel reaction
     for reactor in x_reactors_valid:
         # Retrieve the user from DB
-        voter = await get_voter(reactor.id, proposal.voting_message_id)
+        voter = await find_matching_voter(reactor.id, proposal.voting_message_id)
 
         if not voter:
             # If voter is not in DB, add it
@@ -118,7 +118,7 @@ async def sync_voters_db_with_discord(client, proposal):
     if len(proposal.voters) >= proposal.threshold:
         logger.debug("Threshold is reached, cancelling")
         await cancel_proposal(
-            proposal, ProposalResult.CANCELLED_BY_REACHING_THRESHOLD, voting_message
+            proposal, ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD, voting_message
         )
 
 
