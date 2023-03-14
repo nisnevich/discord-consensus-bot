@@ -12,7 +12,7 @@ from bot.config.logging_config import log_handler, console_handler
 from bot.utils.discord_utils import get_discord_client, get_message, get_user_by_id_or_mention
 from bot.utils.validation import validate_roles
 from bot.utils.db_utils import DBUtil
-from bot.utils.formatting_utils import get_amount_to_print
+from bot.utils.formatting_utils import get_amount_to_print, get_nickname_by_id_or_mention
 from bot.config.schemas import ProposalHistory, FreeFundingTransaction, FreeFundingBalance
 from bot.config.const import ProposalResult, VOTING_CHANNEL_ID
 
@@ -56,14 +56,22 @@ async def send_free_funding_balance(ctx):
         # Retrieve the authors balance
         author_mention = str(ctx.message.author.mention)
         author_balance = db.get_user_free_funding_balance(author_mention)
-        if author_balance:
-            # Reply with the balance
-            await ctx.message.add_reaction(REACTION_ON_BOT_MENTION)
-            await ctx.message.reply(
-                FREE_FUNDING_BALANCE_MESSAGE.format(
-                    balance=get_amount_to_print(author_balance.balance)
-                )
+        # Add author to DB if not added yet
+        if not author_balance:
+            logger.debug("Added free funding balance for author=%s", author_mention)
+            author_balance = FreeFundingBalance(
+                author=author_mention,
+                nickname=await get_nickname_by_id_or_mention(author_mention),
+                balance=FREE_FUNDING_LIMIT_PERSON_PER_SEASON,
             )
+            await db.add(author_balance)
+
+        # Reply with the balance
+        await ctx.message.add_reaction(REACTION_ON_BOT_MENTION)
+        await ctx.message.reply(
+            FREE_FUNDING_BALANCE_MESSAGE.format(balance=get_amount_to_print(author_balance.balance))
+        )
+
     except Exception as e:
         try:
             # Try replying in Discord
