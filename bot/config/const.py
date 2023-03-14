@@ -78,7 +78,17 @@ GRANT_PROPOSAL_COMMAND_NAME = 'propose'
 PROPOSAL_COMMAND_ALIASES = ['lazy', 'suggest', 'prop', 'consensus']
 GRANT_APPLY_COMMAND_NAME = 'grant'
 FREE_FUNDING_COMMAND_NAME = 'tips'
-FREE_FUNDING_COMMAND_ALIASES = ['personal', 'free', 'my', 'easy', 'gift', 'love']
+FREE_FUNDING_COMMAND_ALIASES = [
+    'personal',
+    'free',
+    'my',
+    'easy',
+    'gift',
+    'love',
+    'tip',
+    'thanks',
+    'thank',
+]
 HELP_COMMAND_NAME = 'help-lazy'
 HELP_COMMAND_ALIASES = ['lazy-help', 'help-consensus', 'consensus-help', 'help-tips', 'tips-help']
 EXPORT_COMMAND_NAME = 'export'
@@ -281,7 +291,7 @@ HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL = "Hi there! Your message was removed f
 EXPORT_CHANNEL_REPLY = "Here you go! You'll find three tabs in the document - lazy consensus history, tips balances and tips history. "
 
 # Free funding messages
-FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season. Use the 'tips' command just like you would use 'send'."
+FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season. Use the '!tips' command just like you would use '!send'."
 
 # ======================
 # General proposal texts
