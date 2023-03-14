@@ -72,7 +72,17 @@ GRANT_PROPOSAL_COMMAND_NAME = 'propose'
 PROPOSAL_COMMAND_ALIASES = ['lazy', 'suggest', 'prop', 'consensus']
 GRANT_APPLY_COMMAND_NAME = 'grant'
 FREE_FUNDING_COMMAND_NAME = 'tips'
-FREE_FUNDING_COMMAND_ALIASES = ['personal', 'free', 'my', 'easy', 'gift', 'love']
+FREE_FUNDING_COMMAND_ALIASES = [
+    'personal',
+    'free',
+    'my',
+    'easy',
+    'gift',
+    'love',
+    'tip',
+    'thanks',
+    'thank',
+]
 HELP_COMMAND_NAME = 'help-lazy'
 HELP_COMMAND_ALIASES = ['lazy-help', 'help-consensus', 'consensus-help', 'help-tips', 'tips-help']
 EXPORT_COMMAND_NAME = 'export'
