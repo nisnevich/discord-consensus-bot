@@ -57,7 +57,7 @@ class Proposals(Base):
     # Minimal number of voters "against" needed to cancel this proposal
     threshold = Column(Integer)
     # Minimal number of voters "for" in order for a proposal to pass
-    threshold_positive = Column(Integer)
+    threshold_positive = Column(Integer, default=-1)
 
     """
     In the next line, back_populates creates a bidirectional relationship between the two classes.
@@ -89,7 +89,7 @@ class Voters(Base):
     proposal_id = Column(Integer, ForeignKey("proposals.id"))
     value = Column(String)
 
-    proposal = relationship("Proposals", back_populates=VOTERS_TABLE_NAME)
+    proposals = relationship("Proposals", back_populates=VOTERS_TABLE_NAME)
 
     def __repr__(self) -> str:
         return f"<Voter(id={self.id}, user_id={self.user_id}, proposal_id={self.proposal_id}, value={self.value}>"
