@@ -11,8 +11,8 @@ LOG_FILE_SIZE = 1024 * 1024 * 10
 DEFAULT_LOG_LEVEL = logging.DEBUG
 
 # Database
-DB_PATH = os.path.join(PROJECT_ROOT, "consensus-bot.db")
-DB_HISTORY_PATH = os.path.join(PROJECT_ROOT, "consensus-bot-history.db")
+DB_PATH = os.path.join(PROJECT_ROOT, "db", "consensus-bot.db")
+DB_HISTORY_PATH = os.path.join(PROJECT_ROOT, "db", "consensus-bot-history.db")
 GRANT_PROPOSALS_TABLE_NAME = "proposals"
 VOTERS_TABLE_NAME = "voters"
 PROPOSAL_HISTORY_TABLE_NAME = "proposal_history"

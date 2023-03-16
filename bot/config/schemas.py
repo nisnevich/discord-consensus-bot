@@ -57,7 +57,7 @@ class Proposals(Base):
     # Minimal number of voters "against" needed to cancel this proposal
     threshold = Column(Integer)
     # Minimal number of voters "for" in order for a proposal to pass
-    threshold_positive = Column(Integer, default=-1)
+    threshold_positive = Column(Integer)
 
     """
     In the next line, back_populates creates a bidirectional relationship between the two classes.
