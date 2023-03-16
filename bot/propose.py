@@ -14,10 +14,11 @@ from bot.utils.proposal_utils import (
     get_proposal,
     add_proposal,
     is_relevant_proposal,
+    get_voters_with_vote,
 )
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.validation import validate_roles, validate_grant_message, validate_grantless_message
-from bot.utils.discord_utils import get_discord_client
+from bot.utils.discord_utils import get_discord_client, get_message
 from bot.utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
     get_discord_countdown_plus_delta,
@@ -59,7 +60,7 @@ async def approve_proposal(voting_message_id):
         # If full consensus is enabled for this proposal, and the minimal number of supporting votes is not reached, cancel the proposal
         if (
             proposal.threshold_positive
-            and len(get_voters_with_vote(proposal, Vote.YES)) < proposal.threshold_positive
+            and len(await get_voters_with_vote(proposal, Vote.YES)) < proposal.threshold_positive
         ):
             # Retrieve the voting message
             voting_message = await get_message(client, VOTING_CHANNEL_ID, voting_message_id)

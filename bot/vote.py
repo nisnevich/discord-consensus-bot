@@ -38,6 +38,11 @@ async def is_valid_voting_reaction(payload):
         return False
     logger.debug("Emoji is correct")
 
+    # The bot adds voting reactions to each message as a template, so it should be filtered out
+    if payload.user_id == BOT_ID:
+        return False
+    logger.debug("Voter is not the bot itself.")
+
     # Check if the user role matches
     guild = client.get_guild(payload.guild_id)
     member = guild.get_member(payload.user_id)
@@ -317,8 +322,12 @@ async def on_raw_reaction_add(payload):
             len(proposal.voters),
             proposal.voting_message_id,
         )
+        # If the vote is positive, stop here after adding to DB
+        if payload.emoji.name == EMOJI_VOTING_YES:
+            return
 
-        #  Check whether the voter is the proposer himself, and then cancel the proposal
+        # If the vote is negative, continue
+        # Check whether the voter is the proposer himself, and then cancel the proposal
         if proposal.author == payload.member.mention:
             logger.debug("The proposer voted against, cancelling")
             await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
@@ -326,7 +335,7 @@ async def on_raw_reaction_add(payload):
         logger.debug("The proposer isn't the author of the proposal")
 
         # Check if the threshold is reached
-        if len(get_voters_with_vote(proposal, Vote.NO)) >= proposal.threshold:
+        if len(await get_voters_with_vote(proposal, Vote.NO)) >= proposal.threshold:
             logger.debug("Threshold is reached, cancelling")
             await cancel_proposal(
                 proposal, ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD, voting_message
