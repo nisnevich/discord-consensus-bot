@@ -1,5 +1,34 @@
 Both ini files are set up correctly.
 
+================
+Initialization
+================
+
+1) For each DB, the working directory should be initialised (this will also create alembic.ini script):
+
+alembic init alembic-main
+
+2) Then add to the generated env.py the Base import from the schema - this enables metadata connection:
+
+import path
+import sys
+
+# directory reach
+directory = path.Path(__file__).abspath()
+# setting path
+sys.path.append(directory.parent.parent.parent)
+
+from bot.config.schemas import Base
+
+3) Also in env.py initialize the metadata:
+
+target_metadata = Base.metadata
+
+
+==========
+Migration
+==========
+
 1) First, generate a migration script, e.g. for main DB:
 
 alembic -c alembic-consensus-bot.ini revision --autogenerate -m "Add new column to Proposals"
