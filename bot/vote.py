@@ -19,7 +19,11 @@ from bot.utils.proposal_utils import (
 from bot.utils.db_utils import DBUtil
 from bot.utils.validation import validate_roles
 from bot.utils.discord_utils import get_discord_client, get_message, send_dm
-from bot.utils.formatting_utils import get_amount_to_print, get_discord_countdown_plus_delta
+from bot.utils.formatting_utils import (
+    get_amount_to_print,
+    get_discord_countdown_plus_delta,
+    get_mention_by_id,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -136,15 +140,24 @@ async def on_raw_reaction_remove(payload):
 
 async def cancel_proposal(proposal, reason, voting_message):
     # Extracting dynamic data to fill messages
-    # Don't remove unused variables because messages text may change
-    mention_author = proposal.author
+    # Don't remove unused variables because messages texts change too often
+    mention_author = get_mention_by_id(proposal.author)
     description_of_proposal = proposal.description
-    list_of_voters_against = VOTERS_LIST_SEPARATOR.join(
-        f"<@{voter.user_id}>" for voter in proposal.voters if voter.value == Vote.NO.value
-    )
-    list_of_voters_for = VOTERS_LIST_SEPARATOR.join(
-        f"<@{voter.user_id}>" for voter in proposal.voters if voter.value == Vote.YES.value
-    )
+
+    # Create lists of voters
+    list_of_voters_for = []
+    list_of_voters_against = []
+    for voter in proposal.voters:
+        voter_mention = get_mention_by_id(voter.user_id)
+        if int(voter.value) == Vote.YES.value:
+            list_of_voters_for.append(voter_mention)
+        else:
+            list_of_voters_against.append(voter_mention)
+    number_of_voters_for = len(list_of_voters_for)
+    list_of_voters_for = VOTERS_LIST_SEPARATOR.join(list_of_voters_for)
+    list_of_voters_against = VOTERS_LIST_SEPARATOR.join(list_of_voters_against)
+
+    # Retrieve links to the messages
     original_message = await get_message(client, proposal.channel_id, proposal.message_id)
     link_to_voting_message = voting_message.jump_url
     link_to_initial_proposer_message = original_message.jump_url if original_message else None
@@ -197,9 +210,10 @@ async def cancel_proposal(proposal, reason, voting_message):
         )
     elif reason == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD:
         edit_in_voting_channel = PROPOSAL_CANCELLED_VOTING_CHANNEL[reason].format(
-            supporters_number=len(list_of_voters_for),
+            supporters_number=number_of_voters_for,
+            yes_voting_reaction=EMOJI_VOTING_YES,
+            supporters_list=f" ({list_of_voters_for})" if list_of_voters_for else "",
             threshold=proposal.threshold_positive,
-            supporters_list=list_of_voters_for,
             link_to_original_message=link_to_initial_proposer_message,
         )
 
@@ -293,7 +307,7 @@ async def on_raw_reaction_add(payload):
         logger.debug("User hasn't voted before")
 
         # If it's a positive vote and the author is the proposer himself, don't count the vote
-        if payload.emoji.name == EMOJI_VOTING_YES and proposal.author == payload.user_id:
+        if payload.emoji.name == EMOJI_VOTING_YES and int(proposal.author) == payload.user_id:
             # Create DM channel (not using send_dm function here, because the 'member' is used to remove the reaction later)
             guild = client.get_guild(payload.guild_id)
             member = guild.get_member(payload.user_id)
@@ -317,7 +331,8 @@ async def on_raw_reaction_add(payload):
             ),
         )
         logger.info(
-            "Added vote of user_id=%s, total %d voters against voting_message_id=%d",
+            "Added vote=%s of user_id=%s, total %d voters in voting_message_id=%d",
+            Vote.YES.value if payload.emoji.name == EMOJI_VOTING_YES else Vote.NO.value,
             payload.user_id,
             len(proposal.voters),
             proposal.voting_message_id,
@@ -328,7 +343,7 @@ async def on_raw_reaction_add(payload):
 
         # If the vote is negative, continue
         # Check whether the voter is the proposer himself, and then cancel the proposal
-        if proposal.author == payload.member.mention:
+        if int(proposal.author) == payload.member.id:
             logger.debug("The proposer voted against, cancelling")
             await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
             return
@@ -346,7 +361,7 @@ async def on_raw_reaction_add(payload):
                 payload.guild_id,
                 payload.user_id,
                 HELP_MESSAGE_VOTED_AGAINST.format(
-                    author=proposal.author,
+                    author=get_mention_by_id(proposal.author),
                     countdown=get_discord_countdown_plus_delta(
                         proposal.closed_at - datetime.utcnow()
                     ),

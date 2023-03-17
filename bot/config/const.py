@@ -42,9 +42,12 @@ class ServerEnvironment(Enum):
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 30  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 1
+# Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
+# negative votes threshold)
+FULL_CONSENSUS_ENABLED = True
 # Minimal number of voters "for" in order for a proposal to pass
 FULL_CONSENSUS_THRESHOLD_POSITIVE = 1
 # A total number of free funding for each person per season
@@ -111,6 +114,8 @@ STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME = "stopcock_lazy"
 STOP_ACCEPTING_FREE_FUNDING_TRANSACTIONS_FLAG_FILE_NAME = "stopcock_free"
 # This value is inserted in spreadsheets when a cell value is missing
 EMPTY_ANALYTICS_VALUE = "n/a"
+# A value used in DB when a certain threshold (e.g. full consensus positive votes limit) is disabled for the given proposal
+THRESHOLD_DISABLED_DB_VALUE = -1
 # The name of the file sent to user with !export command
 EXPORT_DATA_FILENAME = "analytics.xlsx"
 
@@ -133,8 +138,8 @@ class ProposalResult(Enum):
 
 
 class Vote(Enum):
-    YES = 0
-    NO = 1
+    NO = 0
+    YES = 1
 
     def __str__(self):
         if self.value == Vote.YES.value:
@@ -309,8 +314,9 @@ FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season.
 PROPOSAL_CANCELLED_VOTING_CHANNEL = {
     ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Proposal cancelled due to opposition from {threshold} members - {voters_list}: {link_to_original_message}",
     ProposalResult.CANCELLED_BY_PROPOSER: ":leaves: Proposal cancelled by author ({author}): {link_to_original_message}",
-    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "The proposal has been canceled due to insufficient support - {supporters_number} vote(s) \"for\", but it needs as least {threshold}. {supporters_list}: {link_to_original_message}",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "The proposal didn't pass because it lacked enough support. {supporters_number} member(s) voted {yes_voting_reaction}{supporters_list}, but it needs at least {threshold} supporter(s): {link_to_original_message}",
 }
+PROPOSAL_ACCEPTED_SUPPORTED_BY_VOTING_CHANNEL_EDIT = "*Supported by*: {supporters_list}\n"
 
 # =====================
 # Proposals with grants
@@ -329,7 +335,7 @@ def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
 
 # Active voting
 NEW_GRANT_PROPOSAL_RESPONSE = """
-Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted. Layer 3 members who object can add ❌ here: {voting_link}
+Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted: {voting_link}
 """
 NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :rocket:{amount_reaction} **Active grant proposal** by {author}
@@ -339,13 +345,13 @@ NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 # Finished voting
 GRANT_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT = """
 :tada: Granted {amount} points to {mention}: {description}
-*Proposed by {author}: {link_to_original_message}*
+{supported_by}*Proposed by {author}: {link_to_original_message}*
 """
 GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given and {mention} is now richer by {amount} points!",
     ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
-    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Apologies, your proposal was cancelled due to insufficient support. However, please don't be discouraged and feel free to submit more proposals in the future. Your efforts are appreciated and we all hope to see more great ideas from you soon.",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Sorry, your proposal didn't receive enough support and was cancelled. Don't be disheartened, and feel free to submit new ideas. Your contributions are valued, and we look forward to seeing more great ideas from you in the future.",
 }
 
 # =====================
@@ -353,7 +359,7 @@ GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
 # =====================
 
 # Active voting
-NEW_GRANTLESS_PROPOSAL_RESPONSE = "Nice one, but let's see what the community thinks! Layer 3 members who object can add ❌ here: {voting_link}"
+NEW_GRANTLESS_PROPOSAL_RESPONSE = "Nice one, let's see what the community thinks: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :rocket: **Active proposal** (no grant) by {author}
 {countdown}: {description}
@@ -362,11 +368,11 @@ NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 # Finished voting
 GRANTLESS_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT = """
 :tada: Accepted proposal of {author}: {description}
-*Proposed here: {link_to_original_message}*
+{supported_by}*Proposed here: {link_to_original_message}*
 """
 GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The proposal has been accepted!",
     ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
-    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Apologies, your proposal was cancelled due to insufficient support. However, please don't be discouraged and feel free to submit more proposals in the future. Your efforts are appreciated and we all hope to see more great ideas from you soon.",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Sorry, your proposal didn't receive enough support and was cancelled. Don't be disheartened, and feel free to submit new ideas. Your contributions are valued, and we look forward to seeing more great ideas from you in the future.",
 }

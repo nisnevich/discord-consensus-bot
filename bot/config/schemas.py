@@ -56,7 +56,7 @@ class Proposals(Base):
     # Reserved for later:
     # Minimal number of voters "against" needed to cancel this proposal
     threshold = Column(Integer)
-    # Minimal number of voters "for" in order for a proposal to pass
+    # Minimal number of voters "for" in order for a proposal to pass; -1 if the full consensus is disabled for this proposal
     threshold_positive = Column(Integer)
 
     """
@@ -87,6 +87,7 @@ class Voters(Base):
     user_id = Column(Integer)
     voting_message_id = Column(Integer)
     proposal_id = Column(Integer, ForeignKey("proposals.id"))
+    # TODO migrate to int
     value = Column(String)
 
     proposals = relationship("Proposals", back_populates=VOTERS_TABLE_NAME)
@@ -127,7 +128,7 @@ class FreeFundingBalance(Base):
     __tablename__ = FREE_FUNDING_BALANCES_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
-    # The id of the user who sends transactions
+    # The mention of the user who sends transactions
     author = Column(String)
     # The nickname of the user who sends transactions (so that analytics will be retrieved quickly, without the need to query Discord for nicknames)
     nickname = Column(String)
@@ -142,7 +143,7 @@ class FreeFundingTransaction(Base):
     __tablename__ = FREE_FUNDING_TRANSACTIONS_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
-    # The id of the user who sends transactions
+    # The nickname of the user who sends transactions
     author = Column(String)
     # Comma-separated list of user mentions to whom funds were sent (the separator is defined in FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR)
     mentions = Column(String)

@@ -59,13 +59,13 @@ async def approve_proposal(voting_message_id):
             return
         # If full consensus is enabled for this proposal, and the minimal number of supporting votes is not reached, cancel the proposal
         if (
-            proposal.threshold_positive
+            proposal.threshold_positive != THRESHOLD_DISABLED_DB_VALUE
             and len(await get_voters_with_vote(proposal, Vote.YES)) < proposal.threshold_positive
         ):
             # Retrieve the voting message
             voting_message = await get_message(client, VOTING_CHANNEL_ID, voting_message_id)
             # Cancel the proposal
-            cancel_proposal(
+            await cancel_proposal(
                 proposal,
                 ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD,
                 voting_message,
@@ -111,7 +111,7 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
     new_grant_proposal = Proposals(
         message_id=ctx.message.id,
         channel_id=ctx.message.channel.id,
-        author=ctx.message.author.mention,
+        author=ctx.message.author.id,
         voting_message_id=voting_message.id,
         is_grantless=False,
         mention=mention.mention,
@@ -122,13 +122,16 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
         closed_at=datetime.utcnow() + timedelta(seconds=PROPOSAL_DURATION_SECONDS),
         bot_response_message_id=bot_response_message.id if bot_response_message else 0,
         threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
-        threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE,
+        threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE
+        if FULL_CONSENSUS_ENABLED
+        else THRESHOLD_DISABLED_DB_VALUE,
     )
     await add_proposal(new_grant_proposal, db)
 
     # Add tick and cross reactions to the voting message after adding proposal to DB
-    await voting_message.add_reaction(EMOJI_VOTING_YES)
-    await voting_message.add_reaction(EMOJI_VOTING_NO)
+    if FULL_CONSENSUS_ENABLED:
+        await voting_message.add_reaction(EMOJI_VOTING_YES)
+        await voting_message.add_reaction(EMOJI_VOTING_NO)
 
     # Run the approval coroutine
     client.loop.create_task(approve_proposal(voting_message.id))
@@ -166,7 +169,7 @@ async def proposal_grantless(ctx, original_message, description):
     new_grant_proposal = Proposals(
         message_id=ctx.message.id,
         channel_id=ctx.message.channel.id,
-        author=ctx.message.author.mention,
+        author=ctx.message.author.id,
         voting_message_id=voting_message.id,
         is_grantless=True,
         mention=None,
@@ -177,13 +180,16 @@ async def proposal_grantless(ctx, original_message, description):
         closed_at=datetime.utcnow() + timedelta(seconds=PROPOSAL_DURATION_SECONDS),
         bot_response_message_id=bot_response_message.id if bot_response_message else 0,
         threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
-        threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE,
+        threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE
+        if FULL_CONSENSUS_ENABLED
+        else THRESHOLD_DISABLED_DB_VALUE,
     )
     await add_proposal(new_grant_proposal, db)
 
     # Add tick and cross reactions to the voting message after adding proposal to DB
-    await voting_message.add_reaction(EMOJI_VOTING_YES)
-    await voting_message.add_reaction(EMOJI_VOTING_NO)
+    if FULL_CONSENSUS_ENABLED:
+        await voting_message.add_reaction(EMOJI_VOTING_YES)
+        await voting_message.add_reaction(EMOJI_VOTING_NO)
 
     # Run the approval coroutine
     client.loop.create_task(approve_proposal(voting_message.id))

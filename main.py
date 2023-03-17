@@ -53,9 +53,7 @@ async def sync_voters_db_with_discord(client, proposal):
 
     # Retrieve all users who added cancel reaction to the message
     x_reactions = [
-        reaction
-        for reaction in voting_message.reactions
-        if str(reaction.emoji) == EMOJI_VOTING_NO
+        reaction for reaction in voting_message.reactions if str(reaction.emoji) == EMOJI_VOTING_NO
     ]
     logger.debug(f"Reactions count: {len(x_reactions)}")
     x_reactors_valid = []
@@ -66,7 +64,7 @@ async def sync_voters_db_with_discord(client, proposal):
             if not await validate_roles(user):
                 return False
             # Check if the user is the proposer himself, and then cancel
-            if proposal.author == user.mention:
+            if proposal.author == user.id:
                 # cancel_proposal will remove all voters, so we just run it and exit
                 logger.debug("The proposer voted against, cancelling")
                 await cancel_proposal(

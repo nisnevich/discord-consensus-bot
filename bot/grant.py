@@ -3,7 +3,7 @@ from bot.utils.db_utils import DBUtil
 from bot.config.const import *
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.discord_utils import get_discord_client, get_message
-from bot.utils.formatting_utils import get_amount_to_print
+from bot.utils.formatting_utils import get_amount_to_print, get_mention_by_id
 
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ async def grant(voting_message_id):
                 mention=proposal.mention,
                 amount=get_amount_to_print(proposal.amount),
                 description=proposal.description,
-                author=proposal.author,
+                author=get_mention_by_id(proposal.author),
                 voting_url=voting_message.jump_url,
             )
 
@@ -91,13 +91,22 @@ async def grant(voting_message_id):
                 proposal.message_id,
             )
 
+        # Compose the list of supporters
+        supported_by = PROPOSAL_ACCEPTED_SUPPORTED_BY_VOTING_CHANNEL_EDIT.format(
+            supporters_list=VOTERS_LIST_SEPARATOR.join(
+                get_mention_by_id(voter.user_id)
+                for voter in proposal.voters
+                if int(voter.value) == Vote.YES.value
+            )
+        )
         # Update the proposal results in the voting channel
         if voting_message:
             if proposal.is_grantless:
                 await voting_message.edit(
                     content=GRANTLESS_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT.format(
-                        author=proposal.author,
+                        author=get_mention_by_id(proposal.author),
                         description=proposal.description,
+                        supported_by=supported_by if FULL_CONSENSUS_ENABLED else "",
                         # TODO#9 if original_message is None, message should be different
                         link_to_original_message=link_to_original_message,
                     ),
@@ -109,7 +118,8 @@ async def grant(voting_message_id):
                         amount=get_amount_to_print(proposal.amount),
                         mention=proposal.mention,
                         description=proposal.description,
-                        author=proposal.author,
+                        author=get_mention_by_id(proposal.author),
+                        supported_by=supported_by if FULL_CONSENSUS_ENABLED else "",
                         # TODO#9 if original_message is None, message should be different
                         link_to_original_message=link_to_original_message,
                     ),
@@ -131,7 +141,7 @@ async def grant(voting_message_id):
             else:
                 message = await voting_channel.send(
                     ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED.format(
-                        author=proposal.author,
+                        author=get_mention_by_id(proposal.author),
                         link_to_original_message=f"Original message: {link_to_original_message}",
                         RESPONSIBLE_MENTION=RESPONSIBLE_MENTION,
                     )
