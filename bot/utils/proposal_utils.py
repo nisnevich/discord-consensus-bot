@@ -10,7 +10,7 @@ from bot.utils.db_utils import DBUtil
 
 from bot.config.logging_config import log_handler, console_handler
 from bot.config.schemas import Proposals, Voters
-from bot.config.const import DEFAULT_LOG_LEVEL
+from bot.config.const import DEFAULT_LOG_LEVEL, Vote
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -22,7 +22,10 @@ db = DBUtil()
 proposals = {}
 
 
-async def get_voter(user_id, voting_message_id):
+def find_matching_voter(user_id, voting_message_id):
+    """
+    Returns either a single Voter object that matches the provided user_id and voting_message_id, or a list of Voter objects that match, which is usually empty but may contain multiple objects if there's an error in the system.
+    """
     voters_found = []
     # Iterate through proposals and check for voters with matching ids
     for id in proposals:
@@ -37,6 +40,17 @@ async def get_voter(user_id, voting_message_id):
     # more than 1 match is erroneous, but may happen and should be handled accordingly)
     else:
         return voters_found
+
+
+def get_voters_with_vote(proposal, vote: Vote):
+    """
+    Returns an array of proposal voters with a certain voting value (e.g. "yes" or "no).
+    """
+    voters = []
+    for voter in proposal.voters:
+        if int(voter.value) == vote.value:
+            voters.append(voter)
+    return voters
 
 
 async def add_voter(proposal, voter):
@@ -107,9 +121,9 @@ def validate_grantless_proposal(new_proposal):
         raise ValueError(
             f"channel_id should be an int, got {type(new_proposal.channel_id)} instead: {new_proposal.channel_id}"
         )
-    if not isinstance(new_proposal.author, (discord.User, str)):
+    if not isinstance(new_proposal.author, (discord.User, str, int)):
         raise ValueError(
-            f"author should be discord.User or str, got {type(new_proposal.author)} instead: {new_proposal.author}"
+            f"author should be discord.User or str or int, got {type(new_proposal.author)} instead: {new_proposal.author}"
         )
     if not isinstance(new_proposal.voting_message_id, int):
         raise ValueError(
