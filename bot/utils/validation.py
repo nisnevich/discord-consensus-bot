@@ -260,11 +260,11 @@ async def validate_grant_message(
     )
 
     # Check if mentions are valid
-    if not validate_mentions(original_message, mentions):
+    if not await validate_mentions(original_message, mention):
         return False
 
     # Check if amount is valid
-    if not validate_amount(original_message, amount):
+    if not await validate_amount(original_message, amount):
         return False
 
     # Check if the amount is less than a certain value to avoid flooding the voting channel

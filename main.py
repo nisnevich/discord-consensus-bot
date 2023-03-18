@@ -9,17 +9,22 @@ from bot.utils.proposal_utils import (
     add_proposal,
     get_proposals_count,
     is_relevant_proposal,
-    get_voter,
+    find_matching_voter,
     add_voter,
     remove_voter,
+    get_voters_with_vote,
 )
 from bot.utils.discord_utils import get_discord_client, get_message
 from bot.utils.validation import validate_roles
 from bot.config.const import (
-    CANCEL_EMOJI_UNICODE,
+    EMOJI_VOTING_NO,
+    EMOJI_VOTING_YES,
     VOTING_CHANNEL_ID,
     SLEEP_BEFORE_RECOVERY_SECONDS,
     ProposalResult,
+    Vote,
+    BOT_ID,
+    THRESHOLD_DISABLED_DB_VALUE,
 )
 from bot.config.schemas import Voters
 from bot.utils.dev_utils import measure_time_async
@@ -36,90 +41,101 @@ logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
 
-async def sync_voters_db_with_discord(client, proposal):
+async def sync_voters_db_with_discord(voting_message, proposal, vote, emoji):
     """
     Updates voters in the database based on the reactions on the voting message associated with the given proposal.
     Voters who have added cancel reaction but are not in the database are added to the database.
     Voters who are in the database but have not added cancel reaction are removed from the database.
+    Also, decisions are applied if the proposer voted against, or if lazy consensus dissenters
+    threshold was reached. This could have been done directly in approve_proposal to make the code
+    cleaner, but checking every 5-10 sec the entire set of proposals would dramatically increase CPU load.
 
+    :param voting_message: The message on which the voting occurred.
     :param proposal: The proposal for which to update voters.
+    :param vote: The value of the vote - e.g. Vote.YES, Vote.NO
+    :param emoji: The emoji corresponding to the vote.
     """
 
-    # Retrieve the voting message
-    voting_message = await get_message(client, VOTING_CHANNEL_ID, proposal.voting_message_id)
-    logger.info(
-        "Recovery: synchronizing voters of voting_message_id=%d", proposal.voting_message_id
-    )
-
-    # Retrieve all users who added cancel reaction to the message
-    x_reactions = [
-        reaction
-        for reaction in voting_message.reactions
-        if str(reaction.emoji) == CANCEL_EMOJI_UNICODE
-    ]
-    logger.debug(f"Reactions count: {len(x_reactions)}")
-    x_reactors_valid = []
-    for x_reaction in x_reactions:
-        # Retrieve all users who added the cancel reaction
-        async for user in x_reaction.users():
-            # Check if the user is a valid member to participate in voting
-            if not await validate_roles(user):
-                return False
-            # Check if the user is the proposer himself, and then cancel
-            if proposal.author == user.mention:
-                # cancel_proposal will remove all voters, so we just run it and exit
-                logger.debug("The proposer voted against, cancelling")
-                await cancel_proposal(
-                    proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message
-                )
-                return
-            x_reactors_valid.append(user)
-
-    # Remove voters whose cancel reaction is not found on the message
+    reaction_voting = None
+    # Find the reaction on the message
+    for reaction in voting_message.reactions:
+        if str(reaction.emoji) == emoji:
+            reaction_voting = reaction
+            break
+    # Extract all dissenters
+    voters = get_voters_with_vote(proposal, vote)
+    # If the voting reaction is not found, simply remove all voters from DB and exit
+    if not reaction_voting:
+        # Iterate through all voters
+        for voter in proposal.voters:
+            logger.info(f"Removing voter {voter.user_id} from DB for proposal {proposal.id}")
+            # Remove voter from DB
+            await remove_voter(proposal, voter)
+        return
+    # Otherwise, remove only voters whose reaction is not found on the message (i.e. was removed by the voter while the bot was down), and continue
     for voter in proposal.voters:
+        # Assume the voter didn't react, unless proven so
         voter_reacted = False
+        # Assume the voter still has permissions to vote, unless proven othewise
         is_valid_voter = True
-        for x_reaction in x_reactions:
-            # Check if the voter reacted
-            async for user in x_reaction.users():
-                if user.id == voter.user_id:
-                    logger.debug(
-                        "Proposal author: %s, user mention: %s", proposal.author, user.mention
-                    )
-
-                    # Make sure the voter still has permissions to vote, otherwise remove
-                    if not await validate_roles(user):
-                        is_valid_voter = False
-                    voter_reacted = True
-                    break
-            if voter_reacted:
+        # For each voter in DB, iterate through the actual voting reactions on the message, to check if the voters reaction is still presented
+        async for user in reaction_voting.users():
+            # If the voter ID matches the user ID found on the message, keep it in DB and switch to the next voter
+            if voter.user_id == user.id:
+                # Mark as "reacted"
+                voter_reacted = True
+                # If the voter doesn't have permissions to vote, remove him from DB
+                if not await validate_roles(user):
+                    is_valid_voter = False
                 break
-
+        # If voter removed his reaction, or he doesn't have permissions to vote anymore, remove from DB
         if not voter_reacted or not is_valid_voter:
             logger.info(f"Removing voter {voter.user_id} from DB for proposal {proposal.id}")
             await remove_voter(proposal, voter)
 
-    # Process each valid user who added the cancel reaction
-    for reactor in x_reactors_valid:
-        # Retrieve the user from DB
-        voter = await get_voter(reactor.id, proposal.voting_message_id)
-
+    # Add new voters to DB
+    async for reactor in reaction_voting.users():
+        # Check if the reactor is allowed to participate in voting
+        if not await validate_roles(reactor) or reactor.id == BOT_ID:
+            continue
+        # For objecting votes, cancel the proposal if the voter is the proposer himself
+        if vote == Vote.NO and int(proposal.author) == reactor.id:
+            # cancel_proposal will remove all voters, so we just run it and exit
+            logger.debug("The proposer voted against, cancelling")
+            await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
+            return
+        # For supporting votes, don't count the author if he has upvoted
+        if vote == Vote.YES and proposal.author == reactor.id:
+            logger.debug("The author has voted in his own favor, not counting")
+            continue
+        # Attempt to retrieve the voter from DB
+        voter = find_matching_voter(reactor.id, proposal.voting_message_id)
+        # If the voter is not found in DB, add it
         if not voter:
-            # If voter is not in DB, add it
             logger.info(
                 f"Adding voter {reactor.id} to DB for proposal {proposal.voting_message_id}"
             )
+            # Add voter to DB
             await add_voter(
                 proposal,
-                Voters(user_id=reactor.id, voting_message_id=proposal.voting_message_id),
+                Voters(
+                    user_id=reactor.id,
+                    voting_message_id=proposal.voting_message_id,
+                    value=vote.value,
+                ),
             )
 
-    # Check if the threshold is reached, and then cancel
-    if len(proposal.voters) >= proposal.threshold:
-        logger.debug("Threshold is reached, cancelling")
-        await cancel_proposal(
-            proposal, ProposalResult.CANCELLED_BY_REACHING_THRESHOLD, voting_message
-        )
+    # When handling objecting votes, cancel the proposal if the threshold is reached
+    if vote == Vote.NO:
+        # Get list of dissenters again (after we added all that were missing in DB)
+        voters_against = get_voters_with_vote(proposal, vote)
+        # Check if the threshold is reached
+        if len(voters_against) >= proposal.threshold:
+            logger.debug("Threshold is reached, cancelling")
+            # Cancel the proposal
+            await cancel_proposal(
+                proposal, ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD, voting_message
+            )
 
 
 @measure_time_async
@@ -146,8 +162,21 @@ async def start_proposals_coroutines(client, pending_grant_proposals):
 
         # Start background tasks to approve pending proposals
         for proposal in pending_grant_proposals:
+            # Retrieve the voting message
+            voting_message = await get_message(
+                client, VOTING_CHANNEL_ID, proposal.voting_message_id
+            )
+            logger.info(
+                "Recovery: synchronizing voters of voting_message_id=%d", proposal.voting_message_id
+            )
             # Update voters that were added or removed during the downtime
-            await sync_voters_db_with_discord(client, proposal)
+            # Update dissenters
+            await sync_voters_db_with_discord(voting_message, proposal, Vote.NO, EMOJI_VOTING_NO)
+            # Update supporters, if full consensus is enabled for the proposal
+            if proposal.threshold_positive != THRESHOLD_DISABLED_DB_VALUE:
+                await sync_voters_db_with_discord(
+                    voting_message, proposal, Vote.YES, EMOJI_VOTING_YES
+                )
 
             # If the proposal wasn't removed add approval coroutine to event loop
             if is_relevant_proposal(proposal.voting_message_id):

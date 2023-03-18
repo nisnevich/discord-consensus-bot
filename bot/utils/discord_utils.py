@@ -36,10 +36,8 @@ async def send_dm(guild_id, user_id, text):
     """
     guild = client.get_guild(guild_id)
     member = guild.get_member(user_id)
-    # Open DM with user
-    dm_channel = await member.create_dm()
     # Send message
-    message = await dm_channel.send(text)
+    message = await member.send(text)
     # Remove embeds from the message
     await message.edit(suppress=True)
 

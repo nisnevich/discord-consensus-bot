@@ -19,6 +19,7 @@ from bot.config.const import (
     PROPOSAL_HISTORY_TABLE_NAME,
     FREE_FUNDING_TRANSACTIONS_TABLE_NAME,
     FREE_FUNDING_BALANCES_TABLE_NAME,
+    Vote,
 )
 
 Base = declarative_base()
@@ -53,8 +54,10 @@ class Proposals(Base):
     bot_response_message_id = Column(Integer)
 
     # Reserved for later:
-    # Minimal number of voters against to cancel this proposal (instead of general LAZY_CONSENSUS_THRESHOLD)
+    # Minimal number of voters "against" needed to cancel this proposal
     threshold = Column(Integer)
+    # Minimal number of voters "for" in order for a proposal to pass; -1 if the full consensus is disabled for this proposal
+    threshold_positive = Column(Integer)
 
     """
     In the next line, back_populates creates a bidirectional relationship between the two classes.
@@ -62,7 +65,9 @@ class Proposals(Base):
     "all" means that all actions, such as deletion, will be cascaded to the related voters.
     "delete-orphan" means that any voters that no longer have a related grant proposal will be deleted from the database.
     """
-    voters = relationship("Voters", back_populates="grant_proposal", cascade="all, delete-orphan")
+    voters = relationship(
+        "Voters", back_populates=GRANT_PROPOSALS_TABLE_NAME, cascade="all, delete-orphan"
+    )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -74,19 +79,21 @@ class Proposals(Base):
 
 class Voters(Base):
     """
-    The Voters class represents a voter in a grant proposal. It is used to store user_id and grant_proposal_id in the 'voters' table in the database. The grant_proposal_id is a foreign key referencing the 'proposals' table, and is used to establish a relationship between a voter and the grant proposal they voted against. This relationship is defined using SQLAlchemy's relationship feature, and allows for easy retrieval of all voters for a specific grant proposal.
+    The Voters class represents a voter in a grant proposal. It is used to store user_id and proposal_id in the 'voters' table in the database. The proposal_id is a foreign key referencing the 'proposals' table, and is used to establish a relationship between a voter and the grant proposal they voted against. This relationship is defined using SQLAlchemy's relationship feature, and allows for easy retrieval of all voters for a specific grant proposal.
     """
 
     __tablename__ = VOTERS_TABLE_NAME
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer)
     voting_message_id = Column(Integer)
-    grant_proposal_id = Column(Integer, ForeignKey("proposals.id"))
+    proposal_id = Column(Integer, ForeignKey("proposals.id"))
+    # TODO migrate to int
+    value = Column(String)
 
-    grant_proposal = relationship("Proposals", back_populates="voters")
+    proposals = relationship("Proposals", back_populates=VOTERS_TABLE_NAME)
 
     def __repr__(self) -> str:
-        return f"<Voter(id={self.id}, user_id={self.user_id}, grant_proposal_id={self.grant_proposal_id}>"
+        return f"<Voter(id={self.id}, user_id={self.user_id}, proposal_id={self.proposal_id}, value={self.value}>"
 
 
 class ProposalHistory(Proposals):
@@ -121,7 +128,7 @@ class FreeFundingBalance(Base):
     __tablename__ = FREE_FUNDING_BALANCES_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
-    # The id of the user who sends transactions
+    # The mention of the user who sends transactions
     author = Column(String)
     # The nickname of the user who sends transactions (so that analytics will be retrieved quickly, without the need to query Discord for nicknames)
     nickname = Column(String)
@@ -136,7 +143,7 @@ class FreeFundingTransaction(Base):
     __tablename__ = FREE_FUNDING_TRANSACTIONS_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
-    # The id of the user who sends transactions
+    # The nickname of the user who sends transactions
     author = Column(String)
     # Comma-separated list of user mentions to whom funds were sent (the separator is defined in FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR)
     mentions = Column(String)
