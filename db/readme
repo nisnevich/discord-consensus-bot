@@ -1,0 +1,42 @@
+Both ini files are set up correctly.
+
+================
+Initialization
+================
+
+1) For each DB, the working directory should be initialised (this will also create alembic.ini script):
+
+alembic init alembic-main
+
+2) Then add to the generated env.py the Base import from the schema - this enables metadata connection:
+
+import path
+import sys
+
+# directory reach
+directory = path.Path(__file__).abspath()
+# setting path
+sys.path.append(directory.parent.parent.parent)
+
+from bot.config.schemas import Base
+
+3) Also in env.py initialize the metadata:
+
+target_metadata = Base.metadata
+
+
+==========
+Migration
+==========
+
+1) First, generate a migration script, e.g. for main DB:
+
+alembic -c alembic-consensus-bot.ini revision --autogenerate -m "Add new column to Proposals"
+
+2) SQLite has limited support for altering tables, which is why you're encountering the NotImplementedError. To work around this limitation, Alembic provides a "batch mode" that creates a new table with the desired schema, copies the data from the old table to the new one, and then renames the new table to the original name.
+
+To use the batch mode, you'll need to update your migration file. Locate the generated migration file in the db/alembic-main/versions directory, and give it to chatgpt asking to update for sqlite. 
+
+3) Once you've updated the migration scripts, run the patch:
+
+alembic -c alembic-consensus-bot.ini upgrade head

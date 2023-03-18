@@ -14,16 +14,18 @@ from bot.utils.proposal_utils import (
     get_proposal,
     add_proposal,
     is_relevant_proposal,
+    get_voters_with_vote,
 )
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.validation import validate_roles, validate_grant_message, validate_grantless_message
-from bot.utils.discord_utils import get_discord_client
+from bot.utils.discord_utils import get_discord_client, get_message
 from bot.utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
     get_discord_countdown_plus_delta,
     get_amount_to_print,
 )
 from bot.config.schemas import Proposals
+from bot.vote import cancel_proposal
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
@@ -44,6 +46,7 @@ async def approve_proposal(voting_message_id):
     except ValueError as e:
         logger.error(f"Error while getting grant proposal: {e}")
         return
+    # Unless the timer runs out, sleep (any other operations in this cycle should be minimised, as it runs every 5-10 sec for each active proposal)
     while proposal.closed_at > datetime.utcnow():
         # If proposal was cancelled, it will be removed from dictionary (see on_raw_reaction_add),
         # so we should exit
@@ -55,6 +58,20 @@ async def approve_proposal(voting_message_id):
         # When the time has come, double check to make sure the proposal wasn't cancelled
         if not is_relevant_proposal(voting_message_id):
             return
+        # If full consensus is enabled for this proposal, and the minimal number of supporting votes is not reached, cancel the proposal
+        if (
+            proposal.threshold_positive != THRESHOLD_DISABLED_DB_VALUE
+            and len(get_voters_with_vote(proposal, Vote.YES)) < proposal.threshold_positive
+        ):
+            # Retrieve the voting message
+            voting_message = await get_message(client, VOTING_CHANNEL_ID, voting_message_id)
+            # Cancel the proposal
+            await cancel_proposal(
+                proposal,
+                ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD,
+                voting_message,
+            )
+
         # Apply the grant
         await grant(voting_message_id)
     except ValueError as e:
@@ -95,7 +112,7 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
     new_grant_proposal = Proposals(
         message_id=ctx.message.id,
         channel_id=ctx.message.channel.id,
-        author=ctx.message.author.mention,
+        author=ctx.message.author.id,
         voting_message_id=voting_message.id,
         is_grantless=False,
         mention=mention.mention,
@@ -105,13 +122,17 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
         submitted_at=datetime.utcnow(),
         closed_at=datetime.utcnow() + timedelta(seconds=PROPOSAL_DURATION_SECONDS),
         bot_response_message_id=bot_response_message.id if bot_response_message else 0,
-        threshold=LAZY_CONSENSUS_THRESHOLD,
+        threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
+        threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE
+        if FULL_CONSENSUS_ENABLED
+        else THRESHOLD_DISABLED_DB_VALUE,
     )
     await add_proposal(new_grant_proposal, db)
 
-    # Add tick and cross reactions to the voting message after adding proposal to DB. Reactions are
-    # added for the convenience of the users; tick doesn't have any functional meaning ATM
-    await voting_message.add_reaction(REACTION_VOTING_DEFAULT_POSITIVE)
+    # Add tick and cross reactions to the voting message after adding proposal to DB
+    if FULL_CONSENSUS_ENABLED:
+        await voting_message.add_reaction(EMOJI_VOTING_YES)
+        await voting_message.add_reaction(EMOJI_VOTING_NO)
 
     # Run the approval coroutine
     client.loop.create_task(approve_proposal(voting_message.id))
@@ -149,7 +170,7 @@ async def proposal_grantless(ctx, original_message, description):
     new_grant_proposal = Proposals(
         message_id=ctx.message.id,
         channel_id=ctx.message.channel.id,
-        author=ctx.message.author.mention,
+        author=ctx.message.author.id,
         voting_message_id=voting_message.id,
         is_grantless=True,
         mention=None,
@@ -159,13 +180,17 @@ async def proposal_grantless(ctx, original_message, description):
         submitted_at=datetime.utcnow(),
         closed_at=datetime.utcnow() + timedelta(seconds=PROPOSAL_DURATION_SECONDS),
         bot_response_message_id=bot_response_message.id if bot_response_message else 0,
-        threshold=LAZY_CONSENSUS_THRESHOLD,
+        threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
+        threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE
+        if FULL_CONSENSUS_ENABLED
+        else THRESHOLD_DISABLED_DB_VALUE,
     )
     await add_proposal(new_grant_proposal, db)
 
-    # Add tick and cross reactions to the voting message after adding proposal to DB. Reactions are
-    # added for the convenience of the users; tick doesn't have any functional meaning ATM
-    await voting_message.add_reaction(REACTION_VOTING_DEFAULT_POSITIVE)
+    # Add tick and cross reactions to the voting message after adding proposal to DB
+    if FULL_CONSENSUS_ENABLED:
+        await voting_message.add_reaction(EMOJI_VOTING_YES)
+        await voting_message.add_reaction(EMOJI_VOTING_NO)
 
     # Run the approval coroutine
     client.loop.create_task(approve_proposal(voting_message.id))
@@ -176,8 +201,8 @@ async def proposal_grantless(ctx, original_message, description):
 async def propose_command(ctx, *args):
     f"""
     Submit a grant proposal. The proposal will be approved after {PROPOSAL_DURATION_SECONDS}
-    seconds unless {LAZY_CONSENSUS_THRESHOLD} members with {ROLE_IDS_ALLOWED} roles react with
-    {CANCEL_EMOJI_UNICODE} emoji to the proposal message which will be posted by the bot in the
+    seconds unless {LAZY_CONSENSUS_THRESHOLD_NEGATIVE} members with {ROLE_IDS_ALLOWED} roles react with
+    {EMOJI_VOTING_NO} emoji to the proposal message which will be posted by the bot in the
     {VOTING_CHANNEL_ID} channel.
     Parameters:
         ctx (commands.Context): The context in which the command was called.
