@@ -47,7 +47,7 @@ PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
 # negative votes threshold)
-FULL_CONSENSUS_ENABLED = False
+FULL_CONSENSUS_ENABLED = True
 # Minimal number of voters "for" in order for a proposal to pass
 FULL_CONSENSUS_THRESHOLD_POSITIVE = 2
 # A total number of free funding for each person per season
