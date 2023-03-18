@@ -62,7 +62,7 @@ GRANT_APPLY_CHANNEL_ID = 1066350422949908540
 # Instead of using this array, we could simply check if the bot has permissions to delete messages or remove reactions, but in Eco the permissions are controlled with a third-party solution, so it's more reliable to simply list channels that were agreed to have permissions
 # As agreed with Dave, the allowed channels are l3-general and l3-voting (to avoid clutter in them)
 CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS = [1060864279303172136, 1059027021952450610]
-BOT_ID = 1061680925425012756
+BOT_ID = 1069354843745038407
 
 # =====================
 # Bot related constants
