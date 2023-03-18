@@ -46,6 +46,7 @@ async def approve_proposal(voting_message_id):
     except ValueError as e:
         logger.error(f"Error while getting grant proposal: {e}")
         return
+    # Unless the timer runs out, sleep (any other operations in this cycle should be minimised, as it runs every 5-10 sec for each active proposal)
     while proposal.closed_at > datetime.utcnow():
         # If proposal was cancelled, it will be removed from dictionary (see on_raw_reaction_add),
         # so we should exit
@@ -60,7 +61,7 @@ async def approve_proposal(voting_message_id):
         # If full consensus is enabled for this proposal, and the minimal number of supporting votes is not reached, cancel the proposal
         if (
             proposal.threshold_positive != THRESHOLD_DISABLED_DB_VALUE
-            and len(await get_voters_with_vote(proposal, Vote.YES)) < proposal.threshold_positive
+            and len(get_voters_with_vote(proposal, Vote.YES)) < proposal.threshold_positive
         ):
             # Retrieve the voting message
             voting_message = await get_message(client, VOTING_CHANNEL_ID, voting_message_id)

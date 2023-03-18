@@ -42,14 +42,14 @@ class ServerEnvironment(Enum):
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
-LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 1
+LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
 # negative votes threshold)
-FULL_CONSENSUS_ENABLED = True
+FULL_CONSENSUS_ENABLED = False
 # Minimal number of voters "for" in order for a proposal to pass
-FULL_CONSENSUS_THRESHOLD_POSITIVE = 1
+FULL_CONSENSUS_THRESHOLD_POSITIVE = 2
 # A total number of free funding for each person per season
 FREE_FUNDING_LIMIT_PERSON_PER_SEASON = 3000
 
@@ -65,7 +65,8 @@ BOT_ID = 1061680925425012756
 # Invite link with required permissions
 # https://discord.com/api/oauth2/authorize?client_id=1061680925425012756&permissions=277025467456&scope=bot
 
-# Time interval between checking if it's time to approve a proposal
+# Time interval (sec) between checking if the proposal has come to a close; recommended to keep under 10
+# seconds so not to create delays for end users, but over 5 seconds so not to create a high CPU load
 APPROVAL_SLEEP_SECONDS = 5
 # Time interval between starting the bot and running the recovery; it's needed in order to make sure
 #  the client methods will become available (otherwise methods such as client.get_channel may fail).

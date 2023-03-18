@@ -104,7 +104,7 @@ async def on_raw_reaction_remove(payload):
         proposal = get_proposal(payload.message_id)
 
         # Error handling - retrieve the voter object from the DB
-        voter = await find_matching_voter(payload.user_id, payload.message_id)
+        voter = find_matching_voter(payload.user_id, payload.message_id)
         if not voter:
             logger.warning(
                 "Warning: Unable to find in the DB a user whose voting reaction was presented on active proposal. channel=%s, message=%s, user=%s, proposal=%s",
@@ -288,11 +288,8 @@ async def on_raw_reaction_add(payload):
         # Retrieve the proposal
         proposal = get_proposal(payload.message_id)
 
-        # The voting message is needed to format the replies of the bot later
-        voting_message = await get_message(client, payload.channel_id, payload.message_id)
-
         # Error/fraud handling - check if the user has already voted for this proposal
-        voter = await find_matching_voter(payload.user_id, payload.message_id)
+        voter = find_matching_voter(payload.user_id, payload.message_id)
         logger.debug("Voter: %s", voter)
         if voter:
             logger.warning(
@@ -341,6 +338,8 @@ async def on_raw_reaction_add(payload):
         if payload.emoji.name == EMOJI_VOTING_YES:
             return
 
+        # Retrieve the voting message (to format the replies of the bot later)
+        voting_message = await get_message(client, payload.channel_id, payload.message_id)
         # If the vote is negative, continue
         # Check whether the voter is the proposer himself, and then cancel the proposal
         if int(proposal.author) == payload.member.id:
@@ -350,7 +349,7 @@ async def on_raw_reaction_add(payload):
         logger.debug("The proposer isn't the author of the proposal")
 
         # Check if the threshold is reached
-        if len(await get_voters_with_vote(proposal, Vote.NO)) >= proposal.threshold:
+        if len(get_voters_with_vote(proposal, Vote.NO)) >= proposal.threshold:
             logger.debug("Threshold is reached, cancelling")
             await cancel_proposal(
                 proposal, ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD, voting_message
