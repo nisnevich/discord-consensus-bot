@@ -105,7 +105,7 @@ async def sync_voters_db_with_discord(voting_message, proposal, vote, emoji):
             await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
             return
         # For supporting votes, don't count the author if he has upvoted
-        if vote == Vote.YES and proposal.author == reactor.id:
+        if vote == Vote.YES and int(proposal.author) == reactor.id:
             logger.debug("The author has voted in his own favor, not counting")
             continue
         # Attempt to retrieve the voter from DB
