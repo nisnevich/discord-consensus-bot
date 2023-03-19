@@ -140,29 +140,28 @@ class FreeFundingBalance(Base):
 
     id = Column(Integer, primary_key=True)
     # The mention of the user who sends transactions
-    # TODO change to int and store id instead of mention
-    author = Column(String)
+    author_id = Column(Integer)
     # The nickname of the user who sends transactions (so that analytics will be retrieved quickly, without the need to query Discord for nicknames)
-    # TODO rename to author_nickname
-    nickname = Column(String)
+    author_nickname = Column(String)
     # The remaining balance of the user
     balance = Column(Float)
 
     def __repr__(self):
-        return f"<FreeFundingBalance(id={self.id}, author='{self.author}', balance={self.balance})>"
+        return f"<FreeFundingBalance(id={self.id}, author='{self.author_id}', balance={self.balance})>"
 
 
 class FreeFundingTransaction(Base):
     __tablename__ = FREE_FUNDING_TRANSACTIONS_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
-    # TODO add storing authors id
+    # The ID of the author who sends the transaction
+    author_id = Column(Integer)
     # The nickname of the user who sends transactions
-    # TODO rename to author_nickname
-    author = Column(String)
-    # Comma-separated list of user mentions to whom funds were sent (the separator is defined in FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR)
-    # TODO rename to receiver_ids
-    mentions = Column(String)
+    author_nickname = Column(String)
+    # List of comma-separated user ids to whom the funds were sent (the separator is defined in FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR)
+    receiver_ids = Column(String)
+    # Comma-separated list of user nicknames to whom funds were sent
+    receiver_nicknames = Column(String)
     # Total amount of funds - a sum of the amounts sent to each mentioned user (defining some constraints to avoid overflow)
     total_amount = Column(
         Float, CheckConstraint('total_amount > -1000000000 AND total_amount < 1000000000')
@@ -175,4 +174,4 @@ class FreeFundingTransaction(Base):
     message_url = Column(String)
 
     def __repr__(self):
-        return f"<FreeFundingTransaction(id={self.id}, author='{self.author}', mentions='{self.mentions}', amount={self.total_amount}, description='{self.description}', submitted_at='{self.submitted_at}, message_url='{self.message_url}')>"
+        return f"<FreeFundingTransaction(id={self.id}, author='{self.author_nickname}', mentions='{self.receiver_nicknames}', amount={self.total_amount}, description='{self.description}', submitted_at='{self.submitted_at}, message_url='{self.message_url}')>"

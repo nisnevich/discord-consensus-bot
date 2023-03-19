@@ -18,7 +18,7 @@ VOTERS_TABLE_NAME = "voters"
 PROPOSAL_HISTORY_TABLE_NAME = "proposal_history"
 FREE_FUNDING_BALANCES_TABLE_NAME = "free_funding_balance"
 FREE_FUNDING_TRANSACTIONS_TABLE_NAME = "free_funding_transaction_history"
-FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR = ", "
+DB_ARRAY_COLUMN_SEPARATOR = ", "
 
 # nltk datasets to download
 NLTK_DATASETS_DIR = f"{PROJECT_ROOT}/nltk"

@@ -56,14 +56,15 @@ async def send_free_funding_balance(ctx):
             return
 
         # Retrieve the authors balance
-        author_mention = str(ctx.message.author.mention)
-        author_balance = db.get_user_free_funding_balance(author_mention)
+        author_balance = db.get_user_free_funding_balance(ctx.message.author.id)
         # Add author to DB if not added yet
         if not author_balance:
-            logger.debug("Added free funding balance for author=%s", author_mention)
+            logger.debug("Added free funding balance for author=%s", ctx.message.author.id)
             author_balance = FreeFundingBalance(
-                author=author_mention,
-                nickname=await get_nickname_by_id_or_mention(author_mention),
+                author_id=ctx.message.author.id,
+                author_nickname=await get_nickname_by_id_or_mention(
+                    str(ctx.message.author.mention)
+                ),
                 balance=FREE_FUNDING_LIMIT_PERSON_PER_SEASON,
             )
             await db.add(author_balance)
@@ -205,7 +206,7 @@ async def write_free_funding_balance(page):
     # Loop over each users balance and add a row to the worksheet
     for row_num, balance in enumerate(all_balances.all(), 2):
         # Author
-        page.cell(row=row_num, column=1, value=str(balance.nickname))
+        page.cell(row=row_num, column=1, value=str(balance.author_nickname))
         # Amount
         page.cell(row=row_num, column=2, value=str(get_amount_to_print(balance.balance)))
 
@@ -240,9 +241,9 @@ async def write_free_funding_transactions(page):
             row=row_num, column=2, value=transaction.submitted_at.strftime("%Y-%m-%d %H:%M:%S")
         )
         # Author
-        page.cell(row=row_num, column=3, value=str(transaction.author))
+        page.cell(row=row_num, column=3, value=str(transaction.author_nickname))
         # Mentions
-        page.cell(row=row_num, column=4, value=str(transaction.mentions))
+        page.cell(row=row_num, column=4, value=str(transaction.receiver_nicknames))
         # Total amount
         page.cell(row=row_num, column=5, value=str(get_amount_to_print(transaction.total_amount)))
         # Description

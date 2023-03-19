@@ -90,8 +90,8 @@ class DBUtil:
         else:
             logger.info("Table already exist: %s", FREE_FUNDING_TRANSACTIONS_TABLE_NAME)
 
-    def get_user_free_funding_balance(self, author_mention) -> Query:
-        return DBUtil.session.query(FreeFundingBalance).filter_by(author=author_mention).first()
+    def get_user_free_funding_balance(self, author_id) -> Query:
+        return DBUtil.session.query(FreeFundingBalance).filter_by(author_id=author_id).first()
 
     def load_pending_grant_proposals(self) -> Query:
         return DBUtil.session.query(Proposals)
