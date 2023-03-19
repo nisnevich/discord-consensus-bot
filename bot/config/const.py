@@ -50,7 +50,7 @@ LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 4
 # negative votes threshold)
 FULL_CONSENSUS_ENABLED = True
 # Minimal number of voters "for" in order for a proposal to pass
-FULL_CONSENSUS_THRESHOLD_POSITIVE = 2
+FULL_CONSENSUS_THRESHOLD_POSITIVE = 4
 # A total number of free funding for each person per season
 FREE_FUNDING_LIMIT_PERSON_PER_SEASON = 3000
 
