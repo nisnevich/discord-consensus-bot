@@ -104,7 +104,7 @@ class DBUtil:
         for proposal in pending_grant_proposals:
             logger.info(proposal)
 
-    async def filter(self, table, is_history=True, condition=None):
+    async def filter(self, table, is_history=True, condition=None, order_by=None):
         """
         Filters the given ORM objects and returns a query (results should be retrieved using
         statements like .all() or .first()). The DB is chosen depending on is_history parameter.
@@ -112,17 +112,14 @@ class DBUtil:
         if is_history:
             async with DBUtil.session_lock_history:
                 query = DBUtil.session_history.query(table)
-                if condition:
-                    return query.filter(condition)
-                else:
-                    return query
         else:
             async with DBUtil.session_lock:
                 query = DBUtil.session.query(table)
-                if condition:
-                    return query.filter(condition)
-                else:
-                    return query
+        if condition:
+            query = query.filter(condition)
+        if order_by is not None:
+            query = query.order_by(order_by)
+        return query
 
     async def add(self, orm_object):
         """

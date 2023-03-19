@@ -38,6 +38,8 @@ async def on_message(message):
         await message.delete()
         return
 
+    # Replace curly quotes with standard quotes - otherwise it causes errors when used like !gift @Consensus-Dev#0594 500 don’t worry, be happy :blush:
+    message.content = message.content.replace('’', "'")
     # Process commands (the @client.event decorator intercepts all messages)
     await client.process_commands(message)
 
@@ -152,6 +154,7 @@ async def write_lazy_consensus_history(page):
     accepted_proposals = await db.filter(
         ProposalHistory,
         condition=(ProposalHistory.result == ProposalResult.ACCEPTED.value),
+        order_by=ProposalHistory.closed_at.asc(),
     )
     # Loop over each accepted proposal and add a row to the worksheet
     for row_num, proposal in enumerate(accepted_proposals.all(), 2):
@@ -167,7 +170,9 @@ async def write_lazy_consensus_history(page):
         page.cell(
             row=row_num,
             column=4,
-            value=str(proposal.receiver_ids) if proposal.receiver_ids is not None else EMPTY_ANALYTICS_VALUE,
+            value=str(proposal.receiver_ids)
+            if proposal.receiver_ids is not None
+            else EMPTY_ANALYTICS_VALUE,
         )
         # Amount
         page.cell(
@@ -219,7 +224,10 @@ async def write_free_funding_transactions(page):
     define_columns(page, columns)
 
     # Retrieve all transactions
-    all_transactions = await db.filter(FreeFundingTransaction)
+    all_transactions = await db.filter(
+        FreeFundingTransaction,
+        order_by=FreeFundingTransaction.submitted_at.asc(),
+    )
 
     # Loop over each transaction and add a row to the worksheet
     for row_num, transaction in enumerate(all_transactions.all(), 2):

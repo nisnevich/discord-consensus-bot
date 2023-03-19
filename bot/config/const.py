@@ -42,7 +42,7 @@ class ServerEnvironment(Enum):
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
@@ -245,7 +245,7 @@ ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author}
 ERROR_MESSAGE_AUTHOR_SUPPORTING_OWN_PROPOSAL = "Sorry, but supporting your own proposal is a no-no."
 
 # Free funding validation error messages
-ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT = "Oopsie! Wrong command format. Use it like `!send`, but always add description so people know what you're up to. For more info, check out `!help-tips`."
+ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT = "Oopsie! Wrong command format. Use it like `!send`, but always add description so people know what you're up to."
 ERROR_MESSAGE_FREE_TRANSACTION_TO_YOURSELF = "I'm sorry, Dave. I'm afraid I can't let you do that. Sending tips to yourself is not allowed. https://www.youtube.com/watch?v=ARJ8cAGm6JE"  # Alternative: Can't send points to yourself, sorry! But I'm sure there's someone out there who deserves some recognition from you.
 ERROR_MESSAGE_NOT_ENOUGH_BALANCE = (
     "Sorry, your balance is not enough. You have {balance} 'tips' remaining this season."

@@ -112,17 +112,17 @@ async def proposal_with_grant(ctx, original_message, mention, amount, descriptio
     new_grant_proposal = Proposals(
         message_id=ctx.message.id,
         channel_id=ctx.message.channel.id,
-        author=ctx.message.author.id,
+        author_id=ctx.message.author.id,
         voting_message_id=voting_message.id,
         is_grantless=False,
-        mention=mention.mention,
+        receiver_ids=mention.mention,
         amount=amount,
         description=description,
         # set the datetimes in UTC, to preserve a single timezone for calculations
         submitted_at=datetime.utcnow(),
         closed_at=datetime.utcnow() + timedelta(seconds=PROPOSAL_DURATION_SECONDS),
         bot_response_message_id=bot_response_message.id if bot_response_message else 0,
-        threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
+        threshold_negative=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
         threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE
         if FULL_CONSENSUS_ENABLED
         else THRESHOLD_DISABLED_DB_VALUE,
@@ -170,17 +170,17 @@ async def proposal_grantless(ctx, original_message, description):
     new_grant_proposal = Proposals(
         message_id=ctx.message.id,
         channel_id=ctx.message.channel.id,
-        author=ctx.message.author.id,
+        author_id=ctx.message.author.id,
         voting_message_id=voting_message.id,
         is_grantless=True,
-        mention=None,
+        receiver_ids=None,
         amount=None,
         description=description,
         # set the datetimes in UTC, to preserve a single timezone for calculations
         submitted_at=datetime.utcnow(),
         closed_at=datetime.utcnow() + timedelta(seconds=PROPOSAL_DURATION_SECONDS),
         bot_response_message_id=bot_response_message.id if bot_response_message else 0,
-        threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
+        threshold_negative=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
         threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE
         if FULL_CONSENSUS_ENABLED
         else THRESHOLD_DISABLED_DB_VALUE,

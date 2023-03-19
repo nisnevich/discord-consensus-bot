@@ -75,7 +75,11 @@ async def get_user_by_id_or_mention(id_or_mention):
     :return: The user on the Discord server, or None if it couldn't be found
     """
     # If mention was given, remove <@ and >
-    if id_or_mention.startswith("<@") and id_or_mention.endswith(">"):
+    if (
+        not isinstance(id_or_mention, int)
+        and id_or_mention.startswith("<@")
+        and id_or_mention.endswith(">")
+    ):
         user_id = int(id_or_mention[2:-1].strip("!"))
     # Otherwise simply convert to int
     else:
