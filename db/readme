@@ -35,8 +35,18 @@ alembic -c alembic-consensus-bot.ini revision --autogenerate -m "Add new column 
 
 2) SQLite has limited support for altering tables, which is why you're encountering the NotImplementedError. To work around this limitation, Alembic provides a "batch mode" that creates a new table with the desired schema, copies the data from the old table to the new one, and then renames the new table to the original name.
 
-To use the batch mode, you'll need to update your migration file. Locate the generated migration file in the db/alembic-main/versions directory, and give it to chatgpt asking to update for sqlite. 
+To use the batch mode, you'll need to update your migration file. Locate the generated migration
+file in the db/alembic-main/versions directory, and give it to chatgpt asking to update for sqlite.
+To do this the reliable way, give it old schemas of each table you need to update (run for each: sqlite3 > .schema
+voters), and the relevant declarations of the same ORM classes, then it works well.
 
 3) Once you've updated the migration scripts, run the patch:
 
 alembic -c alembic-consensus-bot.ini upgrade head
+
+
+Notes:
+
+If you see: ERROR [alembic.util.messaging] Target database is not up to date.
+Remove files under versions/ and generate then again ("migration" step 1).
+
