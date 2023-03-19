@@ -40,10 +40,10 @@ async def grant(voting_message_id):
             grant_message = GRANT_COMMAND_LAZY_CONSENSUS_MESSAGE.format(
                 prefix=DISCORD_COMMAND_PREFIX,
                 grant_command=GRANT_APPLY_COMMAND_NAME,
-                mention=proposal.mention,
+                mention=proposal.receiver_ids,
                 amount=get_amount_to_print(proposal.amount),
                 description=proposal.description,
-                author=get_mention_by_id(proposal.author),
+                author=get_mention_by_id(proposal.author_id),
                 voting_url=voting_message.jump_url,
             )
 
@@ -55,7 +55,7 @@ async def grant(voting_message_id):
                 await message.edit(suppress=True)
             except Exception as e:
                 await voting_channel.send(
-                    f"Could not apply grant for {proposal.mention}. cc {RESPONSIBLE_MENTION}",
+                    f"Could not apply grant for {proposal.receiver_ids}. cc {RESPONSIBLE_MENTION}",
                 )
                 logger.critical(
                     "An error occurred while sending grant message, voting_message_id=%d",
@@ -77,7 +77,7 @@ async def grant(voting_message_id):
             if not proposal.is_grantless:
                 await original_message.reply(
                     GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[result].format(
-                        mention=proposal.mention,
+                        mention=proposal.receiver_ids,
                         amount=get_amount_to_print(proposal.amount),
                     )
                 )
@@ -104,7 +104,7 @@ async def grant(voting_message_id):
             if proposal.is_grantless:
                 await voting_message.edit(
                     content=GRANTLESS_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT.format(
-                        author=get_mention_by_id(proposal.author),
+                        author=get_mention_by_id(proposal.author_id),
                         description=proposal.description,
                         supported_by=supported_by if FULL_CONSENSUS_ENABLED else "",
                         # TODO#9 if original_message is None, message should be different
@@ -116,9 +116,9 @@ async def grant(voting_message_id):
                 await voting_message.edit(
                     content=GRANT_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT.format(
                         amount=get_amount_to_print(proposal.amount),
-                        mention=proposal.mention,
+                        mention=proposal.receiver_ids,
                         description=proposal.description,
-                        author=get_mention_by_id(proposal.author),
+                        author=get_mention_by_id(proposal.author_id),
                         supported_by=supported_by if FULL_CONSENSUS_ENABLED else "",
                         # TODO#9 if original_message is None, message should be different
                         link_to_original_message=link_to_original_message,
@@ -131,7 +131,7 @@ async def grant(voting_message_id):
                 message = await voting_channel.send(
                     ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED.format(
                         amount=get_amount_to_print(proposal.amount),
-                        mention=proposal.mention,
+                        mention=proposal.receiver_ids,
                         link_to_original_message=f"Original message: {link_to_original_message}",
                         RESPONSIBLE_MENTION=RESPONSIBLE_MENTION,
                     )
@@ -141,7 +141,7 @@ async def grant(voting_message_id):
             else:
                 message = await voting_channel.send(
                     ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED.format(
-                        author=get_mention_by_id(proposal.author),
+                        author=get_mention_by_id(proposal.author_id),
                         link_to_original_message=f"Original message: {link_to_original_message}",
                         RESPONSIBLE_MENTION=RESPONSIBLE_MENTION,
                     )

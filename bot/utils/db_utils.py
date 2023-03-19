@@ -172,11 +172,11 @@ class DBUtil:
         async with DBUtil.session_lock_history:
             # Before writing to DB, we should modify some values using Discord API for them to be quickly retrieved when exporting analytics
             # Converting author id to nickname
-            proposal.author = await get_nickname_by_id_or_mention(proposal.author)
+            proposal.author_id = await get_nickname_by_id_or_mention(proposal.author_id)
 
             # If the proposal has a grant, the mentioned person id will be converted to a nickname
             if not proposal.is_grantless:
-                proposal.mention = await get_nickname_by_id_or_mention(proposal.mention)
+                proposal.receiver_ids = await get_nickname_by_id_or_mention(proposal.receiver_ids)
             # Retrieving voting message to save URL
             voting_message = await get_message(
                 client, VOTING_CHANNEL_ID, proposal.voting_message_id

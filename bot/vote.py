@@ -141,7 +141,7 @@ async def on_raw_reaction_remove(payload):
 async def cancel_proposal(proposal, reason, voting_message):
     # Extracting dynamic data to fill messages
     # Don't remove unused variables because messages texts change too often
-    mention_author = get_mention_by_id(proposal.author)
+    mention_author = get_mention_by_id(proposal.author_id)
     description_of_proposal = proposal.description
 
     # Create lists of voters
@@ -162,7 +162,7 @@ async def cancel_proposal(proposal, reason, voting_message):
     link_to_voting_message = voting_message.jump_url
     link_to_initial_proposer_message = original_message.jump_url if original_message else None
     if not proposal.is_grantless:
-        mention_receiver = proposal.mention
+        mention_receiver = proposal.receiver_ids
         amount_of_allocation = get_amount_to_print(proposal.amount)
 
     # Filling the proposer response message based on the reason of cancelling
@@ -189,7 +189,7 @@ async def cancel_proposal(proposal, reason, voting_message):
                 threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
                 voting_link=link_to_voting_message,
             )
-        log_message = "(by reaching negative threshold)"
+        log_message = "(by reaching negative threshold_negative)"
     elif reason == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD:
         if proposal.is_grantless:
             response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format()
@@ -304,7 +304,7 @@ async def on_raw_reaction_add(payload):
         logger.debug("User hasn't voted before")
 
         # If it's a positive vote and the author is the proposer himself, don't count the vote
-        if payload.emoji.name == EMOJI_VOTING_YES and int(proposal.author) == payload.user_id:
+        if payload.emoji.name == EMOJI_VOTING_YES and int(proposal.author_id) == payload.user_id:
             # Create DM channel (not using send_dm function here, because the 'member' is used to remove the reaction later)
             guild = client.get_guild(payload.guild_id)
             member = guild.get_member(payload.user_id)
@@ -342,14 +342,14 @@ async def on_raw_reaction_add(payload):
         voting_message = await get_message(client, payload.channel_id, payload.message_id)
         # If the vote is negative, continue
         # Check whether the voter is the proposer himself, and then cancel the proposal
-        if int(proposal.author) == payload.member.id:
+        if int(proposal.author_id) == payload.member.id:
             logger.debug("The proposer voted against, cancelling")
             await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
             return
         logger.debug("The proposer isn't the author of the proposal")
 
-        # Check if the threshold is reached
-        if len(get_voters_with_vote(proposal, Vote.NO)) >= proposal.threshold:
+        # Check if the threshold_negative is reached
+        if len(get_voters_with_vote(proposal, Vote.NO)) >= proposal.threshold_negative:
             logger.debug("Threshold is reached, cancelling")
             await cancel_proposal(
                 proposal, ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD, voting_message
@@ -360,7 +360,7 @@ async def on_raw_reaction_add(payload):
                 payload.guild_id,
                 payload.user_id,
                 HELP_MESSAGE_VOTED_AGAINST.format(
-                    author=get_mention_by_id(proposal.author),
+                    author=get_mention_by_id(proposal.author_id),
                     countdown=get_discord_countdown_plus_delta(
                         proposal.closed_at - datetime.utcnow()
                     ),

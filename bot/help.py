@@ -162,12 +162,12 @@ async def write_lazy_consensus_history(page):
         # Date
         page.cell(row=row_num, column=2, value=proposal.closed_at.strftime("%Y-%m-%d %H:%M:%S"))
         # Author
-        page.cell(row=row_num, column=3, value=str(proposal.author))
+        page.cell(row=row_num, column=3, value=str(proposal.author_id))
         # Mention
         page.cell(
             row=row_num,
             column=4,
-            value=str(proposal.mention) if proposal.mention is not None else EMPTY_ANALYTICS_VALUE,
+            value=str(proposal.receiver_ids) if proposal.receiver_ids is not None else EMPTY_ANALYTICS_VALUE,
         )
         # Amount
         page.cell(

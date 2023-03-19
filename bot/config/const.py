@@ -42,14 +42,14 @@ class ServerEnvironment(Enum):
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
-LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 1
+LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
-# negative votes threshold)
+# negative votes threshold_negative)
 FULL_CONSENSUS_ENABLED = True
 # Minimal number of voters "for" in order for a proposal to pass
-FULL_CONSENSUS_THRESHOLD_POSITIVE = 1
+FULL_CONSENSUS_THRESHOLD_POSITIVE = 2
 # A total number of free funding for each person per season
 FREE_FUNDING_LIMIT_PERSON_PER_SEASON = 3000
 

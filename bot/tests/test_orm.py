@@ -22,7 +22,7 @@ class TestGrantProposals(unittest.TestCase):
         )
 
         self.assertEqual(proposal.message_id, 1)
-        self.assertEqual(proposal.mention, "@user")
+        self.assertEqual(proposal.receiver_ids, "@user")
         self.assertEqual(proposal.amount, 100)
         self.assertEqual(proposal.description, "Test proposal")
         self.assertEqual(proposal.channel_id, 1)

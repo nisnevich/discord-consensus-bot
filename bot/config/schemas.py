@@ -34,13 +34,13 @@ class Proposals(Base):
     # The id of the initial channel where the proposal was submitted
     channel_id = Column(Integer)
     # The id of the author of the proposal
-    author = Column(String)
+    author_id = Column(Integer)
     # The id of the voting message in the channel VOTING_CHANNEL_ID
     voting_message_id = Column(Integer)
     # Defines whether the proposal has a grant or not
     is_grantless = Column(Boolean)
-    # Mention of a user to give a grant to (empty when is_grantless is true)
-    mention = Column(String)
+    # List of comma-separated user ids to give a grant to (empty when is_grantless is true)
+    receiver_ids = Column(String)
     # Amount of the grant (empty when is_grantless is true)
     # Defining some constraints to avoid overflow
     amount = Column(Float, CheckConstraint('amount > -1000000000 AND amount < 1000000000'))
@@ -55,7 +55,7 @@ class Proposals(Base):
 
     # Reserved for later:
     # Minimal number of voters "against" needed to cancel this proposal
-    threshold = Column(Integer)
+    threshold_negative = Column(Integer)
     # Minimal number of voters "for" in order for a proposal to pass; -1 if the full consensus is disabled for this proposal
     threshold_positive = Column(Integer)
 
@@ -74,7 +74,7 @@ class Proposals(Base):
         self.voters = []
 
     def __repr__(self):
-        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id})>"
+        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author_id}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.receiver_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id})>"
 
 
 class Voters(Base):
@@ -84,12 +84,16 @@ class Voters(Base):
 
     __tablename__ = VOTERS_TABLE_NAME
     id = Column(Integer, primary_key=True)
+    # User ID of the voter
     user_id = Column(Integer)
+    # ID of the voting message
     voting_message_id = Column(Integer)
+    # ID of the proposal that the given voter has voted for
     proposal_id = Column(Integer, ForeignKey("proposals.id"))
-    # TODO migrate to int
-    value = Column(String)
+    # A value of the vote, as per Vote enum
+    value = Column(Integer)
 
+    # Bidirectional relationship with the proposals
     proposals = relationship("Proposals", back_populates=VOTERS_TABLE_NAME)
 
     def __repr__(self) -> str:
@@ -113,15 +117,22 @@ class ProposalHistory(Proposals):
     __mapper_args__ = {
         'polymorphic_identity': PROPOSAL_HISTORY_TABLE_NAME,
     }
+    # ID of the corresponding proposal
     id = Column(Integer, ForeignKey('proposals.id'), primary_key=True)
+    # The result of the proposal (as per ProposalResult enum)
     result = Column(Integer, default=None)
+    # The URL of the voting message in Discord
     voting_message_url = Column(String)
+    # The authors nickname
+    author_nickname = Column(String)
+    # List of comma-separated user nicknames who have received grants (empty when is_grantless is true)
+    receiver_nicknames = Column(String)
 
     # Add an index on the result column to optimise read query perfomance
     __table_args__ = (Index("ix_result", result),)
 
     def __repr__(self):
-        return f"ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.mention}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url})"
+        return f"ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author_id}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.receiver_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url})"
 
 
 class FreeFundingBalance(Base):
@@ -129,8 +140,10 @@ class FreeFundingBalance(Base):
 
     id = Column(Integer, primary_key=True)
     # The mention of the user who sends transactions
+    # TODO change to int and store id instead of mention
     author = Column(String)
     # The nickname of the user who sends transactions (so that analytics will be retrieved quickly, without the need to query Discord for nicknames)
+    # TODO rename to author_nickname
     nickname = Column(String)
     # The remaining balance of the user
     balance = Column(Float)
@@ -143,9 +156,12 @@ class FreeFundingTransaction(Base):
     __tablename__ = FREE_FUNDING_TRANSACTIONS_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
+    # TODO add storing authors id
     # The nickname of the user who sends transactions
+    # TODO rename to author_nickname
     author = Column(String)
     # Comma-separated list of user mentions to whom funds were sent (the separator is defined in FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR)
+    # TODO rename to receiver_ids
     mentions = Column(String)
     # Total amount of funds - a sum of the amounts sent to each mentioned user (defining some constraints to avoid overflow)
     total_amount = Column(

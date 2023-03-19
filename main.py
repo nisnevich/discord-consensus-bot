@@ -99,13 +99,13 @@ async def sync_voters_db_with_discord(voting_message, proposal, vote, emoji):
         if not await validate_roles(reactor) or reactor.id == BOT_ID:
             continue
         # For objecting votes, cancel the proposal if the voter is the proposer himself
-        if vote == Vote.NO and int(proposal.author) == reactor.id:
+        if vote == Vote.NO and int(proposal.author_id) == reactor.id:
             # cancel_proposal will remove all voters, so we just run it and exit
             logger.debug("The proposer voted against, cancelling")
             await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
             return
         # For supporting votes, don't count the author if he has upvoted
-        if vote == Vote.YES and int(proposal.author) == reactor.id:
+        if vote == Vote.YES and int(proposal.author_id) == reactor.id:
             logger.debug("The author has voted in his own favor, not counting")
             continue
         # Attempt to retrieve the voter from DB
@@ -129,8 +129,8 @@ async def sync_voters_db_with_discord(voting_message, proposal, vote, emoji):
     if vote == Vote.NO:
         # Get list of dissenters again (after we added all that were missing in DB)
         voters_against = get_voters_with_vote(proposal, vote)
-        # Check if the threshold is reached
-        if len(voters_against) >= proposal.threshold:
+        # Check if the threshold_negative is reached
+        if len(voters_against) >= proposal.threshold_negative:
             logger.debug("Threshold is reached, cancelling")
             # Cancel the proposal
             await cancel_proposal(

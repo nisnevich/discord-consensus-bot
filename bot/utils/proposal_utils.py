@@ -121,9 +121,9 @@ def validate_grantless_proposal(new_proposal):
         raise ValueError(
             f"channel_id should be an int, got {type(new_proposal.channel_id)} instead: {new_proposal.channel_id}"
         )
-    if not isinstance(new_proposal.author, (discord.User, str, int)):
+    if not isinstance(new_proposal.author_id, (discord.User, str, int)):
         raise ValueError(
-            f"author should be discord.User or str or int, got {type(new_proposal.author)} instead: {new_proposal.author}"
+            f"author should be discord.User or str or int, got {type(new_proposal.author_id)} instead: {new_proposal.author_id}"
         )
     if not isinstance(new_proposal.voting_message_id, int):
         raise ValueError(
@@ -149,9 +149,9 @@ def validate_grantless_proposal(new_proposal):
         raise ValueError(
             f"bot_response_message_id should be an int, got {type(new_proposal.bot_response_message_id)} instead: {new_proposal.bot_response_message_id}"
         )
-    if not isinstance(new_proposal.threshold, int):
+    if not isinstance(new_proposal.threshold_negative, int):
         raise ValueError(
-            f"threshold should be an int, got {type(new_proposal.threshold)} instead: {new_proposal.threshold}"
+            f"threshold should be an int, got {type(new_proposal.threshold_negative)} instead: {new_proposal.threshold_negative}"
         )
 
 
@@ -159,9 +159,9 @@ def validate_proposal_with_grant(new_grant_proposal):
     # The validation of proposals with grant is the same as with grantless, with a couple of extra fields
     validate_grantless_proposal(new_grant_proposal)
 
-    if not isinstance(new_grant_proposal.mention, (discord.User, discord.user.ClientUser, str)):
+    if not isinstance(new_grant_proposal.receiver_ids, (discord.User, discord.user.ClientUser, str)):
         raise ValueError(
-            f"mention should be discord.User str, got {type(new_grant_proposal.mention)} instead: {new_grant_proposal.mention}"
+            f"mention should be discord.User str, got {type(new_grant_proposal.receiver_ids)} instead: {new_grant_proposal.receiver_ids}"
         )
     if not isinstance(new_grant_proposal.amount, (float, int)):
         raise ValueError(
