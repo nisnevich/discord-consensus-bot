@@ -167,19 +167,22 @@ async def start_proposals_coroutines(client, pending_grant_proposals):
                 client, VOTING_CHANNEL_ID, proposal.voting_message_id
             )
             logger.info(
-                "Recovery: synchronizing voters of voting_message_id=%d", proposal.voting_message_id
+                "Recovery: synchronizing voters of id=%d, voting_message_id=%d",
+                proposal.id,
+                proposal.voting_message_id,
             )
             # Update voters that were added or removed during the downtime
             # Update dissenters
             await sync_voters_db_with_discord(voting_message, proposal, Vote.NO, EMOJI_VOTING_NO)
-            # Update supporters, if full consensus is enabled for the proposal
-            if proposal.threshold_positive != THRESHOLD_DISABLED_DB_VALUE:
-                await sync_voters_db_with_discord(
-                    voting_message, proposal, Vote.YES, EMOJI_VOTING_YES
-                )
 
-            # If the proposal wasn't removed add approval coroutine to event loop
+            # If the proposal wasn't removed, proceed
             if is_relevant_proposal(proposal.voting_message_id):
+                # Update supporters, if full consensus is enabled for the proposal
+                if proposal.threshold_positive != THRESHOLD_DISABLED_DB_VALUE:
+                    await sync_voters_db_with_discord(
+                        voting_message, proposal, Vote.YES, EMOJI_VOTING_YES
+                    )
+
                 client.loop.create_task(approve_proposal(proposal.voting_message_id))
                 logger.info(
                     "Added task to event loop to approve voting_message_id=%d",
