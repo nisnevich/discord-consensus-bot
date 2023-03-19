@@ -26,6 +26,10 @@ Base = declarative_base()
 
 
 class Proposals(Base):
+    """
+    A class representing grant proposals in the bot. It stores information about each proposal, such as its author, description, grant receivers, and more. It also maintains relationships with the associated Voters class for handling votes on proposals.
+    """
+
     __tablename__ = GRANT_PROPOSALS_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
@@ -74,7 +78,7 @@ class Proposals(Base):
         self.voters = []
 
     def __repr__(self):
-        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author_id}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.receiver_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id})>"
+        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, receiver_ids={self.receiver_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, threshold_negative={self.threshold_negative}, threshold_positive={self.threshold_positive})>"
 
 
 class Voters(Base):
@@ -97,20 +101,12 @@ class Voters(Base):
     proposals = relationship("Proposals", back_populates=VOTERS_TABLE_NAME)
 
     def __repr__(self) -> str:
-        return f"<Voter(id={self.id}, user_id={self.user_id}, proposal_id={self.proposal_id}, value={self.value}>"
+        return f"<Voter(id={self.id}, user_id={self.user_id}, voting_message_id={self.voting_message_id}, proposal_id={self.proposal_id}, value={self.value})>"
 
 
 class ProposalHistory(Proposals):
     """
     The `ProposalHistory` class is a subclass of the `Proposals` class. It represents the history of approved proposals and is stored in a separate table in the database.
-
-    Attributes:
-        __tablename__ (str): The name of the table in the database that corresponds to this class.
-        __mapper_args__ (dict): A special dictionary used to pass arguments to the SQLAlchemy mapper.
-        id (sqlalchemy.Column): A column representing the primary key for this table. It is a foreign key to the `id` column in the `Proposals` table.
-        result (sqlalchemy.Column): An integer column that stores whether the result of the proposal. This should be one of the enumerated values in `ProposalResult`.
-
-        closed_at (sqlalchemy.Column): A datetime column that stores the date and time when the proposal was approved. The default value is the current UTC time.
     """
 
     __tablename__ = PROPOSAL_HISTORY_TABLE_NAME
@@ -132,10 +128,16 @@ class ProposalHistory(Proposals):
     __table_args__ = (Index("ix_result", result),)
 
     def __repr__(self):
-        return f"ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author={self.author_id}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, mention={self.receiver_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url})"
+        return f"<ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, receiver_ids={self.receiver_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url}, author_nickname={self.author_nickname}, receiver_nicknames={self.receiver_nicknames}, threshold_negative={self.threshold})>"
 
 
 class FreeFundingBalance(Base):
+    """
+    A class representing the free funding balances of users in the bot. It stores information about
+    each user's remaining balance, their ID, and their nickname. This class is used to track and
+    manage the balances of users who participate in the free funding process.
+    """
+
     __tablename__ = FREE_FUNDING_BALANCES_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
@@ -147,10 +149,16 @@ class FreeFundingBalance(Base):
     balance = Column(Float)
 
     def __repr__(self):
-        return f"<FreeFundingBalance(id={self.id}, author='{self.author_id}', balance={self.balance})>"
+        return f"<FreeFundingBalance(id={self.id}, author_id={self.author_id}, author_nickname={self.author_nickname}, balance={self.balance})>"
 
 
 class FreeFundingTransaction(Base):
+    """
+    A class representing free funding transactions in the bot. It stores information about each
+    transaction, such as its author, receiver(s), total amount, description, and more. This class is
+    aimed mainly to track free funding transactions, and is used to export statistics.
+    """
+
     __tablename__ = FREE_FUNDING_TRANSACTIONS_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
@@ -174,4 +182,4 @@ class FreeFundingTransaction(Base):
     message_url = Column(String)
 
     def __repr__(self):
-        return f"<FreeFundingTransaction(id={self.id}, author='{self.author_nickname}', mentions='{self.receiver_nicknames}', amount={self.total_amount}, description='{self.description}', submitted_at='{self.submitted_at}, message_url='{self.message_url}')>"
+        return f"<FreeFundingTransaction(id={self.id}, author_id={self.author_id}, author_nickname={self.author_nickname}, receiver_ids={self.receiver_ids}, receiver_nicknames={self.receiver_nicknames}, total_amount={self.total_amount}, description={self.description}, submitted_at={self.submitted_at}, message_url={self.message_url})>"
