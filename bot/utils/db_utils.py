@@ -3,12 +3,13 @@ import asyncio
 import datetime
 import discord
 import os
+import copy
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Query
 from sqlalchemy import create_engine
 
-from bot.config.schemas import Base, Proposals, ProposalHistory, FreeFundingBalance
+from bot.config.schemas import Base, Proposals, ProposalHistory, FreeFundingBalance, Voters
 from bot.config.logging_config import log_handler, console_handler
 from bot.config.const import *
 from bot.utils.discord_utils import get_discord_client, get_message
@@ -167,32 +168,46 @@ class DBUtil:
         result (ProposalResult): The result of the proposal. This should be one of the enumerated values in `ProposalResult`.
         """
         async with DBUtil.session_lock_history:
-            # Before writing to DB, we should modify some values using Discord API for them to be quickly retrieved when exporting analytics
-            # Converting author id to nickname
-            proposal.author_id = await get_nickname_by_id_or_mention(proposal.author_id)
-
-            # If the proposal has a grant, the mentioned person id will be converted to a nickname
-            if not proposal.is_grantless:
-                proposal.receiver_ids = await get_nickname_by_id_or_mention(proposal.receiver_ids)
-            # Retrieving voting message to save URL
-            voting_message = await get_message(
-                client, VOTING_CHANNEL_ID, proposal.voting_message_id
-            )
-
-            # Copy all attributes from Proposals table excluding some of them
+            # Copy all attributes from Proposals table (excluding some of them)
             proposal_dict = {
                 key: value
                 for key, value in proposal.__dict__.items()
                 if key != "_sa_instance_state" and key != "id" and key != "voters"
             }
-
-            DBUtil.session_history.add(
-                ProposalHistory(
-                    **proposal_dict,
-                    result=result.value,
-                    voting_message_url=voting_message.jump_url,
-                )
+            # Retrieving voting message to save URL
+            voting_message = await get_message(
+                client, VOTING_CHANNEL_ID, proposal.voting_message_id
             )
+            # Create a history item
+            history_item = ProposalHistory(
+                **proposal_dict,
+                result=result.value,
+                voting_message_url=voting_message.jump_url,
+                # Retrieve author nickname by ID, so it can be used quickly when exporting analytics
+                author_nickname=await get_nickname_by_id_or_mention(proposal.author_id),
+                # If the proposal has a grant, the mentioned users will be converted to a nickname
+                receiver_nicknames=None
+                if proposal.is_grantless
+                else DB_ARRAY_COLUMN_SEPARATOR.join(
+                    await get_nickname_by_id_or_mention(receiver_id)
+                    for receiver_id in proposal.receiver_ids
+                ),
+            )
+            # Add a history item
+            DBUtil.session_history.add(history_item)
+            # Make a copy of the voters
+            copied_voters = []
+            for voter in proposal.voters:
+                copied_voter = Voters(
+                    user_id=voter.user_id,
+                    value=voter.value,
+                    voting_message_id=voter.voting_message_id,
+                    proposal_id=voter.proposal_id,
+                )
+                copied_voters.append(copied_voter)
+            # Add the copied voters to the Voters table
+            DBUtil.session_history.add_all(copied_voters)
+            # Save the changes
             DBUtil.session_history.commit()
 
     async def save(self):

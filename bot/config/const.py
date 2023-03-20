@@ -25,7 +25,7 @@ NLTK_DATASETS_DIR = f"{PROJECT_ROOT}/nltk"
 NLTK_DATASETS = ['averaged_perceptron_tagger', 'punkt', 'wordnet', 'words']
 
 # urls
-GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-lazy-consensus-bot"
+GITHUB_PROJECT_URL = "https://github.com/nisnevich/eco-discord-consensus-bot"
 
 
 class ServerEnvironment(Enum):
@@ -42,7 +42,7 @@ class ServerEnvironment(Enum):
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
