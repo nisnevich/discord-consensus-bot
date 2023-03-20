@@ -252,6 +252,21 @@ async def on_raw_reaction_add(payload):
         payload (discord.RawReactionActionEvent): The event containing data about the reaction.
     """
 
+    async def remove_reaction_and_send_dm(client, payload, message):
+        """
+        Creates DM channel, replies to user with the given message, and removes the reaction added
+        in a given payload object.
+        """
+        # Create DM channel (not using send_dm function here, because the 'member' is used to remove the reaction later)
+        guild = client.get_guild(payload.guild_id)
+        member = guild.get_member(payload.user_id)
+        dm_channel = await member.create_dm()
+        # Reply the user in DM
+        await dm_channel.send(message)
+        # Remove the reaction
+        reaction_message = await get_message(client, payload.channel_id, payload.message_id)
+        await reaction_message.remove_reaction(payload.emoji, member)
+
     try:
         logger.debug("Adding a reaction: %s", payload.event_type)
 
@@ -265,20 +280,8 @@ async def on_raw_reaction_add(payload):
 
         # Don't allow to vote if recovery is in progress
         if db.is_recovery():
-            # Create DM channel (not using send_dm function here, because the 'member' is used to remove the reaction later)
-            guild = client.get_guild(payload.guild_id)
-            member = guild.get_member(payload.user_id)
-            dm_channel = await member.create_dm()
-
-            # Replying in DM
-            await dm_channel.send(VOTING_PAUSED_RECOVERY_RESPONSE)
-
-            # Removing the reaction. Not checking for permissions to remove because they must be set
-            # otherwise error should be thrown (this code should only run if the reaction was added
-            # to the voting channel)
-            reaction_message = await get_message(client, payload.channel_id, payload.message_id)
-            await reaction_message.remove_reaction(payload.emoji, member)
-
+            # Remove the vote emoji, reply to user and exit
+            await remove_reaction_and_send_dm(client, payload, VOTING_PAUSED_RECOVERY_RESPONSE)
             logger.info(
                 "Rejecting the vote from %s because recovery is in progress.",
                 member.mention,
@@ -287,13 +290,21 @@ async def on_raw_reaction_add(payload):
 
         # Retrieve the proposal
         proposal = get_proposal(payload.message_id)
+        # Retrieve the voting message (to format the replies of the bot later)
+        voting_message = await get_message(client, payload.channel_id, payload.message_id)
 
-        # Error/fraud handling - check if the user has already voted for this proposal
+        # Check if the user has already voted for this proposal
         voter = find_matching_voter(payload.user_id, payload.message_id)
         logger.debug("Voter: %s", voter)
         if voter:
-            logger.warning(
-                "Warning: Somehow the same user has managed to vote twice on the same proposal: channel=%s, message=%s, user=%s, proposal=%s, voter=%s",
+            # Remove the vote emoji, reply to user and exit
+            await remove_reaction_and_send_dm(
+                client,
+                payload,
+                ERROR_MESSAGE_ALREADY_VOTED.format(link_to_voting_message=voting_message.jump_url),
+            )
+            logger.info(
+                "The user has already voted on this proposal: channel=%s, message=%s, user=%s, proposal=%s, voter=%s",
                 payload.channel_id,
                 payload.message_id,
                 payload.user_id,
@@ -301,21 +312,19 @@ async def on_raw_reaction_add(payload):
                 voter,
             )
             return
-        logger.debug("User hasn't voted before")
+        logger.debug("User hasn't voted on this proposal before")
 
-        # If it's a positive vote and the author is the proposer himself, don't count the vote
+        # If it's a positive vote and the author is the proposer himself, don't count the vote,
         if payload.emoji.name == EMOJI_VOTING_YES and int(proposal.author_id) == payload.user_id:
-            # Create DM channel (not using send_dm function here, because the 'member' is used to remove the reaction later)
-            guild = client.get_guild(payload.guild_id)
-            member = guild.get_member(payload.user_id)
-            dm_channel = await member.create_dm()
-
-            # Reply the user that they can't support their own proposal
-            await dm_channel.send(ERROR_MESSAGE_AUTHOR_SUPPORTING_OWN_PROPOSAL)
-
-            # Remove the reaction
-            reaction_message = await get_message(client, payload.channel_id, payload.message_id)
-            await reaction_message.remove_reaction(payload.emoji, member)
+            # Remove the vote emoji, reply to user and exit
+            await remove_reaction_and_send_dm(
+                client, payload, ERROR_MESSAGE_AUTHOR_SUPPORTING_OWN_PROPOSAL
+            )
+            logger.info(
+                "The author can't upvote their own proposal: proposal=%s, voter=%s",
+                proposal,
+                voter,
+            )
             return
 
         # Add voter to DB and dict
@@ -338,8 +347,6 @@ async def on_raw_reaction_add(payload):
         if payload.emoji.name == EMOJI_VOTING_YES:
             return
 
-        # Retrieve the voting message (to format the replies of the bot later)
-        voting_message = await get_message(client, payload.channel_id, payload.message_id)
         # If the vote is negative, continue
         # Check whether the voter is the proposer himself, and then cancel the proposal
         if int(proposal.author_id) == payload.member.id:
