@@ -35,12 +35,12 @@ async def grant(voting_message_id):
         voting_message = await voting_channel.fetch_message(proposal.voting_message_id)
 
         # Applying the grant if the proposal isn't grantless
-        if not proposal.is_grantless:
+        if not proposal.not_financial:
             # Construct the grant message
             grant_message = GRANT_COMMAND_LAZY_CONSENSUS_MESSAGE.format(
                 prefix=DISCORD_COMMAND_PREFIX,
                 grant_command=GRANT_APPLY_COMMAND_NAME,
-                mention=proposal.receiver_ids,
+                mention=proposal.recipient_ids,
                 amount=get_amount_to_print(proposal.amount),
                 description=proposal.description,
                 author=get_mention_by_id(proposal.author_id),
@@ -55,7 +55,7 @@ async def grant(voting_message_id):
                 await message.edit(suppress=True)
             except Exception as e:
                 await voting_channel.send(
-                    f"Could not apply grant for {proposal.receiver_ids}. cc {RESPONSIBLE_MENTION}",
+                    f"Could not apply grant for {proposal.recipient_ids}. cc {RESPONSIBLE_MENTION}",
                 )
                 logger.critical(
                     "An error occurred while sending grant message, voting_message_id=%d",
@@ -74,10 +74,10 @@ async def grant(voting_message_id):
 
         # Reply to the original proposal message, if it still exists, and if it wasn't send in the voting channel (to avoid flooding)
         if original_message and (voting_channel.id != original_channel.id):
-            if not proposal.is_grantless:
+            if not proposal.not_financial:
                 await original_message.reply(
                     GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[result].format(
-                        mention=proposal.receiver_ids,
+                        mention=proposal.recipient_ids,
                         amount=get_amount_to_print(proposal.amount),
                     )
                 )
@@ -101,7 +101,7 @@ async def grant(voting_message_id):
         )
         # Update the proposal results in the voting channel
         if voting_message:
-            if proposal.is_grantless:
+            if proposal.not_financial:
                 await voting_message.edit(
                     content=GRANTLESS_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT.format(
                         author=get_mention_by_id(proposal.author_id),
@@ -116,7 +116,7 @@ async def grant(voting_message_id):
                 await voting_message.edit(
                     content=GRANT_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT.format(
                         amount=get_amount_to_print(proposal.amount),
-                        mention=proposal.receiver_ids,
+                        mention=proposal.recipient_ids,
                         description=proposal.description,
                         author=get_mention_by_id(proposal.author_id),
                         supported_by=supported_by if FULL_CONSENSUS_ENABLED else "",
@@ -127,11 +127,11 @@ async def grant(voting_message_id):
                 )
         else:
             # Handling the case when voting message was somehow removed from the channel
-            if not proposal.is_grantless:
+            if not proposal.not_financial:
                 message = await voting_channel.send(
                     ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED.format(
                         amount=get_amount_to_print(proposal.amount),
-                        mention=proposal.receiver_ids,
+                        mention=proposal.recipient_ids,
                         link_to_original_message=f"Original message: {link_to_original_message}",
                         RESPONSIBLE_MENTION=RESPONSIBLE_MENTION,
                     )

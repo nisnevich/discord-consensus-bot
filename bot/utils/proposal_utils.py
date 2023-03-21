@@ -133,9 +133,9 @@ def validate_grantless_proposal(new_proposal):
         raise ValueError(
             f"description should be a string, got {type(new_proposal.description)} instead: {new_proposal.description}"
         )
-    if not isinstance(new_proposal.is_grantless, bool):
+    if not isinstance(new_proposal.not_financial, bool):
         raise ValueError(
-            f"is_grantless should be bool, got {type(new_proposal.is_grantless)} instead: {new_proposal.is_grantless}"
+            f"not_financial should be bool, got {type(new_proposal.not_financial)} instead: {new_proposal.not_financial}"
         )
     if not isinstance(new_proposal.submitted_at, datetime):
         raise ValueError(
@@ -159,9 +159,9 @@ def validate_proposal_with_grant(new_grant_proposal):
     # The validation of proposals with grant is the same as with grantless, with a couple of extra fields
     validate_grantless_proposal(new_grant_proposal)
 
-    if not isinstance(new_grant_proposal.receiver_ids, (discord.User, discord.user.ClientUser, str)):
+    if not isinstance(new_grant_proposal.recipient_ids, (discord.User, discord.user.ClientUser, str)):
         raise ValueError(
-            f"mention should be discord.User str, got {type(new_grant_proposal.receiver_ids)} instead: {new_grant_proposal.receiver_ids}"
+            f"mention should be discord.User str, got {type(new_grant_proposal.recipient_ids)} instead: {new_grant_proposal.recipient_ids}"
         )
     if not isinstance(new_grant_proposal.amount, (float, int)):
         raise ValueError(
@@ -183,7 +183,7 @@ def add_proposal(new_proposal):
     db (optional): The DBUtil object used to save a proposal. If this parameter is not specified,proposal will only be added to in-memory dict (use case: when restoring data from DB).
     """
 
-    if new_proposal.is_grantless:
+    if new_proposal.not_financial:
         validate_grantless_proposal(new_proposal)
     else:
         validate_proposal_with_grant(new_proposal)

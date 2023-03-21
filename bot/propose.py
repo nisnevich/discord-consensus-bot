@@ -78,103 +78,60 @@ async def approve_proposal(voting_message_id):
         logger.error(f"Error while removing grant proposal: {e}")
 
 
-async def proposal_with_grant(ctx, original_message, mention, amount, description):
-    # Validity checks
-    if not await validate_grant_message(original_message, mention, amount, description):
-        return
-
-    # Add proposal to the voting channel
-    voting_channel = client.get_channel(VOTING_CHANNEL_ID)
-    voting_message = await voting_channel.send(
-        NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
+async def submit_proposal(ctx, description, finance_recipients=None):
+    # FIXME fix validation
+    if finance_recipients:
+        # Validity checks
+        if not await validate_grantless_message(ctx.message, description):
+            return
+        # Add proposal to the voting channel
+        voting_channel_text = NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
+            countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
+            author=ctx.message.author.mention,
+            description=description,
+        )
+        # Reply to the proposer if the message is not send in the voting channel (to avoid flooding)
+        proposer_response_text = NEW_GRANTLESS_PROPOSAL_RESPONSE.format(
+            voting_link=voting_message.jump_url,
+        )
+    else:
+        # Validity checks
+        if not await validate_grant_message(ctx.message, mention, amount, description):
+            return
+        # Compose voting channel message
+        voting_channel_text = NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
             amount_reaction=NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount),
             author=ctx.message.author.mention,
             countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
-            amount=get_amount_to_print(amount),
-            mention=mention.mention,
+            amount_sum=get_amount_to_print(amount),
             description=description,
         )
-    )
-
-    # Reply to the proposer if the message is not send in the voting channel (to avoid flooding)
-    bot_response_message = None
-    if voting_channel.id != ctx.message.channel.id:
-        bot_response_message = await original_message.reply(
-            NEW_GRANT_PROPOSAL_RESPONSE.format(
-                amount=get_amount_to_print(amount),
-                mention=mention.mention,
-                voting_link=voting_message.jump_url,
-            )
+        # Compose reply to the proposer
+        proposer_response_text = NEW_GRANT_PROPOSAL_RESPONSE.format(
+            voting_link=voting_message.jump_url,
         )
-    logger.info("Sent confirmation messages for proposal with grant, message_id=%d", ctx.message.id)
 
-    # Add grant proposal to dictionary and database, including the message id in the voting channel sent above
-    new_grant_proposal = Proposals(
-        message_id=ctx.message.id,
-        channel_id=ctx.message.channel.id,
-        author_id=ctx.message.author.id,
-        voting_message_id=voting_message.id,
-        is_grantless=False,
-        receiver_ids=mention.mention,
-        amount=amount,
-        description=description,
-        # set the datetimes in UTC, to preserve a single timezone for calculations
-        submitted_at=datetime.utcnow(),
-        closed_at=datetime.utcnow() + timedelta(seconds=PROPOSAL_DURATION_SECONDS),
-        bot_response_message_id=bot_response_message.id if bot_response_message else 0,
-        threshold_negative=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
-        threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE
-        if FULL_CONSENSUS_ENABLED
-        else THRESHOLD_DISABLED_DB_VALUE,
-    )
-    await add_proposal(new_grant_proposal, db)
-
-    # Add tick and cross reactions to the voting message after adding proposal to DB
-    if FULL_CONSENSUS_ENABLED:
-        await voting_message.add_reaction(EMOJI_VOTING_YES)
-        await voting_message.add_reaction(EMOJI_VOTING_NO)
-
-    # Run the approval coroutine
-    client.loop.create_task(approve_proposal(voting_message.id))
-    logger.info("Added task to event loop to approve message_id=%d", voting_message.id)
-
-
-async def proposal_grantless(ctx, original_message, description):
-    # Validity checks
-    if not await validate_grantless_message(original_message, description):
-        return
-
-    # Add proposal to the voting channel
+    # Send proposal to the voting channel
     voting_channel = client.get_channel(VOTING_CHANNEL_ID)
-    voting_message = await voting_channel.send(
-        NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
-            countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
-            author=ctx.message.author.mention,
-            description=description,
-        )
-    )
+    voting_message = await voting_channel.send(voting_channel_text)
 
-    # Reply to the proposer if the message is not send in the voting channel (to avoid flooding)
+    # Reply to the proposer (if the message was send in a channel other than voting, to avoid flooding there)
     bot_response_message = None
     if voting_channel.id != ctx.message.channel.id:
-        bot_response_message = await original_message.reply(
-            NEW_GRANTLESS_PROPOSAL_RESPONSE.format(
-                voting_link=voting_message.jump_url,
-            )
-        )
+        bot_response_message = await ctx.message.reply(proposer_response_text)
     logger.info(
-        "Sent confirmation messages for grantless proposal with message_id=%d", ctx.message.id
+        "Sent confirmation messages for %s proposal with message_id=%d",
+        "grantless" if finance_recipients else "grant",
+        ctx.message.id,
     )
 
     # Add grant proposal to dictionary and database, including the message id in the voting channel sent above
-    new_grant_proposal = Proposals(
+    new_proposal = Proposals(
         message_id=ctx.message.id,
         channel_id=ctx.message.channel.id,
         author_id=ctx.message.author.id,
         voting_message_id=voting_message.id,
-        is_grantless=True,
-        receiver_ids=None,
-        amount=None,
+        not_financial=True if finance_recipients else False,
         description=description,
         # set the datetimes in UTC, to preserve a single timezone for calculations
         submitted_at=datetime.utcnow(),
@@ -184,8 +141,9 @@ async def proposal_grantless(ctx, original_message, description):
         threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE
         if FULL_CONSENSUS_ENABLED
         else THRESHOLD_DISABLED_DB_VALUE,
+        finance_recipients=finance_recipients,
     )
-    await add_proposal(new_grant_proposal, db)
+    await add_proposal(new_proposal, db)
 
     # Add tick and cross reactions to the voting message after adding proposal to DB
     if FULL_CONSENSUS_ENABLED:
@@ -212,97 +170,64 @@ async def propose_command(ctx, *args):
     """
 
     try:
-        # Get the entire message content
-        message_content = ctx.message.content
-        logger.debug("Proposal received: %s", message_content)
+        logger.debug("Proposal received: %s", ctx.message.content)
 
-        original_message = await ctx.fetch_message(ctx.message.id)
-
-        # A reserve mechanism to stop accepting new proposals
+        # A reserve mechanism to stop accepting new proposals - if a certain file exists, reply and exit
         if os.path.exists(STOP_ACCEPTING_PROPOSALS_FLAG_FILE_NAME):
-            await original_message.reply(PROPOSALS_PAUSED_RESPONSE)
+            await ctx.message.reply(PROPOSALS_PAUSED_RESPONSE)
             logger.info(
                 "Rejecting the proposal from %s because a stopcock file is detected.",
                 ctx.message.author.mention,
             )
             return
-
-        # Don't accept proposal if recovery is in progress
+        # Don't accept proposal if recovery is in progress - reply and exit
         if db.is_recovery():
-            await original_message.reply(PROPOSALS_PAUSED_RECOVERY_RESPONSE)
+            await ctx.message.reply(PROPOSALS_PAUSED_RECOVERY_RESPONSE)
             logger.info(
                 "Rejecting the proposal from %s because recovery is in progress.",
                 ctx.message.author.mention,
             )
             return
-
         # Validate that the user is allowed to use the command
         if not await validate_roles(ctx.message.author):
-            await original_message.reply(ERROR_MESSAGE_INVALID_ROLE)
-            logger.info("Unauthorized user. message_id=%d", original_message.id)
+            await ctx.message.reply(ERROR_MESSAGE_INVALID_ROLE)
+            logger.info("Unauthorized user. message_id=%d", ctx.message.id)
             return
 
-        # Less than 3 args means the input is certainly wrong (mention, amount, and some description of the grant is required)
-        if len(args) < 3:
-            await original_message.reply(ERROR_MESSAGE_INVALID_COMMAND_FORMAT)
+        # Retrieve the proposal description (any text that follows the command name)
+        match_description = re.search(
+            rf"^\{DISCORD_COMMAND_PREFIX}\S+\s+([\w\W]+)$", ctx.message.content
+        )
+        # If the description isn't found, reply with an error and exit
+        if not match_description:
+            await ctx.message.reply(ERROR_MESSAGE_INVALID_COMMAND_FORMAT)
             logger.info(
                 "Invalid command format. message_id=%d, invalid value=%s",
-                original_message.id,
-                original_message.content,
+                ctx.message.id,
+                ctx.message.content,
             )
             return
-
-        is_grantless = True
-        # If there are no mentions, consider grantless, otherwise check if it looks like grant request
-        if original_message.mentions:
-            # If the first argument is a mention of a discord user - consider it a grant proposal (and validate accordingly), otherwise grantless
-            mention = original_message.mentions[0]
-            # Converting mention to <@123> format, because in the arguments it's passed like that
-            mention_id_str = "<@{}>".format(mention.id)
-            if args[0] == mention_id_str:
-                is_grantless = False
-                logger.debug("Received a proposal with a grant.")
-                # Suppose that the amount follows mention, and the description follows amount; the validation of these values comes next
-                amount = args[1]
-                try:
-                    amount = float(amount)
-                except ValueError:
-                    await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
-                    logger.info(
-                        "Unable to extract amount from the args. message_id=%d, invalid value=%s",
-                        original_message.id,
-                        amount,
-                    )
-                    return
-
-                # Retrieve description including line breaks. Regex skips 3 words and one or more spaces after each of them (command name, mention amount), and takes everything else
-                match = re.search(r"^\!\S+\s+\S+\s+\S+\s+([\w\W]+)$", message_content)
-                if not match:
-                    await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
-                    logger.critical(
-                        "Can't retrieve description from a proposal while it should be there."
-                    )
-                    return
-                description = match.group(1)
-
-                # Process the proposal
-                await proposal_with_grant(ctx, original_message, mention, amount, description)
-
-        if is_grantless:
-            logger.debug("Received a grantless proposal.")
-
-            # Retrieve description. Regex skips a word and one or more spaces (command name), and takes everything else
-            match = re.search(r"^\!\S+\s+([\w\W]+)$", message_content)
-            if not match:
-                await original_message.reply(ERROR_MESSAGE_INVALID_AMOUNT)
-                logger.critical(
-                    "Can't retrieve description from a proposal while it should be there."
-                )
-                return
-            description = match.group(1)
-
-            # Process the grantless proposal
-            await proposal_grantless(ctx, original_message, description)
+        # Retrieve the description
+        description = match_description.group(1)
+        # Parse all statements in the description where one or more mentions are followed by a number (mention in discord api is <@id>, e.g.<@1234567890>; floating point separator is '.')
+        match_recipients = re.finditer(r"\w*\s*((?:<@\d+>\s*)+)([\.\d]+)\w*\s*", description)
+        # If recipients mentions and amount are found, it's a grant proposal
+        if match_recipients:
+            finance_recipients = []
+            # Iterate over the matches
+            for match in match_recipients:
+                # Extract recipient_ids and amount from the match object
+                recipient_ids = match.group(1).replace('<', '').replace('>', '').replace('@', '')
+                amount = float(match.group(2))
+                # Create a new FinanceRecipients instance and populate it
+                recipient = Grantrecipients(recipient_ids=recipient_ids, amount=amount)
+                # Add the new FinanceRecipients instance to a list
+                finance_recipients.append(recipient)
+            # Submit the financial proposal
+            await submit_proposal(ctx, description, finance_recipients=finance_recipients)
+        else:
+            # Submit the simple proposal
+            await submit_proposal(ctx, description)
 
     except Exception as e:
         try:

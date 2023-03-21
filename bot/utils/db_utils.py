@@ -60,10 +60,10 @@ class DBUtil:
 
     def create_all_tables(self):
         # Creating tables that are only used for bot runtime
-        if not DBUtil.engine.has_table(GRANT_PROPOSALS_TABLE_NAME):
+        if not DBUtil.engine.has_table(PROPOSALS_TABLE_NAME):
             Base.metadata.create_all(DBUtil.engine)
         else:
-            logger.info("Table already exist: %s", GRANT_PROPOSALS_TABLE_NAME)
+            logger.info("Table already exist: %s", PROPOSALS_TABLE_NAME)
         if not DBUtil.engine.has_table(VOTERS_TABLE_NAME):
             Base.metadata.create_all(DBUtil.engine)
         else:
@@ -74,10 +74,10 @@ class DBUtil:
             logger.info("Table already exist: %s", FREE_FUNDING_BALANCES_TABLE_NAME)
 
         # Creating tables that are used for history and analytics
-        if not DBUtil.engine_history.has_table(GRANT_PROPOSALS_TABLE_NAME):
+        if not DBUtil.engine_history.has_table(PROPOSALS_TABLE_NAME):
             Base.metadata.create_all(DBUtil.engine_history)
         else:
-            logger.info("Table already exist: %s", GRANT_PROPOSALS_TABLE_NAME)
+            logger.info("Table already exist: %s", PROPOSALS_TABLE_NAME)
         if not DBUtil.engine_history.has_table(VOTERS_TABLE_NAME):
             Base.metadata.create_all(DBUtil.engine_history)
         else:
@@ -186,11 +186,11 @@ class DBUtil:
                 # Retrieve author nickname by ID, so it can be used quickly when exporting analytics
                 author_nickname=await get_nickname_by_id_or_mention(proposal.author_id),
                 # If the proposal has a grant, the mentioned users will be converted to a nickname
-                receiver_nicknames=None
-                if proposal.is_grantless
+                recipient_nicknames=None
+                if proposal.not_financial
                 else DB_ARRAY_COLUMN_SEPARATOR.join(
-                    await get_nickname_by_id_or_mention(receiver_id)
-                    for receiver_id in proposal.receiver_ids
+                    await get_nickname_by_id_or_mention(recipient_id)
+                    for recipient_id in proposal.recipient_ids
                 ),
             )
             # Add a history item

@@ -171,8 +171,8 @@ async def write_lazy_consensus_history(page):
         page.cell(
             row=row_num,
             column=4,
-            value=str(proposal.receiver_ids)
-            if proposal.receiver_ids is not None
+            value=str(proposal.recipient_ids)
+            if proposal.recipient_ids is not None
             else EMPTY_ANALYTICS_VALUE,
         )
         # Amount
@@ -243,7 +243,7 @@ async def write_free_funding_transactions(page):
         # Author
         page.cell(row=row_num, column=3, value=str(transaction.author_nickname))
         # Mentions
-        page.cell(row=row_num, column=4, value=str(transaction.receiver_nicknames))
+        page.cell(row=row_num, column=4, value=str(transaction.recipient_nicknames))
         # Total amount
         page.cell(row=row_num, column=5, value=str(get_amount_to_print(transaction.total_amount)))
         # Description

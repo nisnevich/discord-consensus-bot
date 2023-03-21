@@ -14,12 +14,13 @@ from sqlalchemy import (
 )
 
 from bot.config.const import (
-    GRANT_PROPOSALS_TABLE_NAME,
+    PROPOSALS_TABLE_NAME,
     VOTERS_TABLE_NAME,
     PROPOSAL_HISTORY_TABLE_NAME,
     FREE_FUNDING_TRANSACTIONS_TABLE_NAME,
     FREE_FUNDING_BALANCES_TABLE_NAME,
     Vote,
+    FINANCE_RECIPIENTS_TABLE_NAME,
 )
 
 Base = declarative_base()
@@ -27,10 +28,11 @@ Base = declarative_base()
 
 class Proposals(Base):
     """
-    A class representing grant proposals in the bot. It stores information about each proposal, such as its author, description, grant receivers, and more. It also maintains relationships with the associated Voters class for handling votes on proposals.
+    A class representing proposals in the bot. It stores information about each proposal, such as
+    its author, description, finance recipients, voters, and more.
     """
 
-    __tablename__ = GRANT_PROPOSALS_TABLE_NAME
+    __tablename__ = PROPOSALS_TABLE_NAME
 
     id = Column(Integer, primary_key=True)
     # The id of the initial message that submitted a proposal
@@ -41,13 +43,8 @@ class Proposals(Base):
     author_id = Column(Integer)
     # The id of the voting message in the channel VOTING_CHANNEL_ID
     voting_message_id = Column(Integer)
-    # Defines whether the proposal has a grant or not
-    is_grantless = Column(Boolean)
-    # List of comma-separated user ids to give a grant to (empty when is_grantless is true)
-    receiver_ids = Column(String)
-    # Amount of the grant (empty when is_grantless is true)
-    # Defining some constraints to avoid overflow
-    amount = Column(Float, CheckConstraint('amount > -1000000000 AND amount < 1000000000'))
+    # Defines whether the proposal has a grant to give or not
+    not_financial = Column(Boolean)
     # The text description of the proposal (validated to fit between MIN_DESCRIPTION_LENGTH and MAX_DESCRIPTION_LENGTH)
     description = Column(String)
     # Date and time when the proposal was submitted
@@ -70,15 +67,46 @@ class Proposals(Base):
     "delete-orphan" means that any voters that no longer have a related grant proposal will be deleted from the database.
     """
     voters = relationship(
-        "Voters", back_populates=GRANT_PROPOSALS_TABLE_NAME, cascade="all, delete-orphan"
+        "Voters", back_populates=PROPOSALS_TABLE_NAME, cascade="all, delete-orphan"
+    )
+    finance_recipients = relationship(
+        "FinanceRecipients", back_populates=PROPOSALS_TABLE_NAME, cascade="all, delete-orphan"
     )
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.voters = []
+        self.finance_recipients = []
 
     def __repr__(self):
-        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, receiver_ids={self.receiver_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, threshold_negative={self.threshold_negative}, threshold_positive={self.threshold_positive})>"
+        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, not_financial={self.not_financial}, recipient_ids={self.recipient_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, threshold_negative={self.threshold_negative}, threshold_positive={self.threshold_positive})>"
+
+
+class FinanceRecipients(Base):
+    """
+    This class represents the finance recipients associated with a proposal. Each instance
+    stores the recipient IDs and the corresponding amount they are to receive.
+    """
+
+    __tablename__ = FINANCE_RECIPIENTS_TABLE_NAME
+
+    # Primary key
+    id = Column(Integer, primary_key=True)
+    # Foreign key - the proposal ID associated with the grant recipients
+    proposal_id = Column(Integer, ForeignKey('proposals.id'), nullable=False)
+    # The ids of the recipients
+    recipient_ids = Column(String, nullable=False)
+    # Comma-separated list of user nicknames to whom funds were sent
+    recipient_nicknames = Column(String)
+    # The amount to receive
+    amount = Column(
+        Float, CheckConstraint('amount > -1000000000 AND amount < 1000000000'), nullable=False
+    )
+
+    proposal = relationship("Proposals", back_populates="finance_recipients")
+
+    def __repr__(self):
+        return f"FinanceRecipients(id={self.id}, proposal_id={self.proposal_id}, voting_message_id={self.voting_message_id}, recipient_ids={self.recipient_ids}, recipient_nicknames={self.recipient_nicknames}, amount={self.amount})"
 
 
 class Voters(Base):
@@ -90,6 +118,8 @@ class Voters(Base):
     id = Column(Integer, primary_key=True)
     # User ID of the voter
     user_id = Column(Integer)
+    # The nickname of the voter (used for analytics)
+    user_nickname = Column(String)
     # ID of the voting message
     voting_message_id = Column(Integer)
     # ID of the proposal that the given voter has voted for
@@ -119,16 +149,14 @@ class ProposalHistory(Proposals):
     result = Column(Integer, default=None)
     # The URL of the voting message in Discord
     voting_message_url = Column(String)
-    # The authors nickname
+    # The authors nickname (used for analytics; the authors id is stored in the associated proposal)
     author_nickname = Column(String)
-    # List of comma-separated user nicknames who have received grants (empty when is_grantless is true)
-    receiver_nicknames = Column(String)
 
     # Add an index on the result column to optimise read query perfomance
     __table_args__ = (Index("ix_result", result),)
 
     def __repr__(self):
-        return f"<ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, is_grantless={self.is_grantless}, receiver_ids={self.receiver_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url}, author_nickname={self.author_nickname}, receiver_nicknames={self.receiver_nicknames}, threshold_negative={self.threshold})>"
+        return f"<ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, not_financial={self.not_financial}, recipient_ids={self.recipient_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url}, author_nickname={self.author_nickname}, recipient_nicknames={self.recipient_nicknames}, threshold_negative={self.threshold})>"
 
 
 class FreeFundingBalance(Base):
@@ -155,7 +183,7 @@ class FreeFundingBalance(Base):
 class FreeFundingTransaction(Base):
     """
     A class representing free funding transactions in the bot. It stores information about each
-    transaction, such as its author, receiver(s), total amount, description, and more. This class is
+    transaction, such as its author, recipient(s), total amount, description, and more. This class is
     aimed mainly to track free funding transactions, and is used to export statistics.
     """
 
@@ -164,12 +192,12 @@ class FreeFundingTransaction(Base):
     id = Column(Integer, primary_key=True)
     # The ID of the author who sends the transaction
     author_id = Column(Integer)
-    # The nickname of the user who sends transactions
+    # The nickname of the user who sends transactions (used for analytics)
     author_nickname = Column(String)
     # List of comma-separated user ids to whom the funds were sent (the separator is defined in FREE_FUNDING_MENTIONS_COLUMN_SEPARATOR)
-    receiver_ids = Column(String)
-    # Comma-separated list of user nicknames to whom funds were sent
-    receiver_nicknames = Column(String)
+    recipient_ids = Column(String)
+    # Comma-separated list of user nicknames to whom funds were sent (used for analytics)
+    recipient_nicknames = Column(String)
     # Total amount of funds - a sum of the amounts sent to each mentioned user (defining some constraints to avoid overflow)
     total_amount = Column(
         Float, CheckConstraint('total_amount > -1000000000 AND total_amount < 1000000000')
@@ -182,4 +210,4 @@ class FreeFundingTransaction(Base):
     message_url = Column(String)
 
     def __repr__(self):
-        return f"<FreeFundingTransaction(id={self.id}, author_id={self.author_id}, author_nickname={self.author_nickname}, receiver_ids={self.receiver_ids}, receiver_nicknames={self.receiver_nicknames}, total_amount={self.total_amount}, description={self.description}, submitted_at={self.submitted_at}, message_url={self.message_url})>"
+        return f"<FreeFundingTransaction(id={self.id}, author_id={self.author_id}, author_nickname={self.author_nickname}, recipient_ids={self.recipient_ids}, recipient_nicknames={self.recipient_nicknames}, total_amount={self.total_amount}, description={self.description}, submitted_at={self.submitted_at}, message_url={self.message_url})>"

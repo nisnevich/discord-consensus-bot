@@ -23,6 +23,7 @@ from bot.utils.formatting_utils import (
     get_amount_to_print,
     get_discord_countdown_plus_delta,
     get_mention_by_id,
+    get_nickname_by_id_or_mention,
 )
 
 logger = logging.getLogger(__name__)
@@ -161,13 +162,13 @@ async def cancel_proposal(proposal, reason, voting_message):
     original_message = await get_message(client, proposal.channel_id, proposal.message_id)
     link_to_voting_message = voting_message.jump_url
     link_to_initial_proposer_message = original_message.jump_url if original_message else None
-    if not proposal.is_grantless:
-        mention_receiver = proposal.receiver_ids
+    if not proposal.not_financial:
+        mention_recipient = proposal.recipient_ids
         amount_of_allocation = get_amount_to_print(proposal.amount)
 
     # Filling the proposer response message based on the reason of cancelling
     if reason == ProposalResult.CANCELLED_BY_PROPOSER:
-        if proposal.is_grantless:
+        if proposal.not_financial:
             response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
                 author=mention_author
             )
@@ -177,7 +178,7 @@ async def cancel_proposal(proposal, reason, voting_message):
             )
         log_message = "(by the proposer)"
     elif reason == ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD:
-        if proposal.is_grantless:
+        if proposal.not_financial:
             response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
                 author=mention_author,
                 threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
@@ -191,7 +192,7 @@ async def cancel_proposal(proposal, reason, voting_message):
             )
         log_message = "(by reaching negative threshold_negative)"
     elif reason == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD:
-        if proposal.is_grantless:
+        if proposal.not_financial:
             response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format()
         else:
             response_to_proposer = GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format()
@@ -238,7 +239,7 @@ async def cancel_proposal(proposal, reason, voting_message):
     await remove_proposal(proposal.voting_message_id, db)
     logger.info(
         "Cancelled %s %s. voting_message_id=%d",
-        "grantless proposal" if proposal.is_grantless else "proposal with a grant",
+        "grantless proposal" if proposal.not_financial else "proposal with a grant",
         log_message,
         proposal.voting_message_id,
     )
@@ -332,6 +333,7 @@ async def on_raw_reaction_add(payload):
             proposal,
             Voters(
                 user_id=payload.user_id,
+                user_nickname=get_nickname_by_id_or_mention(payload.user_id),
                 voting_message_id=proposal.voting_message_id,
                 value=Vote.YES.value if payload.emoji.name == EMOJI_VOTING_YES else Vote.NO.value,
             ),

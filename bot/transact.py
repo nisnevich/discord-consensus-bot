@@ -116,18 +116,18 @@ async def send_transaction(ctx, original_message, mentions, amount, description)
         raise e
 
     # Convert all mentions to nicknames
-    receiver_ids = []
-    receiver_nicknames = []
+    recipient_ids = []
+    recipient_nicknames = []
     for mention in mentions:
-        receiver_ids.append(get_id_by_mention(mention))
-        receiver_nicknames.append(await get_nickname_by_id_or_mention(mention))
+        recipient_ids.append(get_id_by_mention(mention))
+        recipient_nicknames.append(await get_nickname_by_id_or_mention(mention))
     # Add transaction to history
     await db.add_free_transactions_history_item(
         FreeFundingTransaction(
             author_id=ctx.message.author.id,
             author_nickname=await get_nickname_by_id_or_mention(author_mention),
-            receiver_ids=DB_ARRAY_COLUMN_SEPARATOR.join(receiver_ids),
-            receiver_nicknames=DB_ARRAY_COLUMN_SEPARATOR.join(receiver_nicknames),
+            recipient_ids=DB_ARRAY_COLUMN_SEPARATOR.join(recipient_ids),
+            recipient_nicknames=DB_ARRAY_COLUMN_SEPARATOR.join(recipient_nicknames),
             total_amount=amount * len(mentions),
             description=description,
             submitted_at=datetime.now(),

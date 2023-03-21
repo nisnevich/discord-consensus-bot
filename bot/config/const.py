@@ -13,7 +13,8 @@ DEFAULT_LOG_LEVEL = logging.DEBUG
 # Database
 DB_PATH = os.path.join(PROJECT_ROOT, "db", "consensus-bot.db")
 DB_HISTORY_PATH = os.path.join(PROJECT_ROOT, "db", "consensus-bot-history.db")
-GRANT_PROPOSALS_TABLE_NAME = "proposals"
+PROPOSALS_TABLE_NAME = "proposals"
+FINANCE_RECIPIENTS_TABLE_NAME = "finance_recipients"
 VOTERS_TABLE_NAME = "voters"
 PROPOSAL_HISTORY_TABLE_NAME = "proposal_history"
 FREE_FUNDING_BALANCES_TABLE_NAME = "free_funding_balance"
@@ -226,7 +227,9 @@ Here are some examples to get you started:
 Don't worry, we all make mistakes, just give it another try! To learn more in DM, type `!help-lazy`. And if you're still having trouble, feel free to reach out for help.
 """
 ERROR_MESSAGE_NO_MENTIONS = "Where's the love?! You need to mention someone if you want to propose a grant! `!propose @mention 100 for a giant robot.`"
-ERROR_MESSAGE_INVALID_COMMAND_FORMAT = "Oopsie! The command format is as important as the ingredients in a pizza. To make sure you got it right, type `!help-lazy`"
+ERROR_MESSAGE_INVALID_COMMAND_FORMAT = (
+    "That's not the right way this command should be used. Type `!help-lazy` for help."
+)
 ERROR_MESSAGE_INVALID_USER = (
     "Hmmm, that user doesn't seem to be around here. Did you check under the couch?"
 )
@@ -337,16 +340,16 @@ def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
 
 # Active voting
 NEW_GRANT_PROPOSAL_RESPONSE = """
-Alright, let's make this happen! The proposal to grant {mention} {amount} points has been submitted: {voting_link}
+Alright, let's make this happen! The proposal has been submitted: {voting_link}
 """
 NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
 :rocket:{amount_reaction} **Active grant proposal** by {author}
-{countdown} will grant {amount} points to {mention}: {description}
+{countdown} will grant a total of {amount_sum} points: {description}
 """
 
 # Finished voting
 GRANT_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT = """
-:tada: Granted {amount} points to {mention}: {description}
+:tada: Granted {amount_sum} points: {description}
 {supported_by}*Proposed by {author}: {link_to_original_message}*
 """
 GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {

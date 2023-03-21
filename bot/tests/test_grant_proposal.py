@@ -9,7 +9,7 @@ class TestValidateGrantMessage(asynctest.TestCase):
     @mock.patch("discord.User")
     async def test_valid_message(self, mock_user):
         original_message = asynctest.MagicMock()
-        mock_user().receiver_ids = "@user"
+        mock_user().recipient_ids = "@user"
         original_message.mentions = [mock_user()]
         mention = original_message.mentions[0].mention
         original_message.content = "!propose @user 100 test_description"
@@ -51,7 +51,7 @@ class TestValidateGrantMessage(asynctest.TestCase):
         original_message.mentions = [mock_user()]
         mention = original_message.mentions[0].mention
         original_message.reply = asynctest.CoroutineMock()
-        mock_user.receiver_ids = "not_a_valid_mention"
+        mock_user.recipient_ids = "not_a_valid_mention"
         is_valid = await validate_grant_message(
             original_message, mention, "100", "test_description"
         )
