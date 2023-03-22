@@ -36,34 +36,24 @@ async def grant(voting_message_id):
 
         # Applying the grant if the proposal isn't grantless
         if not proposal.not_financial:
-            # Construct the grant message
-            grant_message = GRANT_COMMAND_LAZY_CONSENSUS_MESSAGE.format(
-                prefix=DISCORD_COMMAND_PREFIX,
-                grant_command=GRANT_APPLY_COMMAND_NAME,
-                mention=proposal.recipient_ids,
-                amount=get_amount_to_print(proposal.amount),
-                description=proposal.description,
-                author=get_mention_by_id(proposal.author_id),
-                voting_url=voting_message.jump_url,
-            )
-
-            # Apply the grant
-            try:
+            for recipient in proposal.finance_recipients:
+                # Extract array of recipient ids
+                ids = recipient.recipient_ids.split(DB_ARRAY_COLUMN_SEPARATOR)
+                # Construct the grant message
+                grant_message = GRANT_COMMAND_LAZY_CONSENSUS_MESSAGE.format(
+                    prefix=DISCORD_COMMAND_PREFIX,
+                    grant_command=GRANT_APPLY_COMMAND_NAME,
+                    # Convert recipient ids to mentions, and write them separated by space
+                    mention=" ".join(get_mention_by_id(id) for id in ids),
+                    amount=get_amount_to_print(recipient.amount),
+                    author=get_mention_by_id(proposal.author_id),
+                    voting_url=voting_message.jump_url,
+                )
+                # Apply the grant
                 channel = client.get_channel(GRANT_APPLY_CHANNEL_ID)
                 message = await channel.send(grant_message)
                 # Remove embeds
                 await message.edit(suppress=True)
-            except Exception as e:
-                await voting_channel.send(
-                    f"Could not apply grant for {proposal.recipient_ids}. cc {RESPONSIBLE_MENTION}",
-                )
-                logger.critical(
-                    "An error occurred while sending grant message, voting_message_id=%d",
-                    voting_message_id,
-                    exc_info=True,
-                )
-                # Throwing exception further because if the grant failed to apply, we don't want to do anything else
-                raise e
 
         # Add "accepted" reactions to all messages
         if original_message:
@@ -77,8 +67,7 @@ async def grant(voting_message_id):
             if not proposal.not_financial:
                 await original_message.reply(
                     GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[result].format(
-                        mention=proposal.recipient_ids,
-                        amount=get_amount_to_print(proposal.amount),
+                        amount=get_amount_to_print(proposal.total_amount),
                     )
                 )
             else:
@@ -115,11 +104,10 @@ async def grant(voting_message_id):
             else:
                 await voting_message.edit(
                     content=GRANT_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT.format(
-                        amount=get_amount_to_print(proposal.amount),
-                        mention=proposal.recipient_ids,
+                        amount_sum=get_amount_to_print(proposal.total_amount),
                         description=proposal.description,
-                        author=get_mention_by_id(proposal.author_id),
                         supported_by=supported_by if FULL_CONSENSUS_ENABLED else "",
+                        author=get_mention_by_id(proposal.author_id),
                         # TODO#9 if original_message is None, message should be different
                         link_to_original_message=link_to_original_message,
                     ),
@@ -130,8 +118,7 @@ async def grant(voting_message_id):
             if not proposal.not_financial:
                 message = await voting_channel.send(
                     ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED.format(
-                        amount=get_amount_to_print(proposal.amount),
-                        mention=proposal.recipient_ids,
+                        amount=get_amount_to_print(proposal.total_amount),
                         link_to_original_message=f"Original message: {link_to_original_message}",
                         RESPONSIBLE_MENTION=RESPONSIBLE_MENTION,
                     )
@@ -154,7 +141,8 @@ async def grant(voting_message_id):
             )
 
         # Add history item for analytics
-        await db.add_proposals_history_item(proposal, result)
+        # FIXME uncomment
+        #  await db.add_proposals_history_item(proposal, result)
         logger.debug(
             "Added history item, voting_message_id=%d, result=%s",
             proposal.voting_message_id,

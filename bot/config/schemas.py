@@ -43,8 +43,6 @@ class Proposals(Base):
     author_id = Column(Integer)
     # The id of the voting message in the channel VOTING_CHANNEL_ID
     voting_message_id = Column(Integer)
-    # Defines whether the proposal has a grant to give or not
-    not_financial = Column(Boolean)
     # The text description of the proposal (validated to fit between MIN_DESCRIPTION_LENGTH and MAX_DESCRIPTION_LENGTH)
     description = Column(String)
     # Date and time when the proposal was submitted
@@ -53,6 +51,13 @@ class Proposals(Base):
     closed_at = Column(DateTime)
     # This is only needed for some error handling, though very helpful for onboarding new users
     bot_response_message_id = Column(Integer)
+
+    # Defines whether the proposal has a grant to give or not
+    not_financial = Column(Boolean)
+    # For financial proposals, the total amount to be transferred
+    total_amount = Column(
+        Float, CheckConstraint('total_amount > -1000000000 AND total_amount < 1000000000')
+    )
 
     # Reserved for later:
     # Minimal number of voters "against" needed to cancel this proposal
@@ -92,7 +97,7 @@ class FinanceRecipients(Base):
     # Primary key
     id = Column(Integer, primary_key=True)
     # Foreign key - the proposal ID associated with the grant recipients
-    proposal_id = Column(Integer, ForeignKey('proposals.id'), nullable=False)
+    proposal_id = Column(Integer, ForeignKey('proposals.id'))
     # The ids of the recipients
     recipient_ids = Column(String, nullable=False)
     # Comma-separated list of user nicknames to whom funds were sent
@@ -105,7 +110,7 @@ class FinanceRecipients(Base):
     proposal = relationship("Proposals", back_populates="finance_recipients")
 
     def __repr__(self):
-        return f"FinanceRecipients(id={self.id}, proposal_id={self.proposal_id}, voting_message_id={self.voting_message_id}, recipient_ids={self.recipient_ids}, recipient_nicknames={self.recipient_nicknames}, amount={self.amount})"
+        return f"FinanceRecipients(id={self.id}, proposal_id={self.proposal_id},  recipient_ids={self.recipient_ids}, recipient_nicknames={self.recipient_nicknames}, amount={self.amount})"
 
 
 class Voters(Base):

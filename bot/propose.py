@@ -15,6 +15,7 @@ from bot.utils.proposal_utils import (
     add_proposal,
     is_relevant_proposal,
     get_voters_with_vote,
+    add_finance_recipient,
 )
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.validation import (
@@ -82,7 +83,7 @@ async def approve_proposal(voting_message_id):
         logger.error(f"Error while removing grant proposal: {e}")
 
 
-async def submit_proposal(ctx, description, finance_recipients=None):
+async def submit_proposal(ctx, description, finance_recipients=None, total_amount=None):
     if not finance_recipients:
         # Validity checks
         if not await validate_not_financial_proposal(ctx.message, description):
@@ -102,10 +103,10 @@ async def submit_proposal(ctx, description, finance_recipients=None):
         )
     else:
         # Validity checks
-        if not await validate_financial_proposal(ctx.message, description, finance_recipients):
+        if not await validate_financial_proposal(
+            ctx.message, description, finance_recipients, total_amount
+        ):
             return
-        # Calculate the total amount
-        total_amount = sum(r.amount for r in finance_recipients)
         # Compose voting channel message
         voting_channel_text = NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
             amount_reaction=NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(total_amount),
@@ -132,25 +133,29 @@ async def submit_proposal(ctx, description, finance_recipients=None):
         ctx.message.id,
     )
 
-    # Add grant proposal to dictionary and database, including the message id in the voting channel sent above
+    # Create a proposal
     new_proposal = Proposals(
         message_id=ctx.message.id,
         channel_id=ctx.message.channel.id,
         author_id=ctx.message.author.id,
         voting_message_id=voting_message.id,
-        not_financial=True if finance_recipients else False,
         description=description,
         # set the datetimes in UTC, to preserve a single timezone for calculations
         submitted_at=datetime.utcnow(),
         closed_at=datetime.utcnow() + timedelta(seconds=PROPOSAL_DURATION_SECONDS),
         bot_response_message_id=bot_response_message.id if bot_response_message else 0,
+        not_financial=False if finance_recipients else True,
+        total_amount=total_amount,
         threshold_negative=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
         threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE
         if FULL_CONSENSUS_ENABLED
         else THRESHOLD_DISABLED_DB_VALUE,
-        finance_recipients=finance_recipients,
     )
+    # Add proposal to DB
     await add_proposal(new_proposal, db)
+    # Add recipients to the proposal in DB
+    for recipient in finance_recipients:
+        await add_finance_recipient(new_proposal, recipient)
 
     # Add tick and cross reactions to the voting message after adding proposal to DB
     if FULL_CONSENSUS_ENABLED:
@@ -221,17 +226,26 @@ async def propose_command(ctx, *args):
         # If recipients mentions and amount are found, it's a grant proposal
         if match_recipients:
             finance_recipients = []
+            total_amount = 0
             # Iterate over the matches
             for match in match_recipients:
-                # Extract recipient_ids and amount from the match object
-                recipient_ids = match.group(1).replace('<', '').replace('>', '').replace('@', '')
+                # Extract ids from mentions
+                match_recipient_ids = re.finditer(r"<@(\d+)>", match.group(1))
+                ids = [id_match.group(1) for id_match in match_recipient_ids]
+                # Extract the amount to send
                 amount = float(match.group(2))
                 # Create a new FinanceRecipients instance and populate it
-                recipient = FinanceRecipients(recipient_ids=recipient_ids, amount=amount)
+                recipient = FinanceRecipients(
+                    recipient_ids=DB_ARRAY_COLUMN_SEPARATOR.join(ids), amount=amount
+                )
                 # Add the new FinanceRecipients instance to a list
                 finance_recipients.append(recipient)
+                # Add the sum to total amount
+                total_amount += amount * len(ids)
             # Submit the financial proposal
-            await submit_proposal(ctx, description, finance_recipients=finance_recipients)
+            await submit_proposal(
+                ctx, description, finance_recipients=finance_recipients, total_amount=total_amount
+            )
         else:
             # Submit the simple proposal
             await submit_proposal(ctx, description)

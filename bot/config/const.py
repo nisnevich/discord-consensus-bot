@@ -19,7 +19,8 @@ VOTERS_TABLE_NAME = "voters"
 PROPOSAL_HISTORY_TABLE_NAME = "proposal_history"
 FREE_FUNDING_BALANCES_TABLE_NAME = "free_funding_balance"
 FREE_FUNDING_TRANSACTIONS_TABLE_NAME = "free_funding_transaction_history"
-DB_ARRAY_COLUMN_SEPARATOR = ", "
+# In SQLite, there are no array columns, thus arrays are stored as a string separated by this variable
+DB_ARRAY_COLUMN_SEPARATOR = ";;"
 
 # nltk datasets to download
 NLTK_DATASETS_DIR = f"{PROJECT_ROOT}/nltk"
@@ -43,12 +44,12 @@ class ServerEnvironment(Enum):
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 5  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
 # negative votes threshold_negative)
-FULL_CONSENSUS_ENABLED = True
+FULL_CONSENSUS_ENABLED = False
 # Minimal number of voters "for" in order for a proposal to pass
 FULL_CONSENSUS_THRESHOLD_POSITIVE = 2
 # A total number of free funding for each person per season
@@ -202,14 +203,6 @@ HEART_EMOJI_LIST = [
 # Messages texts
 # ==============
 
-# Grant apply messages
-GRANT_COMMAND_LAZY_CONSENSUS_MESSAGE = """
-{prefix}{grant_command} {mention} {amount} {description}. Requested by {author}, approved via lazy consensus. Voting: {voting_url}
-"""
-GRANT_COMMAND_FREE_FUNDING_MESSAGE = """
-{prefix}{grant_command} {mentions} {amount} {description}. Tips sent by {author} ({balance} points remaining): {tips_url}
-"""
-
 # Lazy consensus validation error messages
 COMMAND_FORMAT_RESPONSE = """
 Hey there, {author}! It looks like you're trying to use the !propose command, but something's not quite right with the syntax. No worries though, I've got you covered.
@@ -243,7 +236,7 @@ ERROR_MESSAGE_LENGTHY_DESCRIPTION = f"Please reduce the description length to le
 ERROR_MESSAGE_SHORTY_DESCRIPTION = f"Less is not always more, my friend. A tiny bit more detailed description would be greatly appreciated."
 ERROR_MESSAGE_INCORRECT_DESCRIPTION_LANGUAGE = f"Looks like your proposal needs a little more time in English class. Let's make sure you described everything in the language of Shakespeare (English must be at least {100 * MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION}% of the text, but feel free to add a second language if you'd like. Just don't let it go over a total of {MAX_DESCRIPTION_LENGTH} characters, okay?)."
 ERROR_MESSAGE_INVALID_ROLE = "Sorry, you need Layer 3 role to use this command. Type `!help-lazy` to learn more about the bot in DM."
-ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED = "The {amount} grant for {mention} was applied, but I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
+ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED = "The {amount} grant was applied, but I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author} is applied! However, I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_AUTHOR_SUPPORTING_OWN_PROPOSAL = "Sorry, but supporting your own proposal is a no-no."
 ERROR_MESSAGE_ALREADY_VOTED = "It appears that you have already voted on this proposal. Before casting another vote, please ensure that your previous vote has been removed: {link_to_voting_message}"
@@ -338,6 +331,14 @@ def NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount):
     return ":moneybag::moneybag::moneybag::moneybag::moneybag:"
 
 
+# Grant apply messages
+GRANT_COMMAND_LAZY_CONSENSUS_MESSAGE = """
+{prefix}{grant_command} {mention} {amount} points. Requested by {author}: {voting_url}
+"""
+GRANT_COMMAND_FREE_FUNDING_MESSAGE = """
+{prefix}{grant_command} {mentions} {amount} {description}. Tips sent by {author} ({balance} points remaining): {tips_url}
+"""
+
 # Active voting
 NEW_GRANT_PROPOSAL_RESPONSE = """
 Alright, let's make this happen! The proposal has been submitted: {voting_link}
@@ -353,7 +354,7 @@ GRANT_PROPOSAL_ACCEPTED_VOTING_CHANNEL_EDIT = """
 {supported_by}*Proposed by {author}: {link_to_original_message}*
 """
 GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
-    ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given and {mention} is now richer by {amount} points!",
+    ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given!",
     ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
     ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Sorry, your proposal didn't receive enough support and was cancelled. Don't be disheartened, and feel free to submit new ideas. Your contributions are valued, and we look forward to seeing more great ideas from you in the future.",

@@ -244,7 +244,7 @@ async def validate_not_financial_proposal(original_message, description: str) ->
 
 
 async def validate_financial_proposal(
-    original_message, description: str, finance_recipients: List[FinanceRecipients]
+    original_message, description: str, finance_recipients: List[FinanceRecipients], total_amount
 ) -> bool:
     """
     Validate grant message sent in discord - mention, amount etc.
@@ -254,7 +254,6 @@ async def validate_financial_proposal(
         bool: True if the grant proposal message is valid, False otherwise.
     """
 
-    total_amount = 0
     # Iterate through all recipients and validate them
     for recipient in finance_recipients:
         # Check if mentions are valid
@@ -263,7 +262,6 @@ async def validate_financial_proposal(
         # Check if amount is valid
         if not await validate_amount(original_message, recipient.amount):
             return False
-        total_amount += recipient.amount
 
     # Check if the total amount is less than a certain value to avoid flooding the voting channel
     if total_amount < MIN_PROPOSAL_AMOUNT:

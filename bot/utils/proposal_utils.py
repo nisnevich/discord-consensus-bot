@@ -65,6 +65,11 @@ async def remove_voter(proposal, voter):
     await db.delete(voter)
 
 
+async def add_finance_recipient(proposal, recipient):
+    await db.add(recipient)
+    await db.append(proposal.finance_recipients, recipient)
+
+
 def is_relevant_proposal(voting_message_id):
     if not isinstance(voting_message_id, int):
         raise ValueError(
