@@ -17,14 +17,18 @@ from bot.utils.proposal_utils import (
     get_voters_with_vote,
 )
 from bot.config.logging_config import log_handler, console_handler
-from bot.utils.validation import validate_roles, validate_grant_message, validate_grantless_message
+from bot.utils.validation import (
+    validate_roles,
+    validate_financial_proposal,
+    validate_not_financial_proposal,
+)
 from bot.utils.discord_utils import get_discord_client, get_message
 from bot.utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
     get_discord_countdown_plus_delta,
     get_amount_to_print,
 )
-from bot.config.schemas import Proposals
+from bot.config.schemas import Proposals, FinanceRecipients
 from bot.vote import cancel_proposal
 
 logger = logging.getLogger(__name__)
@@ -79,10 +83,9 @@ async def approve_proposal(voting_message_id):
 
 
 async def submit_proposal(ctx, description, finance_recipients=None):
-    # FIXME fix validation
-    if finance_recipients:
+    if not finance_recipients:
         # Validity checks
-        if not await validate_grantless_message(ctx.message, description):
+        if not await validate_not_financial_proposal(ctx.message, description):
             return
         # Add proposal to the voting channel
         voting_channel_text = NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
@@ -90,30 +93,34 @@ async def submit_proposal(ctx, description, finance_recipients=None):
             author=ctx.message.author.mention,
             description=description,
         )
+        # Send proposal to the voting channel
+        voting_channel = client.get_channel(VOTING_CHANNEL_ID)
+        voting_message = await voting_channel.send(voting_channel_text)
         # Reply to the proposer if the message is not send in the voting channel (to avoid flooding)
         proposer_response_text = NEW_GRANTLESS_PROPOSAL_RESPONSE.format(
             voting_link=voting_message.jump_url,
         )
     else:
         # Validity checks
-        if not await validate_grant_message(ctx.message, mention, amount, description):
+        if not await validate_financial_proposal(ctx.message, description, finance_recipients):
             return
+        # Calculate the total amount
+        total_amount = sum(r.amount for r in finance_recipients)
         # Compose voting channel message
         voting_channel_text = NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
-            amount_reaction=NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(amount),
+            amount_reaction=NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(total_amount),
             author=ctx.message.author.mention,
             countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
-            amount_sum=get_amount_to_print(amount),
+            amount_sum=get_amount_to_print(total_amount),
             description=description,
         )
+        # Send proposal to the voting channel
+        voting_channel = client.get_channel(VOTING_CHANNEL_ID)
+        voting_message = await voting_channel.send(voting_channel_text)
         # Compose reply to the proposer
         proposer_response_text = NEW_GRANT_PROPOSAL_RESPONSE.format(
             voting_link=voting_message.jump_url,
         )
-
-    # Send proposal to the voting channel
-    voting_channel = client.get_channel(VOTING_CHANNEL_ID)
-    voting_message = await voting_channel.send(voting_channel_text)
 
     # Reply to the proposer (if the message was send in a channel other than voting, to avoid flooding there)
     bot_response_message = None
@@ -207,7 +214,7 @@ async def propose_command(ctx, *args):
                 ctx.message.content,
             )
             return
-        # Retrieve the description
+        # Extract the description
         description = match_description.group(1)
         # Parse all statements in the description where one or more mentions are followed by a number (mention in discord api is <@id>, e.g.<@1234567890>; floating point separator is '.')
         match_recipients = re.finditer(r"\w*\s*((?:<@\d+>\s*)+)([\.\d]+)\w*\s*", description)
@@ -220,7 +227,7 @@ async def propose_command(ctx, *args):
                 recipient_ids = match.group(1).replace('<', '').replace('>', '').replace('@', '')
                 amount = float(match.group(2))
                 # Create a new FinanceRecipients instance and populate it
-                recipient = Grantrecipients(recipient_ids=recipient_ids, amount=amount)
+                recipient = FinanceRecipients(recipient_ids=recipient_ids, amount=amount)
                 # Add the new FinanceRecipients instance to a list
                 finance_recipients.append(recipient)
             # Submit the financial proposal

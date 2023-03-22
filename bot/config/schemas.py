@@ -61,16 +61,15 @@ class Proposals(Base):
     threshold_positive = Column(Integer)
 
     """
-    In the next line, back_populates creates a bidirectional relationship between the two classes.
+    In the next line, back_populates creates a bidirectional relationship between the two classes,
+    the value is the name of the corresponding column in the related table.
     cascade specifies what should happen to the related voters when the grant proposal is deleted.
     "all" means that all actions, such as deletion, will be cascaded to the related voters.
     "delete-orphan" means that any voters that no longer have a related grant proposal will be deleted from the database.
     """
-    voters = relationship(
-        "Voters", back_populates=PROPOSALS_TABLE_NAME, cascade="all, delete-orphan"
-    )
+    voters = relationship("Voters", back_populates="proposal", cascade="all, delete-orphan")
     finance_recipients = relationship(
-        "FinanceRecipients", back_populates=PROPOSALS_TABLE_NAME, cascade="all, delete-orphan"
+        "FinanceRecipients", back_populates="proposal", cascade="all, delete-orphan"
     )
 
     def __init__(self, **kwargs):
@@ -79,7 +78,7 @@ class Proposals(Base):
         self.finance_recipients = []
 
     def __repr__(self):
-        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, not_financial={self.not_financial}, recipient_ids={self.recipient_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, threshold_negative={self.threshold_negative}, threshold_positive={self.threshold_positive})>"
+        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, not_financial={self.not_financial}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, threshold_negative={self.threshold_negative}, threshold_positive={self.threshold_positive})>"
 
 
 class FinanceRecipients(Base):
@@ -128,7 +127,7 @@ class Voters(Base):
     value = Column(Integer)
 
     # Bidirectional relationship with the proposals
-    proposals = relationship("Proposals", back_populates=VOTERS_TABLE_NAME)
+    proposal = relationship("Proposals", back_populates="voters")
 
     def __repr__(self) -> str:
         return f"<Voter(id={self.id}, user_id={self.user_id}, voting_message_id={self.voting_message_id}, proposal_id={self.proposal_id}, value={self.value})>"
@@ -156,7 +155,7 @@ class ProposalHistory(Proposals):
     __table_args__ = (Index("ix_result", result),)
 
     def __repr__(self):
-        return f"<ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, not_financial={self.not_financial}, recipient_ids={self.recipient_ids}, amount={self.amount}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url}, author_nickname={self.author_nickname}, recipient_nicknames={self.recipient_nicknames}, threshold_negative={self.threshold})>"
+        return f"<ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, not_financial={self.not_financial}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url}, author_nickname={self.author_nickname}, recipient_nicknames={self.recipient_nicknames}, threshold_negative={self.threshold})>"
 
 
 class FreeFundingBalance(Base):

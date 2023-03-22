@@ -2,6 +2,8 @@ import discord
 import logging
 import sys
 from datetime import datetime
+from typing import List
+from sqlalchemy.orm.collections import InstrumentedList
 
 # Function overloading
 from multipledispatch import dispatch
@@ -9,7 +11,7 @@ from multipledispatch import dispatch
 from bot.utils.db_utils import DBUtil
 
 from bot.config.logging_config import log_handler, console_handler
-from bot.config.schemas import Proposals, Voters
+from bot.config.schemas import Proposals, Voters, FinanceRecipients
 from bot.config.const import DEFAULT_LOG_LEVEL, Vote
 
 logger = logging.getLogger(__name__)
@@ -159,19 +161,10 @@ def validate_proposal_with_grant(new_grant_proposal):
     # The validation of proposals with grant is the same as with grantless, with a couple of extra fields
     validate_grantless_proposal(new_grant_proposal)
 
-    if not isinstance(new_grant_proposal.recipient_ids, (discord.User, discord.user.ClientUser, str)):
+    if not isinstance(new_grant_proposal.finance_recipients, InstrumentedList):
         raise ValueError(
-            f"mention should be discord.User str, got {type(new_grant_proposal.recipient_ids)} instead: {new_grant_proposal.recipient_ids}"
+            f"finance_recipients should be InstrumentedList, got {type(new_grant_proposal.finance_recipients)} instead: {new_grant_proposal.finance_recipients}"
         )
-    if not isinstance(new_grant_proposal.amount, (float, int)):
-        raise ValueError(
-            f"amount should be a float or int, got {type(new_grant_proposal.amount)} instead: {new_grant_proposal.amount}"
-        )
-    if (
-        -sys.float_info.max >= new_grant_proposal.amount
-        or new_grant_proposal.amount >= sys.float_info.max
-    ):
-        raise ValueError(f"amount overflows float type capacity")
 
 
 @dispatch(Proposals)

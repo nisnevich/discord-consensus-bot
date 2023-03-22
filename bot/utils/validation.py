@@ -1,5 +1,6 @@
 from discord import User
 from discord.utils import find, get
+from typing import List
 
 import nltk
 from nltk.corpus import words
@@ -8,6 +9,7 @@ from nltk.tokenize import word_tokenize
 
 from bot.config.logging_config import log_handler, console_handler
 from bot.config.const import *
+from bot.config.schemas import FinanceRecipients
 
 from bot.utils.dev_utils import measure_time
 from bot.utils.formatting_utils import (
@@ -197,7 +199,7 @@ async def validate_free_transaction(
     return True
 
 
-async def validate_grantless_message(original_message, description: str) -> bool:
+async def validate_not_financial_proposal(original_message, description: str) -> bool:
     # check if the description is a non-empty string that has characters besides spaces
     if not description or not description.strip():
         await original_message.reply(ERROR_MESSAGE_INVALID_DESCRIPTION)
@@ -241,8 +243,8 @@ async def validate_grantless_message(original_message, description: str) -> bool
     return True
 
 
-async def validate_grant_message(
-    original_message, mention: str, amount: float, description: str
+async def validate_financial_proposal(
+    original_message, description: str, finance_recipients: List[FinanceRecipients]
 ) -> bool:
     """
     Validate grant message sent in discord - mention, amount etc.
@@ -251,36 +253,32 @@ async def validate_grant_message(
     Returns:
         bool: True if the grant proposal message is valid, False otherwise.
     """
-    logger.debug(
-        "Grant proposal validation started.\nPrimary mention: %s\nAmount: %s\nDescription: %s\nAll mentions: %s",
-        mention,
-        amount,
-        description,
-        original_message.mentions,
-    )
 
-    # Check if mentions are valid
-    if not await validate_mentions(original_message, mention):
-        return False
+    total_amount = 0
+    # Iterate through all recipients and validate them
+    for recipient in finance_recipients:
+        # Check if mentions are valid
+        if not await validate_mentions(original_message, recipient.recipient_ids):
+            return False
+        # Check if amount is valid
+        if not await validate_amount(original_message, recipient.amount):
+            return False
+        total_amount += recipient.amount
 
-    # Check if amount is valid
-    if not await validate_amount(original_message, amount):
-        return False
-
-    # Check if the amount is less than a certain value to avoid flooding the voting channel
-    if float(amount) < MIN_PROPOSAL_AMOUNT:
+    # Check if the total amount is less than a certain value to avoid flooding the voting channel
+    if total_amount < MIN_PROPOSAL_AMOUNT:
         await original_message.reply(
-            ERROR_MESSAGE_LITTLE_AMOUNT.format(amount=get_amount_to_print(amount))
+            ERROR_MESSAGE_LITTLE_AMOUNT.format(amount=get_amount_to_print(total_amount))
         )
         logger.info(
-            "Too little amount. message_id=%d, invalid value=%s",
+            "Too little total_amount. message_id=%d, invalid value=%s",
             original_message.id,
-            amount,
+            total_amount,
         )
         return False
 
     # The validation of proposals with grant is the same as with grantless, with some extra fields
-    return await validate_grantless_message(original_message, description)
+    return await validate_not_financial_proposal(original_message, description)
 
 
 # The first run of is_valid_language always takes a few seconds (supposedly because of loading data into main memory), so we make a stub run when starting the application to avoid latency for users
