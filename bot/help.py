@@ -3,9 +3,12 @@ import csv
 import io
 import discord
 import openpyxl
-from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.worksheet.dimensions import ColumnDimension
+from openpyxl.styles import Font, Border, Side, PatternFill, Color
+from openpyxl.styles.alignment import Alignment
+from sqlalchemy import and_
 
 from bot.config.const import *
 from bot.config.logging_config import log_handler, console_handler
@@ -13,7 +16,12 @@ from bot.utils.discord_utils import get_discord_client, get_message, get_user_by
 from bot.utils.validation import validate_roles
 from bot.utils.db_utils import DBUtil
 from bot.utils.formatting_utils import get_amount_to_print, get_nickname_by_id_or_mention
-from bot.config.schemas import ProposalHistory, FreeFundingTransaction, FreeFundingBalance
+from bot.config.schemas import (
+    Proposals,
+    ProposalHistory,
+    FreeFundingTransaction,
+    FreeFundingBalance,
+)
 from bot.config.const import ProposalResult, VOTING_CHANNEL_ID
 
 logger = logging.getLogger(__name__)
@@ -23,6 +31,17 @@ logger.addHandler(console_handler)
 
 db = DBUtil()
 client = get_discord_client()
+
+# Create alignments to format cells
+alignment_center = Alignment(horizontal='center', vertical='center')
+alignment_wrap = Alignment(wrap_text=True)
+alignment_wrap_center = Alignment(horizontal='center', vertical='center', wrap_text=True)
+alignment_left_center = Alignment(horizontal='left', vertical='center')
+# Create borders
+bottom_border = Border(bottom=Side(style='thin'))
+dotted_right_border = Border(right=Side(style='dotted'))
+# Create colors
+header_fill = PatternFill(start_color=Color('b6d7a8'), end_color=Color('b6d7a8'), fill_type='solid')
 
 
 @client.event
@@ -137,15 +156,56 @@ def define_columns(page, columns):
         page.column_dimensions[column_letter].width = column_width
         page.cell(row=1, column=col_num, value=column_header).font = Font(bold=True)
 
+    # Draw the border after the header
+    for column in range(1, 1 + len(columns)):
+        cell = page.cell(row=1, column=column)
+        cell.border = bottom_border
+        cell.fill = header_fill
+
+    # Freeze the header to show it when scrolling the sheet (it freezes all rows above the given cell)
+    page.freeze_panes = 'A2'
+
+
+def postprocess(page, columns):
+    """
+    Format page after it has been filled with the data.
+    """
+    row_num = 0
+    # Apply a dotted right border style to all cells in the specified worksheet, while preserving any existing bottom borders.
+    for row in page.iter_rows():
+        row_num += 1
+        # Skip the first row, as it's the header
+        if row_num == 1:
+            continue
+        for cell in row:
+            if cell.border.bottom and cell.border.bottom.style:
+                cell.border = Border(bottom=cell.border.bottom, right=dotted_right_border.right)
+            else:
+                cell.border = dotted_right_border
+
+
+def set_bottom_border(page, columns):
+    """
+    Applies a bottom border to all cells in the last row of the specified worksheet for each column in the specified columns list.
+    """
+    # Loop over the columns and apply the border to each cell
+    for column in range(1, 1 + len(columns)):
+        cell = page.cell(row=page.max_row, column=column)
+        cell.border = bottom_border
+
 
 async def write_lazy_consensus_history(page):
     # Define column names and widths
     columns = [
         {"header": "Discord link", "width": 15},
         {"header": "When completed (UTC time)", "width": 28},
-        {"header": "Author", "width": 15},
-        {"header": "Grant given to", "width": 15},
+        {"header": "Author", "width": 20},
+        {"header": "Grant given to", "width": 25},
         {"header": "Amount", "width": 10},
+        {"header": "Total amount", "width": 14},
+        # Description isn't aligned at full height of the proposal text. Unfortunately, in openpyxl
+        # there seems to be no way to do so, using column_dimensions.auto_height didn't help. The
+        # workaround could be to adjust column width based on the font size and number of lines.
         {"header": "Description", "width": 100},
     ]
     # Enable the columns in the page
@@ -154,37 +214,87 @@ async def write_lazy_consensus_history(page):
     # Retrieve all accepted proposals
     accepted_proposals = await db.filter(
         ProposalHistory,
-        condition=(ProposalHistory.result == ProposalResult.ACCEPTED.value),
+        condition=and_(
+            Proposals.id == ProposalHistory.id,
+            ProposalHistory.result == ProposalResult.ACCEPTED.value,
+        ),
         order_by=ProposalHistory.closed_at.asc(),
     )
     # Loop over each accepted proposal and add a row to the worksheet
-    for row_num, proposal in enumerate(accepted_proposals.all(), 2):
+    current_row = 2
+    for proposal in accepted_proposals.all():
+        start_row = end_row = current_row
+        # If the proposal is not financial, fill recievers and amount with empty analytics values
+        if proposal.not_financial:
+            cell = page.cell(row=start_row, column=4, value=EMPTY_ANALYTICS_VALUE)
+            cell.alignment = alignment_center
+            cell = page.cell(row=start_row, column=5, value=EMPTY_ANALYTICS_VALUE)
+            cell.alignment = alignment_center
+        else:
+            # Retrieve recievers
+            finance_recipients = proposal.finance_recipients
+            if not finance_recipients:
+                logger.warning("No finance recipients found in a financial proposal!")
+                continue
+            # Fill each receivers group in a separate row
+            for row_num, recipient in enumerate(finance_recipients, start_row):
+                # Mention
+                cell = page.cell(
+                    row=row_num,
+                    column=4,
+                    value=str(recipient.recipient_nicknames),
+                )
+                cell.alignment = alignment_wrap
+                # Amount
+                cell = page.cell(
+                    row=row_num, column=5, value=str(get_amount_to_print(recipient.amount))
+                )
+                cell.alignment = alignment_center
+            # Set the end row of the current proposal to merge other cells
+            end_row += len(finance_recipients) - 1
+
         # Discord URL
         discord_link = proposal.voting_message_url
-        page.cell(row=row_num, column=1).value = discord_link
-        page.cell(row=row_num, column=1).hyperlink = discord_link
+        page.merge_cells(start_row=start_row, end_row=end_row, start_column=1, end_column=1)
+        cell = page.cell(row=start_row, column=1, value=discord_link)
+        cell.hyperlink = discord_link
+        cell.alignment = alignment_left_center
         # Date
-        page.cell(row=row_num, column=2, value=proposal.closed_at.strftime("%Y-%m-%d %H:%M:%S"))
+        date_str = proposal.closed_at.strftime("%Y-%m-%d %H:%M:%S")
+        page.merge_cells(start_row=start_row, end_row=end_row, start_column=2, end_column=2)
+        cell = page.cell(row=start_row, column=2, value=date_str)
+        cell.alignment = alignment_center
         # Author
-        page.cell(row=row_num, column=3, value=str(proposal.author_id))
-        # Mention
-        page.cell(
-            row=row_num,
-            column=4,
-            value=str(proposal.recipient_ids)
-            if proposal.recipient_ids is not None
-            else EMPTY_ANALYTICS_VALUE,
+        page.merge_cells(start_row=start_row, end_row=end_row, start_column=3, end_column=3)
+        cell = page.cell(
+            row=start_row,
+            column=3,
+            value=str(proposal.author_nickname),
         )
-        # Amount
-        page.cell(
-            row=row_num,
-            column=5,
-            value=str(get_amount_to_print(proposal.amount))
-            if proposal.amount is not None
-            else EMPTY_ANALYTICS_VALUE,
+        cell.alignment = alignment_wrap_center
+        # Total amount
+        page.merge_cells(start_row=start_row, end_row=end_row, start_column=6, end_column=6)
+        cell = page.cell(
+            row=start_row,
+            column=6,
+            value=EMPTY_ANALYTICS_VALUE
+            if proposal.not_financial
+            else get_amount_to_print(proposal.total_amount),
         )
+        cell.alignment = alignment_center
         # Description
-        page.cell(row=row_num, column=6, value=str(proposal.description))
+        page.merge_cells(start_row=start_row, end_row=end_row, start_column=7, end_column=7)
+        cell = page.cell(row=start_row, column=7, value=str(proposal.description))
+        cell.alignment = alignment_wrap
+
+        # Draw the bottom border
+        set_bottom_border(page, columns)
+
+        # Increment the current row
+        current_row = end_row + 1
+
+    # Apply some formatting after the page has been filled
+    postprocess(page, columns)
 
 
 async def write_free_funding_balance(page):
@@ -209,6 +319,12 @@ async def write_free_funding_balance(page):
         page.cell(row=row_num, column=1, value=str(balance.author_nickname))
         # Amount
         page.cell(row=row_num, column=2, value=str(get_amount_to_print(balance.balance)))
+
+        # Draw the bottom border
+        set_bottom_border(page, columns)
+
+    # Apply some formatting after the page has been filled
+    postprocess(page, columns)
 
 
 async def write_free_funding_transactions(page):
@@ -248,6 +364,12 @@ async def write_free_funding_transactions(page):
         page.cell(row=row_num, column=5, value=str(get_amount_to_print(transaction.total_amount)))
         # Description
         page.cell(row=row_num, column=6, value=str(transaction.description))
+
+        # Draw the bottom border
+        set_bottom_border(page, columns)
+
+    # Apply some formatting after the page has been filled
+    postprocess(page, columns)
 
 
 async def export_xlsx():

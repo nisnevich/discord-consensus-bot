@@ -44,12 +44,12 @@ class ServerEnvironment(Enum):
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 5  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
 # negative votes threshold_negative)
-FULL_CONSENSUS_ENABLED = False
+FULL_CONSENSUS_ENABLED = True
 # Minimal number of voters "for" in order for a proposal to pass
 FULL_CONSENSUS_THRESHOLD_POSITIVE = 2
 # A total number of free funding for each person per season
@@ -226,6 +226,9 @@ ERROR_MESSAGE_INVALID_COMMAND_FORMAT = (
 ERROR_MESSAGE_INVALID_USER = (
     "Hmmm, that user doesn't seem to be around here. Did you check under the couch?"
 )
+ERROR_MESSAGE_DUPLICATE_MENTIONS = """
+Multiple mentions of {duplicates} found in a single line. Please ensure each user is mentioned in each statement only once.
+"""
 ERROR_MESSAGE_INVALID_AMOUNT = "The amount must be a positive number."
 ERROR_MESSAGE_NEGATIVE_AMOUNT = "Hold on, {amount} is not enough to even buy a pack of gum. The amount has to be positive, my friend."
 ERROR_MESSAGE_OVERFLOW_AMOUNT = "Whoa there, looks like you're trying to request a whopper of a number! Better try again with a smaller amount before the numbers run away from us!"

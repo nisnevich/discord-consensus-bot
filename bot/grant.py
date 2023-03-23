@@ -141,14 +141,7 @@ async def grant(voting_message_id):
             )
 
         # Add history item for analytics
-        # FIXME uncomment
-        #  await db.add_proposals_history_item(proposal, result)
-        logger.debug(
-            "Added history item, voting_message_id=%d, result=%s",
-            proposal.voting_message_id,
-            result,
-        )
-
+        await db.add_proposals_history_item(proposal, result)
         # Remove proposal from dictionary and DB
         try:
             await remove_proposal(voting_message_id, db)

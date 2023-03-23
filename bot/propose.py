@@ -28,6 +28,7 @@ from bot.utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
     get_discord_countdown_plus_delta,
     get_amount_to_print,
+    get_nickname_by_id_or_mention,
 )
 from bot.config.schemas import Proposals, FinanceRecipients
 from bot.vote import cancel_proposal
@@ -155,6 +156,7 @@ async def submit_proposal(ctx, description, finance_recipients=None, total_amoun
     await add_proposal(new_proposal, db)
     # Add recipients to the proposal in DB
     for recipient in finance_recipients:
+        recipient.proposal_id = new_proposal.id
         await add_finance_recipient(new_proposal, recipient)
 
     # Add tick and cross reactions to the voting message after adding proposal to DB
@@ -232,11 +234,15 @@ async def propose_command(ctx, *args):
                 # Extract ids from mentions
                 match_recipient_ids = re.finditer(r"<@(\d+)>", match.group(1))
                 ids = [id_match.group(1) for id_match in match_recipient_ids]
+                # Retrieve nicknames for all users (will be used for analytics later)
+                nicknames = [await get_nickname_by_id_or_mention(id) for id in ids]
                 # Extract the amount to send
                 amount = float(match.group(2))
                 # Create a new FinanceRecipients instance and populate it
                 recipient = FinanceRecipients(
-                    recipient_ids=DB_ARRAY_COLUMN_SEPARATOR.join(ids), amount=amount
+                    recipient_ids=DB_ARRAY_COLUMN_SEPARATOR.join(ids),
+                    recipient_nicknames=VOTERS_LIST_SEPARATOR.join(nicknames),
+                    amount=amount,
                 )
                 # Add the new FinanceRecipients instance to a list
                 finance_recipients.append(recipient)

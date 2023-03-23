@@ -162,9 +162,6 @@ async def cancel_proposal(proposal, reason, voting_message):
     original_message = await get_message(client, proposal.channel_id, proposal.message_id)
     link_to_voting_message = voting_message.jump_url
     link_to_initial_proposer_message = original_message.jump_url if original_message else None
-    if not proposal.not_financial:
-        mention_recipient = proposal.recipient_ids
-        amount_of_allocation = get_amount_to_print(proposal.amount)
 
     # Filling the proposer response message based on the reason of cancelling
     if reason == ProposalResult.CANCELLED_BY_PROPOSER:
@@ -230,11 +227,6 @@ async def cancel_proposal(proposal, reason, voting_message):
 
     # Add history item for analytics
     await db.add_proposals_history_item(proposal, reason)
-    logger.debug(
-        "Added history item, voting_message_id=%d, result=%s",
-        proposal.voting_message_id,
-        reason,
-    )
     # Remove the proposal
     await remove_proposal(proposal.voting_message_id, db)
     logger.info(
@@ -333,7 +325,7 @@ async def on_raw_reaction_add(payload):
             proposal,
             Voters(
                 user_id=payload.user_id,
-                user_nickname=get_nickname_by_id_or_mention(payload.user_id),
+                user_nickname=await get_nickname_by_id_or_mention(payload.user_id),
                 voting_message_id=proposal.voting_message_id,
                 value=Vote.YES.value if payload.emoji.name == EMOJI_VOTING_YES else Vote.NO.value,
             ),

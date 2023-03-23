@@ -63,7 +63,7 @@ async def reset_free_funding(ctx, *args):
     logger.info("Balance reset for author_id=%s", author_id)
 
 
-async def send_transaction(ctx, original_message, mentions, amount, description):
+async def send_transaction(ctx, original_message, mentions, ids, amount, description):
     # Check if member is in DB, otherwise add it (roles should have already been checked before calling this method)
     author_mention = str(ctx.message.author.mention)
     author_balance = db.get_user_free_funding_balance(ctx.message.author.id)
@@ -78,7 +78,7 @@ async def send_transaction(ctx, original_message, mentions, amount, description)
 
     # Validity checks (including whether the author has sufficient funds, that's why we do it after retreiving the balance)
     if not await validate_free_transaction(
-        original_message, ctx.message.author.mention, author_balance, mentions, amount, description
+        original_message, ctx.message.author.id, author_balance, ids, amount, description
     ):
         await ctx.message.add_reaction(REACTION_ON_TRANSACTION_FAILED)
         return
@@ -116,17 +116,15 @@ async def send_transaction(ctx, original_message, mentions, amount, description)
         raise e
 
     # Convert all mentions to nicknames
-    recipient_ids = []
     recipient_nicknames = []
     for mention in mentions:
-        recipient_ids.append(get_id_by_mention(mention))
         recipient_nicknames.append(await get_nickname_by_id_or_mention(mention))
     # Add transaction to history
     await db.add_free_transactions_history_item(
         FreeFundingTransaction(
             author_id=ctx.message.author.id,
             author_nickname=await get_nickname_by_id_or_mention(author_mention),
-            recipient_ids=DB_ARRAY_COLUMN_SEPARATOR.join(recipient_ids),
+            recipient_ids=DB_ARRAY_COLUMN_SEPARATOR.join(ids),
             recipient_nicknames=DB_ARRAY_COLUMN_SEPARATOR.join(recipient_nicknames),
             total_amount=amount * len(mentions),
             description=description,
@@ -207,9 +205,10 @@ async def free_funding_transact_command(ctx, *args):
                 # Retrieve the author of the original message
                 reply_message = await ctx.fetch_message(ctx.message.reference.message_id)
                 mentions = [reply_message.author.mention]
+                ids = [get_id_by_mention(mentions[0])]
 
                 # Send the transaction
-                await send_transaction(ctx, original_message, mentions, amount, description)
+                await send_transaction(ctx, original_message, mentions, ids, amount, description)
                 return
 
         # Check the command matches a default format: mentions amount description
@@ -232,11 +231,12 @@ async def free_funding_transact_command(ctx, *args):
 
         # Extract the parameters
         mentions = match.group(1).split()
+        ids = [get_id_by_mention(mention) for mention in mentions]
         amount = float(match.group(2))
         description = match.group(3)
 
         # Send the transaction
-        await send_transaction(ctx, original_message, mentions, amount, description)
+        await send_transaction(ctx, original_message, mentions, ids, amount, description)
 
     except Exception as e:
         try:

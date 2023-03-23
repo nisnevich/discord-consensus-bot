@@ -83,7 +83,32 @@ class Proposals(Base):
         self.finance_recipients = []
 
     def __repr__(self):
-        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, not_financial={self.not_financial}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, threshold_negative={self.threshold_negative}, threshold_positive={self.threshold_positive})>"
+        return f"<Proposal(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, not_financial={self.not_financial}, total_amount={self.total_amount}, threshold_negative={self.threshold_negative}, threshold_positive={self.threshold_positive}, voters={self.voters}, finance_recipients={self.finance_recipients})>"
+
+
+class ProposalHistory(Proposals):
+    """
+    The `ProposalHistory` class is a subclass of the `Proposals` class. It represents the history of approved proposals and is stored in a separate table in the database.
+    """
+
+    __tablename__ = PROPOSAL_HISTORY_TABLE_NAME
+    __mapper_args__ = {
+        'polymorphic_identity': PROPOSAL_HISTORY_TABLE_NAME,
+    }
+    # ID of the corresponding proposal
+    id = Column(Integer, ForeignKey('proposals.id'), primary_key=True)
+    # The result of the proposal (as per ProposalResult enum)
+    result = Column(Integer, default=None)
+    # The URL of the voting message in Discord
+    voting_message_url = Column(String)
+    # The authors nickname (used for analytics; the authors id is stored in the associated proposal)
+    author_nickname = Column(String)
+
+    # Add an index on the result column to optimise read query perfomance
+    __table_args__ = (Index("ix_result", result),)
+
+    def __repr__(self):
+        return f"<ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, not_financial={self.not_financial}, total_amount={self.total_amount}, threshold_negative={self.threshold_negative}, threshold_positive={self.threshold_positive}, voters={self.voters}, finance_recipients={self.finance_recipients}, result={self.result}, voting_message_url={self.voting_message_url}, author_nickname={self.author_nickname})>"
 
 
 class FinanceRecipients(Base):
@@ -119,15 +144,16 @@ class Voters(Base):
     """
 
     __tablename__ = VOTERS_TABLE_NAME
+    # Primary key
     id = Column(Integer, primary_key=True)
+    # Foreign key - the proposal ID associated with the voters
+    proposal_id = Column(Integer, ForeignKey("proposals.id"))
     # User ID of the voter
     user_id = Column(Integer)
     # The nickname of the voter (used for analytics)
     user_nickname = Column(String)
     # ID of the voting message
     voting_message_id = Column(Integer)
-    # ID of the proposal that the given voter has voted for
-    proposal_id = Column(Integer, ForeignKey("proposals.id"))
     # A value of the vote, as per Vote enum
     value = Column(Integer)
 
@@ -136,31 +162,6 @@ class Voters(Base):
 
     def __repr__(self) -> str:
         return f"<Voter(id={self.id}, user_id={self.user_id}, voting_message_id={self.voting_message_id}, proposal_id={self.proposal_id}, value={self.value})>"
-
-
-class ProposalHistory(Proposals):
-    """
-    The `ProposalHistory` class is a subclass of the `Proposals` class. It represents the history of approved proposals and is stored in a separate table in the database.
-    """
-
-    __tablename__ = PROPOSAL_HISTORY_TABLE_NAME
-    __mapper_args__ = {
-        'polymorphic_identity': PROPOSAL_HISTORY_TABLE_NAME,
-    }
-    # ID of the corresponding proposal
-    id = Column(Integer, ForeignKey('proposals.id'), primary_key=True)
-    # The result of the proposal (as per ProposalResult enum)
-    result = Column(Integer, default=None)
-    # The URL of the voting message in Discord
-    voting_message_url = Column(String)
-    # The authors nickname (used for analytics; the authors id is stored in the associated proposal)
-    author_nickname = Column(String)
-
-    # Add an index on the result column to optimise read query perfomance
-    __table_args__ = (Index("ix_result", result),)
-
-    def __repr__(self):
-        return f"<ProposalHistory(id={self.id}, message_id={self.message_id}, channel_id={self.channel_id}, author_id={self.author_id}, voting_message_id={self.voting_message_id}, not_financial={self.not_financial}, description={self.description}, submitted_at={self.submitted_at}, closed_at={self.closed_at}, bot_response_message_id={self.bot_response_message_id}, result={self.result}, voting_message_url={self.voting_message_url}, author_nickname={self.author_nickname}, recipient_nicknames={self.recipient_nicknames}, threshold_negative={self.threshold})>"
 
 
 class FreeFundingBalance(Base):
