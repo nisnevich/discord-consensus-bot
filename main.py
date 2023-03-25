@@ -99,6 +99,7 @@ async def sync_voters_db_with_discord(voting_message, proposal, vote, emoji):
         if not await validate_roles(reactor) or reactor.id == BOT_ID:
             continue
         # For objecting votes, cancel the proposal if the voter is the proposer himself
+        # Votes against take priority over votes for so they go first (e.g. if a user has voted both for and against a proposal while the bot was down, only the vote against will be counted)
         if vote == Vote.NO and int(proposal.author_id) == reactor.id:
             # cancel_proposal will remove all voters, so we just run it and exit
             logger.debug("The proposer voted against, cancelling")

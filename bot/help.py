@@ -223,6 +223,7 @@ async def write_lazy_consensus_history(page):
     # Loop over each accepted proposal and add a row to the worksheet
     current_row = 2
     for proposal in accepted_proposals.all():
+        logger.debug(proposal)
         start_row = end_row = current_row
         # If the proposal is not financial, fill recievers and amount with empty analytics values
         if proposal.not_financial:

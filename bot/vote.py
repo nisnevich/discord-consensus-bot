@@ -276,8 +276,7 @@ async def on_raw_reaction_add(payload):
             # Remove the vote emoji, reply to user and exit
             await remove_reaction_and_send_dm(client, payload, VOTING_PAUSED_RECOVERY_RESPONSE)
             logger.info(
-                "Rejecting the vote from %s because recovery is in progress.",
-                member.mention,
+                "Rejecting the vote because recovery is in progress.",
             )
             return
 
@@ -337,8 +336,20 @@ async def on_raw_reaction_add(payload):
             len(proposal.voters),
             proposal.voting_message_id,
         )
-        # If the vote is positive, stop here after adding to DB
+        # If the vote is positive, tell user the vote has been counted, and exit
         if payload.emoji.name == EMOJI_VOTING_YES:
+            await send_dm(
+                payload.guild_id,
+                payload.user_id,
+                HELP_MESSAGE_VOTED_FOR.format(
+                    author=get_mention_by_id(proposal.author_id),
+                    vote_emoji=EMOJI_VOTING_YES,
+                    countdown=get_discord_countdown_plus_delta(
+                        proposal.closed_at - datetime.utcnow()
+                    ),
+                    voting_link=voting_message.jump_url,
+                ),
+            )
             return
 
         # If the vote is negative, continue

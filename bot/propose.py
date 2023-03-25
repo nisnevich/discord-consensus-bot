@@ -77,6 +77,7 @@ async def approve_proposal(voting_message_id):
                 ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD,
                 voting_message,
             )
+            return
 
         # Apply the grant
         await grant(voting_message_id)

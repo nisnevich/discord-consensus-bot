@@ -177,84 +177,107 @@ class DBUtil:
         """
 
         def replace_mentions_with_nicknames(description, id_to_nickname_map):
+            """
+            Replaces all mentions in a proposal description with nicknames, based on the mapping provided in id_to_nickname_map.
+            """
+
             def replace_mention(match):
                 user_id = match.group(1)
                 return id_to_nickname_map.get(user_id, f"<@{user_id}>")
 
             return re.sub(r"<@(\d+)>", replace_mention, description)
 
-        async with DBUtil.session_lock_history:
-            # Copy all attributes from Proposals table (excluding some of them)
-            proposal_dict = {
-                key: value
-                for key, value in proposal.__dict__.items()
-                # Exclude id and _sa_instance_state because they're unique to each table
-                if key != "_sa_instance_state" and key != "id"
-                # Exclude voters and finance_recipients because they are attached to another ORM
-                # session, and also we need to recreate them in the history DB with their unique ids
-                and key != "voters" and key != "finance_recipients"
-            }
+        try:
+            async with DBUtil.session_lock_history:
+                # Copy all attributes from Proposals table (excluding some of them)
+                proposal_dict = {
+                    key: value
+                    for key, value in proposal.__dict__.items()
+                    # Exclude id and _sa_instance_state because they're unique to each table
+                    if key != "_sa_instance_state" and key != "id"
+                    # Exclude voters and finance_recipients because they are attached to another ORM
+                    # session, and also we need to recreate them in the history DB with their unique ids
+                    and key != "voters" and key != "finance_recipients"
+                }
 
-            # Retrieving voting message to save URL
-            voting_message = await get_message(
-                client, VOTING_CHANNEL_ID, proposal.voting_message_id
-            )
-            # Create a history item
-            history_item = ProposalHistory(
-                **proposal_dict,
-                result=result.value,
-                voting_message_url=voting_message.jump_url,
-                # Retrieve author nickname by ID, so it can be used quickly when exporting analytics
-                author_nickname=await get_nickname_by_id_or_mention(proposal.author_id),
-            )
-            # Add a history item
-            DBUtil.session_history.add(history_item)
-            # Flush the changes so to assign id to the history proposal and associate other objects with it later
-            DBUtil.session_history.flush()
-
-            # Make a copy of the voters
-            copied_voters = []
-            for voter in proposal.voters:
-                copied_voter = Voters(
-                    user_id=voter.user_id,
-                    user_nickname=await get_nickname_by_id_or_mention(voter.user_id),
-                    value=voter.value,
-                    voting_message_id=voter.voting_message_id,
-                    proposal_id=history_item.id,
+                # Retrieving voting message to save URL
+                voting_message = await get_message(
+                    client, VOTING_CHANNEL_ID, proposal.voting_message_id
                 )
-                copied_voters.append(copied_voter)
-            # Add the copied voters to the Voters table
-            DBUtil.session_history.add_all(copied_voters)
-
-            # Make a copy of the recipients
-            copied_recipients = []
-            for recipient in proposal.finance_recipients:
-                copied_recipient = FinanceRecipients(
-                    proposal_id=history_item.id,
-                    recipient_ids=recipient.recipient_ids,
-                    recipient_nicknames=recipient.recipient_nicknames,
-                    amount=recipient.amount,
+                # Create a history item
+                history_item = ProposalHistory(
+                    **proposal_dict,
+                    result=result.value,
+                    voting_message_url=voting_message.jump_url,
+                    # Retrieve author nickname by ID, so it can be used quickly when exporting analytics
+                    author_nickname=await get_nickname_by_id_or_mention(proposal.author_id),
                 )
-                copied_recipients.append(copied_recipient)
-            # Add the copied recipients to the FinanceRecipients table
-            DBUtil.session_history.add_all(copied_recipients)
+                # Add a history item
+                DBUtil.session_history.add(history_item)
+                # Flush the changes so to assign id to the history proposal and associate other objects with it later
+                DBUtil.session_history.flush()
 
-            # Create a mapping of ids to nicknames
-            id_to_nickname_map = {}
-            for recipient in copied_recipients:
-                ids = recipient.recipient_ids.split(DB_ARRAY_COLUMN_SEPARATOR)
-                nicknames = recipient.recipient_nicknames.split(COMMA_LIST_SEPARATOR)
-                id_to_nickname_map.update(zip(ids, nicknames))
-            # Replace all mentions in description with the actual nicknames
-            history_item.description = replace_mentions_with_nicknames(
-                history_item.description, id_to_nickname_map
-            )
+                # Make a copy of the voters
+                copied_voters = []
+                for voter in proposal.voters:
+                    copied_voter = Voters(
+                        user_id=voter.user_id,
+                        user_nickname=await get_nickname_by_id_or_mention(voter.user_id),
+                        value=voter.value,
+                        voting_message_id=voter.voting_message_id,
+                        proposal_id=history_item.id,
+                    )
+                    copied_voters.append(copied_voter)
+                # Add the copied voters to the Voters table
+                DBUtil.session_history.add_all(copied_voters)
 
-            # Save the changes
-            DBUtil.session_history.commit()
-            logger.debug(
-                "Added history item %s",
-                history_item,
+                # Make a copy of the recipients
+                copied_recipients = []
+                for recipient in proposal.finance_recipients:
+                    copied_recipient = FinanceRecipients(
+                        proposal_id=history_item.id,
+                        recipient_ids=recipient.recipient_ids,
+                        recipient_nicknames=recipient.recipient_nicknames,
+                        amount=recipient.amount,
+                    )
+                    copied_recipients.append(copied_recipient)
+                # Add the copied recipients to the FinanceRecipients table
+                DBUtil.session_history.add_all(copied_recipients)
+
+                # Create a mapping of ids to nicknames
+                id_to_nickname_map = {}
+                for recipient in copied_recipients:
+                    ids = recipient.recipient_ids.split(DB_ARRAY_COLUMN_SEPARATOR)
+                    nicknames = recipient.recipient_nicknames.split(COMMA_LIST_SEPARATOR)
+                    id_to_nickname_map.update(zip(ids, nicknames))
+                # Replace all mentions in description with the actual nicknames
+                # Once I faced a bug during recovery when cancelling proposals, that the description got empty for unknown reason, so we do null checks just in case
+                if history_item.description and id_to_nickname_map:
+                    history_item.description = replace_mentions_with_nicknames(
+                        history_item.description, id_to_nickname_map
+                    )
+
+                # Save the changes
+                DBUtil.session_history.commit()
+                logger.debug(
+                    "Added history item %s",
+                    history_item,
+                )
+        except Exception as e:
+            try:
+                grant_channel = client.get_channel(GRANT_APPLY_CHANNEL_ID)
+                await grant_channel.send(
+                    f"An unexpected error occurred when saving proposal history. cc {RESPONSIBLE_MENTION}"
+                )
+            except Exception as e:
+                logger.critical("Unable to reply in the chat that a critical error has occurred.")
+
+            logger.critical(
+                "Unexpected error in %s while saving proposal history, result=%s, proposal=%s",
+                __name__,
+                result,
+                proposal,
+                exc_info=True,
             )
 
     async def save(self):

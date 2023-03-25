@@ -44,12 +44,12 @@ class ServerEnvironment(Enum):
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 1  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
 # negative votes threshold_negative)
-FULL_CONSENSUS_ENABLED = False
+FULL_CONSENSUS_ENABLED = True
 # Minimal number of voters "for" in order for a proposal to pass
 FULL_CONSENSUS_THRESHOLD_POSITIVE = 2
 # A total number of free funding for each person per season
@@ -298,9 +298,12 @@ For power users:
 For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The project is looking for contributors and teammates: {GITHUB_PROJECT_URL}
 """
 HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on a wrong message! 😕 To make your vote count, please head to the voting message in #l3-voting: {voting_link}."
+HELP_MESSAGE_VOTED_FOR = """
+Your vote supporting a proposal of {author} has been counted. {vote_emoji} The voting ends {countdown}. If you change your mind later, you can remove your vote from {voting_link}
+"""
 HELP_MESSAGE_VOTED_AGAINST = """
 Your vote against a proposal of {author} has been counted. The voting ends {countdown}. Make sure to explain why you're against it, be clear, concise and respectful.
-If you change your mind after talking to the author, remember to remove {cancel_emoji} from {voting_link}.
+If you change your mind after talking to the author, remember to remove {cancel_emoji} from {voting_link}
 """
 HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL = "Hi there! Your message was removed from `#l3-voting`, because it was decided to leave the channel opened only for messages by bots (for example, EasyPoll can write there too, but not humans). This is to maintain the channel cleaner, so others can simply see all active votings. Please use `#l3-general` or other channels to post your message. The decision was made here: https://discord.com/channels/768556386404794448/1060864279303172136/1077580065648427060"
 EXPORT_CHANNEL_REPLY = "Here you go! You'll find three tabs in the document - lazy consensus history, tips balances and tips history. "
