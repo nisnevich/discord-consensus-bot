@@ -241,7 +241,7 @@ async def propose_command(ctx, *args):
                 # Create a new FinanceRecipients instance and populate it
                 recipient = FinanceRecipients(
                     recipient_ids=DB_ARRAY_COLUMN_SEPARATOR.join(ids),
-                    recipient_nicknames=VOTERS_LIST_SEPARATOR.join(nicknames),
+                    recipient_nicknames=COMMA_LIST_SEPARATOR.join(nicknames),
                     amount=amount,
                 )
                 # Add the new FinanceRecipients instance to a list

@@ -4,6 +4,7 @@ import datetime
 import discord
 import os
 import copy
+import re
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import Query
@@ -174,6 +175,14 @@ class DBUtil:
         proposal (Proposals): The original proposal that needs to be added to the history.
         result (ProposalResult): The result of the proposal. This should be one of the enumerated values in `ProposalResult`.
         """
+
+        def replace_mentions_with_nicknames(description, id_to_nickname_map):
+            def replace_mention(match):
+                user_id = match.group(1)
+                return id_to_nickname_map.get(user_id, f"<@{user_id}>")
+
+            return re.sub(r"<@(\d+)>", replace_mention, description)
+
         async with DBUtil.session_lock_history:
             # Copy all attributes from Proposals table (excluding some of them)
             proposal_dict = {
@@ -185,6 +194,7 @@ class DBUtil:
                 # session, and also we need to recreate them in the history DB with their unique ids
                 and key != "voters" and key != "finance_recipients"
             }
+
             # Retrieving voting message to save URL
             voting_message = await get_message(
                 client, VOTING_CHANNEL_ID, proposal.voting_message_id
@@ -228,6 +238,18 @@ class DBUtil:
                 copied_recipients.append(copied_recipient)
             # Add the copied recipients to the FinanceRecipients table
             DBUtil.session_history.add_all(copied_recipients)
+
+            # Create a mapping of ids to nicknames
+            id_to_nickname_map = {}
+            for recipient in copied_recipients:
+                ids = recipient.recipient_ids.split(DB_ARRAY_COLUMN_SEPARATOR)
+                nicknames = recipient.recipient_nicknames.split(COMMA_LIST_SEPARATOR)
+                id_to_nickname_map.update(zip(ids, nicknames))
+            # Replace all mentions in description with the actual nicknames
+            history_item.description = replace_mentions_with_nicknames(
+                history_item.description, id_to_nickname_map
+            )
+
             # Save the changes
             DBUtil.session_history.commit()
             logger.debug(

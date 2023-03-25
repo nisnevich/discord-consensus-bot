@@ -155,8 +155,8 @@ async def cancel_proposal(proposal, reason, voting_message):
         else:
             list_of_voters_against.append(voter_mention)
     number_of_voters_for = len(list_of_voters_for)
-    list_of_voters_for = VOTERS_LIST_SEPARATOR.join(list_of_voters_for)
-    list_of_voters_against = VOTERS_LIST_SEPARATOR.join(list_of_voters_against)
+    list_of_voters_for = COMMA_LIST_SEPARATOR.join(list_of_voters_for)
+    list_of_voters_against = COMMA_LIST_SEPARATOR.join(list_of_voters_against)
 
     # Retrieve links to the messages
     original_message = await get_message(client, proposal.channel_id, proposal.message_id)

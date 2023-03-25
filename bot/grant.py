@@ -82,7 +82,7 @@ async def grant(voting_message_id):
 
         # Compose the list of supporters
         supported_by = PROPOSAL_ACCEPTED_SUPPORTED_BY_VOTING_CHANNEL_EDIT.format(
-            supporters_list=VOTERS_LIST_SEPARATOR.join(
+            supporters_list=COMMA_LIST_SEPARATOR.join(
                 get_mention_by_id(voter.user_id)
                 for voter in proposal.voters
                 if int(voter.value) == Vote.YES.value

@@ -44,12 +44,12 @@ class ServerEnvironment(Enum):
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 1  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
 # negative votes threshold_negative)
-FULL_CONSENSUS_ENABLED = True
+FULL_CONSENSUS_ENABLED = False
 # Minimal number of voters "for" in order for a proposal to pass
 FULL_CONSENSUS_THRESHOLD_POSITIVE = 2
 # A total number of free funding for each person per season
@@ -99,7 +99,7 @@ FREE_FUNDING_BALANCE_COMMAND_NAME = 'tips-balance'
 FREE_FUNDING_BALANCE_ALIASES = ['balance-tips', 'personal-balance', 'balance-personal']
 RESET_BALANCE_COMMAND_NAME = 'reset'
 
-VOTERS_LIST_SEPARATOR = ", "  # A separator between the dissenter nicknames in the list that is shown in the results of a cancelled proposal
+COMMA_LIST_SEPARATOR = ", "  # A comma separator between the items stored in DB or shown in Discord
 RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 MIN_DESCRIPTION_LENGTH = 30  # just some common sense value
