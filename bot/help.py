@@ -21,6 +21,7 @@ from bot.config.schemas import (
     ProposalHistory,
     FreeFundingTransaction,
     FreeFundingBalance,
+    FinanceRecipients,
 )
 from bot.config.const import ProposalResult, VOTING_CHANNEL_ID
 
@@ -166,7 +167,7 @@ def define_columns(page, columns):
     page.freeze_panes = 'A2'
 
 
-def postprocess(page, columns):
+def postprocess(page):
     """
     Format page after it has been filled with the data.
     """
@@ -189,9 +190,110 @@ def set_bottom_border(page, columns):
     Applies a bottom border to all cells in the last row of the specified worksheet for each column in the specified columns list.
     """
     # Loop over the columns and apply the border to each cell
-    for column in range(1, 1 + len(columns)):
+    for column in range(1, 1 + (columns if isinstance(columns, int) else len(columns))):
         cell = page.cell(row=page.max_row, column=column)
         cell.border = bottom_border
+
+
+async def write_summary(page):
+    # Retrieve the necessary data
+    free_funding_balances = await db.filter(FreeFundingBalance, is_history=False)
+    free_funding_spent = sum(
+        [
+            FREE_FUNDING_LIMIT_PERSON_PER_SEASON - balance.balance
+            for balance in free_funding_balances
+        ]
+    )
+
+    accepted_proposals = await db.filter(
+        ProposalHistory, condition=ProposalHistory.result == ProposalResult.ACCEPTED.value
+    )
+    total_grants_amount = sum(
+        [proposal.total_amount for proposal in accepted_proposals if not proposal.not_financial]
+    )
+    total_accepted_proposals = accepted_proposals.count()
+
+    submitted_proposals = await db.filter(Proposals)
+    total_submitted_proposals = submitted_proposals.count()
+
+    # Write the data to the page
+    page.cell(row=1, column=1, value="Total tips sent:").font = Font(bold=True)
+    page.cell(row=1, column=2, value=free_funding_spent)
+    set_bottom_border(page, 2)
+
+    page.cell(row=2, column=1, value="Total points given with full consensus:").font = Font(
+        bold=True
+    )
+    page.cell(row=2, column=2, value=total_grants_amount)
+    set_bottom_border(page, 2)
+
+    page.cell(row=3, column=1, value="Total number of accepted proposals:").font = Font(bold=True)
+    page.cell(row=3, column=2, value=total_accepted_proposals)
+    set_bottom_border(page, 2)
+
+    page.cell(row=4, column=1, value="Total number of submitted proposals:").font = Font(bold=True)
+    page.cell(row=4, column=2, value=total_submitted_proposals)
+    set_bottom_border(page, 2)
+
+    # Set text wrapping for the description cells
+    for row in range(1, 5):
+        cell = page.cell(row=row, column=1)
+        cell.alignment = alignment_wrap_center
+
+
+async def write_all_users_grants(page):
+    # Define column names and widths
+    columns = [
+        {"header": "User", "width": 20},
+        #  {"header": "Points balance", "width": 20},
+        {"header": "Tips received", "width": 16},
+        {"header": "Grants received by voting", "width": 26},
+    ]
+    # Enable the columns in the page
+    define_columns(page, columns)
+
+    # Retrieve free funding transactions and group by user
+    free_funding_transactions = await db.filter(FreeFundingTransaction)
+    free_funding_by_user = {}
+    for transaction in free_funding_transactions:
+        recipients = transaction.recipient_nicknames.split(DB_ARRAY_COLUMN_SEPARATOR)
+        amounts = [transaction.total_amount / len(recipients)] * len(recipients)
+        for recipient, amount in zip(recipients, amounts):
+            if recipient in free_funding_by_user:
+                free_funding_by_user[recipient] += amount
+            else:
+                free_funding_by_user[recipient] = amount
+
+    # Retrieve finance recipients and group by user
+    finance_recipients = await db.filter(FinanceRecipients)
+    grants_by_user = {}
+    for recipient in finance_recipients:
+        recipients = recipient.recipient_nicknames.split(COMMA_LIST_SEPARATOR)
+        amounts = [recipient.amount] * len(recipients)
+        for recipient, amount in zip(recipients, amounts):
+            if recipient in grants_by_user:
+                grants_by_user[recipient] += amount
+            else:
+                grants_by_user[recipient] = amount
+
+    # Combine users from both dictionaries
+    all_users = set(free_funding_by_user.keys()).union(grants_by_user.keys())
+
+    # Write user data to the page
+    row = 2
+    for user in sorted(all_users):
+        # Username
+        page.cell(row=row, column=1, value=user)
+        #
+        page.cell(row=row, column=2, value=get_amount_to_print(free_funding_by_user.get(user, 0)))
+        page.cell(row=row, column=3, value=get_amount_to_print(grants_by_user.get(user, 0)))
+        # Draw the bottom border
+        set_bottom_border(page, columns)
+
+        row += 1
+
+    # Apply some formatting after the page has been filled
+    postprocess(page)
 
 
 async def write_lazy_consensus_history(page):
@@ -295,7 +397,7 @@ async def write_lazy_consensus_history(page):
         current_row = end_row + 1
 
     # Apply some formatting after the page has been filled
-    postprocess(page, columns)
+    postprocess(page)
 
 
 async def write_free_funding_balance(page):
@@ -325,7 +427,7 @@ async def write_free_funding_balance(page):
         set_bottom_border(page, columns)
 
     # Apply some formatting after the page has been filled
-    postprocess(page, columns)
+    postprocess(page)
 
 
 async def write_free_funding_transactions(page):
@@ -370,21 +472,29 @@ async def write_free_funding_transactions(page):
         set_bottom_border(page, columns)
 
     # Apply some formatting after the page has been filled
-    postprocess(page, columns)
+    postprocess(page)
 
 
 async def export_xlsx():
     # Create a new Excel workbook and worksheet
     wb = openpyxl.Workbook()
 
-    # Create a page with a history of all lazy consensus proposals
-    lazy_history_page = wb.active
-    lazy_history_page.title = "Lazy Consensus History"
-    await write_lazy_consensus_history(lazy_history_page)
+    # Create a summary page
+    summary_page = wb.active
+    summary_page.title = "Summary"
+    await write_summary(summary_page)
 
     # Create a page with free funding balances of all members
-    free_funding_balance_page = wb.create_sheet(title="Tips Balances")
+    free_funding_balance_page = wb.create_sheet(title="L3 Engagement")
     await write_free_funding_balance(free_funding_balance_page)
+
+    # Create a page with grants and free funding received by all members
+    all_grants_page = wb.create_sheet(title="Grant Receivers")
+    await write_all_users_grants(all_grants_page)
+
+    # Create a page with a history of all lazy consensus proposals
+    proposals_page = wb.create_sheet(title="Proposals")
+    await write_lazy_consensus_history(proposals_page)
 
     # Create a page with all free funding transactions
     free_funding_history_page = wb.create_sheet(title="Tips Transactions")
