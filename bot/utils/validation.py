@@ -1,5 +1,6 @@
 from discord import User
 from discord.utils import find, get
+from typing import List
 
 import nltk
 from nltk.corpus import words
@@ -8,10 +9,12 @@ from nltk.tokenize import word_tokenize
 
 from bot.config.logging_config import log_handler, console_handler
 from bot.config.const import *
+from bot.config.schemas import FinanceRecipients
 
 from bot.utils.dev_utils import measure_time
 from bot.utils.formatting_utils import (
     get_amount_to_print,
+    get_mention_by_id,
     remove_special_symbols,
     remove_discord_mentions,
 )
@@ -87,16 +90,32 @@ async def validate_roles(user: User) -> bool:
     return True
 
 
-async def validate_mentions(original_message, mentions):
+async def validate_recipients(original_message, ids):
     """
     Validates mention(s) given in a command.
     """
     # Assume that the validation of the mention was done when parsing the command
     # Only do some basic check
-    if mentions is None:
+    if ids is None:
         await original_message.reply(ERROR_MESSAGE_INVALID_USER)
         logger.info(
-            "Invalid mentions. message_id=%d, invalid value=%s",
+            "Invalid ids. message_id=%d, invalid value=%s",
+            original_message.id,
+            original_message.content,
+        )
+        return False
+    # Check if any repeating ids are given (ids can be array or string)
+    all_ids = ids if isinstance(ids, list) else ids.split(DB_ARRAY_COLUMN_SEPARATOR)
+    unique_ids = set()
+    # Find all duplicates
+    duplicate_ids = [get_mention_by_id(x) for x in all_ids if x in unique_ids or unique_ids.add(x)]
+    if duplicate_ids:
+        await original_message.reply(
+            # Print only unique duplicates separated by space
+            ERROR_MESSAGE_DUPLICATE_MENTIONS.format(duplicates=" ".join(set(duplicate_ids)))
+        )
+        logger.info(
+            "Invalid ids. message_id=%d, invalid value=%s",
             original_message.id,
             original_message.content,
         )
@@ -147,10 +166,10 @@ async def validate_amount(original_message, amount):
 
 
 async def validate_free_transaction(
-    original_message, author, author_balance, mentions, amount: float, description: str
+    original_message, author_id, author_balance, recipient_ids, amount: float, description: str
 ) -> bool:
-    # Check if mentions are valid
-    if not await validate_mentions(original_message, mentions):
+    # Check if recipient_ids are valid
+    if not await validate_recipients(original_message, recipient_ids):
         return False
 
     # Check if amount is valid
@@ -158,7 +177,7 @@ async def validate_free_transaction(
         return False
 
     # Users can't send points to themselves
-    if author in mentions:
+    if str(author_id) in recipient_ids:
         await original_message.reply(ERROR_MESSAGE_FREE_TRANSACTION_TO_YOURSELF)
         logger.info(
             "Attempted to send points to himself. message_id=%d, invalid value=%s",
@@ -168,7 +187,7 @@ async def validate_free_transaction(
         return False
 
     # Check if the balance is enough
-    total_amount = amount * len(mentions)
+    total_amount = amount * len(recipient_ids)
     if total_amount > author_balance.balance:
         await original_message.reply(
             ERROR_MESSAGE_NOT_ENOUGH_BALANCE.format(
@@ -197,7 +216,7 @@ async def validate_free_transaction(
     return True
 
 
-async def validate_grantless_message(original_message, description: str) -> bool:
+async def validate_not_financial_proposal(original_message, description: str) -> bool:
     # check if the description is a non-empty string that has characters besides spaces
     if not description or not description.strip():
         await original_message.reply(ERROR_MESSAGE_INVALID_DESCRIPTION)
@@ -241,8 +260,8 @@ async def validate_grantless_message(original_message, description: str) -> bool
     return True
 
 
-async def validate_grant_message(
-    original_message, mention: str, amount: float, description: str
+async def validate_financial_proposal(
+    original_message, description: str, finance_recipients: List[FinanceRecipients], total_amount
 ) -> bool:
     """
     Validate grant message sent in discord - mention, amount etc.
@@ -251,36 +270,30 @@ async def validate_grant_message(
     Returns:
         bool: True if the grant proposal message is valid, False otherwise.
     """
-    logger.debug(
-        "Grant proposal validation started.\nPrimary mention: %s\nAmount: %s\nDescription: %s\nAll mentions: %s",
-        mention,
-        amount,
-        description,
-        original_message.mentions,
-    )
 
-    # Check if mentions are valid
-    if not await validate_mentions(original_message, mention):
-        return False
+    # Iterate through all recipients and validate them
+    for recipient in finance_recipients:
+        # Check if mentions are valid
+        if not await validate_recipients(original_message, recipient.recipient_ids):
+            return False
+        # Check if amount is valid
+        if not await validate_amount(original_message, recipient.amount):
+            return False
 
-    # Check if amount is valid
-    if not await validate_amount(original_message, amount):
-        return False
-
-    # Check if the amount is less than a certain value to avoid flooding the voting channel
-    if float(amount) < MIN_PROPOSAL_AMOUNT:
+    # Check if the total amount is less than a certain value to avoid flooding the voting channel
+    if total_amount < MIN_PROPOSAL_AMOUNT:
         await original_message.reply(
-            ERROR_MESSAGE_LITTLE_AMOUNT.format(amount=get_amount_to_print(amount))
+            ERROR_MESSAGE_LITTLE_AMOUNT.format(amount=get_amount_to_print(total_amount))
         )
         logger.info(
-            "Too little amount. message_id=%d, invalid value=%s",
+            "Too little total_amount. message_id=%d, invalid value=%s",
             original_message.id,
-            amount,
+            total_amount,
         )
         return False
 
     # The validation of proposals with grant is the same as with grantless, with some extra fields
-    return await validate_grantless_message(original_message, description)
+    return await validate_not_financial_proposal(original_message, description)
 
 
 # The first run of is_valid_language always takes a few seconds (supposedly because of loading data into main memory), so we make a stub run when starting the application to avoid latency for users
