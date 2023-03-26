@@ -1,8 +1,16 @@
 import discord
+import logging
 from discord.ext import commands
 from typing import Optional
 
-from bot.config.const import DISCORD_COMMAND_PREFIX
+from bot.config.logging_config import log_handler, console_handler
+from bot.config.const import DISCORD_COMMAND_PREFIX, DEFAULT_LOG_LEVEL
+
+logger = logging.getLogger(__name__)
+logger.setLevel(DEFAULT_LOG_LEVEL)
+logger.addHandler(log_handler)
+logger.addHandler(console_handler)
+
 
 client = None
 
@@ -26,7 +34,13 @@ async def get_message(client: discord.Client, channel_id: int, message_id: int):
     Returns the message with the specified ID from the specified channel.
     """
     channel = client.get_channel(channel_id)
-    return await channel.fetch_message(message_id)
+    try:
+        return await channel.fetch_message(message_id)
+    except Exception:
+        logger.warning(
+            "Unable to retrieve message with id=%s from channel %s", message_id, channel_id
+        )
+        return None
 
 
 async def send_dm(guild_id, user_id, text):
@@ -75,7 +89,11 @@ async def get_user_by_id_or_mention(id_or_mention):
     :return: The user on the Discord server, or None if it couldn't be found
     """
     # If mention was given, remove <@ and >
-    if id_or_mention.startswith("<@") and id_or_mention.endswith(">"):
+    if (
+        not isinstance(id_or_mention, int)
+        and id_or_mention.startswith("<@")
+        and id_or_mention.endswith(">")
+    ):
         user_id = int(id_or_mention[2:-1].strip("!"))
     # Otherwise simply convert to int
     else:
