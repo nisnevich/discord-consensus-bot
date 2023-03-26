@@ -63,7 +63,20 @@ async def get_nickname_by_id_or_mention(id_or_mention):
 
 
 def get_mention_by_id(id):
+    """
+    Returns the Discord mention of the user by a given user id.
+    """
     return f"<@{id}>"
+
+
+def get_id_by_mention(mention):
+    """
+    Returns the Discord id of the user by a given mention.
+    """
+    match = re.search(r"<@(.+)>", mention)
+    if match:
+        return match.group(1)
+    return None
 
 
 def remove_discord_mentions(text):

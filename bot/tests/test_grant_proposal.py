@@ -1,7 +1,7 @@
 import asynctest
 import unittest.mock as mock
 
-from bot.propose import validate_grant_message
+from bot.propose import validate_financial_proposal
 from bot.config.const import *
 
 
@@ -9,14 +9,14 @@ class TestValidateGrantMessage(asynctest.TestCase):
     @mock.patch("discord.User")
     async def test_valid_message(self, mock_user):
         original_message = asynctest.MagicMock()
-        mock_user().mention = "@user"
+        mock_user().recipient_ids = "@user"
         original_message.mentions = [mock_user()]
         mention = original_message.mentions[0].mention
         original_message.content = "!propose @user 100 test_description"
         original_message.reply = asynctest.CoroutineMock()
         amount = "100"
         description = "test_description"
-        is_valid = await validate_grant_message(original_message, mention, amount, description)
+        is_valid = await validate_financial_proposal(original_message, mention, amount, description)
         self.assertTrue(is_valid)
         original_message.reply.assert_not_called()
 
@@ -28,7 +28,7 @@ class TestValidateGrantMessage(asynctest.TestCase):
         original_message.reply = asynctest.CoroutineMock()
         amount = "100"
         description = "test_description"
-        is_valid = await validate_grant_message(original_message, mention, amount, description)
+        is_valid = await validate_financial_proposal(original_message, mention, amount, description)
         self.assertFalse(is_valid)
         original_message.reply.assert_called_once_with(ERROR_MESSAGE_NO_MENTIONS)
 
@@ -40,7 +40,7 @@ class TestValidateGrantMessage(asynctest.TestCase):
         original_message.reply = asynctest.CoroutineMock()
         amount = "100"
         description = "test_description"
-        is_valid = await validate_grant_message(original_message, mention, amount, description)
+        is_valid = await validate_financial_proposal(original_message, mention, amount, description)
         self.assertFalse(is_valid)
         original_message.reply.assert_called_once_with(ERROR_MESSAGE_INVALID_COMMAND_FORMAT)
 
@@ -51,8 +51,8 @@ class TestValidateGrantMessage(asynctest.TestCase):
         original_message.mentions = [mock_user()]
         mention = original_message.mentions[0].mention
         original_message.reply = asynctest.CoroutineMock()
-        mock_user.mention = "not_a_valid_mention"
-        is_valid = await validate_grant_message(
+        mock_user.recipient_ids = "not_a_valid_mention"
+        is_valid = await validate_financial_proposal(
             original_message, mention, "100", "test_description"
         )
         self.assertFalse(is_valid)
@@ -69,7 +69,7 @@ class TestValidateGrantMessage(asynctest.TestCase):
         original_message.reply = asynctest.CoroutineMock()
         amount = "not_a_digit"
         description = "test_description"
-        is_valid = await validate_grant_message(original_message, mention, amount, description)
+        is_valid = await validate_financial_proposal(original_message, mention, amount, description)
         self.assertFalse(is_valid)
         original_message.reply.assert_called_once_with(ERROR_MESSAGE_INVALID_AMOUNT)
 
@@ -82,7 +82,7 @@ class TestValidateGrantMessage(asynctest.TestCase):
         original_message.reply = asynctest.CoroutineMock()
         amount = "100"
         description = ""
-        is_valid = await validate_grant_message(original_message, mention, amount, description)
+        is_valid = await validate_financial_proposal(original_message, mention, amount, description)
         self.assertFalse(is_valid)
         original_message.reply.assert_called_once_with(ERROR_MESSAGE_INVALID_DESCRIPTION)
 
