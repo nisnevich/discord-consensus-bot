@@ -174,7 +174,7 @@ async def write_user_activity(page):
     """
     # Define column names and widths
     columns = [
-        {"header": "Author", "width": 15},
+        {"header": "User", "width": 15},
         {"header": "Remaining tips", "width": 18},
         {"header": "Accepted proposals", "width": 20},
         {"header": "Submitted proposals", "width": 20},
@@ -188,7 +188,7 @@ async def write_user_activity(page):
 
     # Loop over each user and add a row to the worksheet
     for row_num, (user_id, user_nickname) in enumerate(
-        sorted(unique_active_users, key=lambda x: x[0]), 2
+        sorted(unique_active_users, key=lambda x: x[1]), 2
     ):
         balances = await db.filter(FreeFundingBalance, is_history=False)
         # If the user haven't used free funding before, show his balance as default (we could have
@@ -267,9 +267,12 @@ async def write_user_grants_recieved(page):
                 grants_by_user[recipient] += amount
             else:
                 grants_by_user[recipient] = amount
+    sorted_grants_by_user = {
+        k: v for k, v in sorted(grants_by_user.items(), key=lambda item: item[0])
+    }
 
     # Combine users from both dictionaries
-    all_users = set(free_funding_by_user.keys()).union(grants_by_user.keys())
+    all_users = set(free_funding_by_user.keys()).union(sorted_grants_by_user.keys())
 
     # Write user data to the page
     row = 2
@@ -278,7 +281,7 @@ async def write_user_grants_recieved(page):
         page.cell(row=row, column=1, value=user)
         #
         page.cell(row=row, column=2, value=get_amount_to_print(free_funding_by_user.get(user, 0)))
-        page.cell(row=row, column=3, value=get_amount_to_print(grants_by_user.get(user, 0)))
+        page.cell(row=row, column=3, value=get_amount_to_print(sorted_grants_by_user.get(user, 0)))
         # Draw the bottom border
         set_bottom_border(page, columns)
 
@@ -397,7 +400,7 @@ async def write_free_funding_transactions(page):
     columns = [
         {"header": "Discord link", "width": 15},
         {"header": "UTC time", "width": 20},
-        {"header": "Author", "width": 15},
+        {"header": "Sender", "width": 15},
         {"header": "Sent to", "width": 20},
         {"header": "Total amount", "width": 15},
         {"header": "Description", "width": 100},
