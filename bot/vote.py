@@ -170,7 +170,9 @@ async def cancel_proposal(proposal, reason, voting_message):
     # Retrieve links to the messages
     original_message = await get_message(client, proposal.channel_id, proposal.message_id)
     link_to_voting_message = voting_message.jump_url
-    link_to_initial_proposer_message = original_message.jump_url if original_message else None
+    link_to_initial_proposer_message = (
+        original_message.jump_url if original_message else ERROR_MESSAGE_ORIGINAL_MESSAGE_MISSING
+    )
 
     # Filling the proposer response message based on the reason of cancelling
     if reason == ProposalResult.CANCELLED_BY_PROPOSER:

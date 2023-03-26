@@ -32,8 +32,20 @@ async def grant(voting_message_id):
         # Retrieve the original proposal message
         # get_message is not used here for a reason - the channel variables are reused later
         original_channel = client.get_channel(proposal.channel_id)
-        original_message = await original_channel.fetch_message(proposal.message_id)
-        link_to_original_message = original_message.jump_url if original_message else None
+        try:
+            original_message = await original_channel.fetch_message(proposal.message_id)
+        except Exception:
+            logger.warning(
+                "Unable to retrieve message with id=%s from channel %s",
+                proposal.message_id,
+                proposal.channel_id,
+            )
+            original_message = None
+        link_to_original_message = (
+            original_message.jump_url
+            if original_message
+            else ERROR_MESSAGE_ORIGINAL_MESSAGE_MISSING
+        )
         # Retrieve the voting message
         voting_channel = client.get_channel(VOTING_CHANNEL_ID)
         voting_message = await voting_channel.fetch_message(proposal.voting_message_id)
@@ -100,7 +112,6 @@ async def grant(voting_message_id):
                         author=get_mention_by_id(proposal.author_id),
                         description=proposal.description,
                         supported_by=supported_by if FULL_CONSENSUS_ENABLED else "",
-                        # TODO#9 if original_message is None, message should be different
                         link_to_original_message=link_to_original_message,
                     ),
                     suppress=True,
@@ -112,7 +123,6 @@ async def grant(voting_message_id):
                         description=proposal.description,
                         supported_by=supported_by if FULL_CONSENSUS_ENABLED else "",
                         author=get_mention_by_id(proposal.author_id),
-                        # TODO#9 if original_message is None, message should be different
                         link_to_original_message=link_to_original_message,
                     ),
                     suppress=True,

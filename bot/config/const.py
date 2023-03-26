@@ -243,6 +243,9 @@ ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED = "The {amount} grant was 
 ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author} is applied! However, I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_AUTHOR_SUPPORTING_OWN_PROPOSAL = "Sorry, but supporting your own proposal is a no-no."
 ERROR_MESSAGE_ALREADY_VOTED = "It appears that you have already voted on this proposal. Before casting another vote, please ensure that your previous vote has been removed: {link_to_voting_message}"
+ERROR_MESSAGE_ORIGINAL_MESSAGE_MISSING = (
+    "Unable to find the original proposers message, probably it was removed."
+)
 
 # Free funding validation error messages
 ERROR_MESSAGE_FREE_FUNDING_INVALID_COMMAND_FORMAT = "Oopsie! Wrong command format. Use it like `!send`, but always add description so people know what you're up to."
