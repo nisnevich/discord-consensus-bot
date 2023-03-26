@@ -154,6 +154,16 @@ class Vote(Enum):
             return 'NO'
 
 
+class ProposalVotingType(Enum):
+    YES_OR_NO = 0
+    MULTI_CHOICE = 1
+
+
+class ProposalAnonymityType(Enum):
+    OPENED = 0
+    REVEAL_VOTERS_AT_THE_END = 1
+
+
 # =============
 # === Emoji ===
 # =============

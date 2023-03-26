@@ -65,6 +65,16 @@ class Proposals(Base):
     # Minimal number of voters "for" in order for a proposal to pass; -1 if the full consensus is disabled for this proposal
     threshold_positive = Column(Integer)
 
+    # Reserved for future usage
+    # Holds ProposalAnonymityType value
+    anonymity_type = Column(Integer)
+    # Holds ProposalType value
+    proposal_type = Column(Integer)
+    # Maximum number of choices that a user can make (for ProposalVotingType.MULTI_CHOICE)
+    number_of_choices_allowed = Column(Integer)
+    # Array of voting options to choose from (Vote class values separated by DB_ARRAY_COLUMN_SEPARATOR)
+    vote_options = Column(String)
+
     """
     In the next line, back_populates creates a bidirectional relationship between the two classes,
     the value is the name of the corresponding column in the related table.
