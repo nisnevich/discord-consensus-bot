@@ -167,12 +167,6 @@ async def write_summary(page):
     set_bottom_border(page, 2)
 
 
-def datetime_to_excel_serial(date):
-    temp = datetime(1899, 12, 31)
-    delta = date - temp
-    return float(delta.days) + (float(delta.seconds) / 86400)
-
-
 async def write_user_activity(page):
     """
     Creates a page with the activity of users who are allowed to send free funding, submit proposals
@@ -180,7 +174,7 @@ async def write_user_activity(page):
     """
     # Define column names and widths
     columns = [
-        {"header": "Author", "width": 15},
+        {"header": "User", "width": 15},
         {"header": "Remaining tips", "width": 18},
         {"header": "Accepted proposals", "width": 20},
         {"header": "Submitted proposals", "width": 20},
@@ -194,20 +188,16 @@ async def write_user_activity(page):
 
     # Loop over each user and add a row to the worksheet
     for row_num, (user_id, user_nickname) in enumerate(
-        sorted(unique_active_users, key=lambda x: x[0]), 2
+        sorted(unique_active_users, key=lambda x: x[1]), 2
     ):
-        user_balance = next(
-            (
-                balance.balance
-                for balance in await db.filter(FreeFundingBalance)
-                if balance.author_id == user_id
-            ),
-            None,
-        )
-        # If the user haven't used free funding before, show his balance as default; we could have
-        # added him to db here, but it's not the best place to do so in analytics
-        if not user_balance:
-            user_balance = FREE_FUNDING_LIMIT_PERSON_PER_SEASON
+        balances = await db.filter(FreeFundingBalance, is_history=False)
+        # If the user haven't used free funding before, show his balance as default (we could have
+        # added his balance to db here, but it's not the best place to do so in analytics)
+        user_balance = FREE_FUNDING_LIMIT_PERSON_PER_SEASON
+        for balance in balances.all():
+            if balance.author_id == user_id:
+                user_balance = balance.balance
+                break
 
         # User
         page.cell(row=row_num, column=1, value=str(user_nickname))
@@ -257,8 +247,17 @@ async def write_user_grants_recieved(page):
             else:
                 free_funding_by_user[recipient] = amount
 
-    # Retrieve finance recipients and group by user
-    finance_recipients = await db.filter(FinanceRecipients)
+    # Retrieve accepted proposals from ProposalHistory
+    accepted_proposals = await db.filter(
+        ProposalHistory, condition=ProposalHistory.result == ProposalResult.ACCEPTED.value
+    )
+    # Get the finance recipient IDs of the accepted proposals
+    accepted_proposal_ids = [proposal.id for proposal in accepted_proposals]
+    # Retrieve finance recipients whose proposal_id is in the list of accepted_proposal_ids
+    finance_recipients = await db.filter(
+        FinanceRecipients, condition=FinanceRecipients.proposal_id.in_(accepted_proposal_ids)
+    )
+    # Group by user
     grants_by_user = {}
     for recipient in finance_recipients:
         recipients = recipient.recipient_nicknames.split(COMMA_LIST_SEPARATOR)
@@ -268,9 +267,12 @@ async def write_user_grants_recieved(page):
                 grants_by_user[recipient] += amount
             else:
                 grants_by_user[recipient] = amount
+    sorted_grants_by_user = {
+        k: v for k, v in sorted(grants_by_user.items(), key=lambda item: item[0])
+    }
 
     # Combine users from both dictionaries
-    all_users = set(free_funding_by_user.keys()).union(grants_by_user.keys())
+    all_users = set(free_funding_by_user.keys()).union(sorted_grants_by_user.keys())
 
     # Write user data to the page
     row = 2
@@ -279,7 +281,7 @@ async def write_user_grants_recieved(page):
         page.cell(row=row, column=1, value=user)
         #
         page.cell(row=row, column=2, value=get_amount_to_print(free_funding_by_user.get(user, 0)))
-        page.cell(row=row, column=3, value=get_amount_to_print(grants_by_user.get(user, 0)))
+        page.cell(row=row, column=3, value=get_amount_to_print(sorted_grants_by_user.get(user, 0)))
         # Draw the bottom border
         set_bottom_border(page, columns)
 
@@ -398,7 +400,7 @@ async def write_free_funding_transactions(page):
     columns = [
         {"header": "Discord link", "width": 15},
         {"header": "UTC time", "width": 20},
-        {"header": "Author", "width": 15},
+        {"header": "Sender", "width": 15},
         {"header": "Sent to", "width": 20},
         {"header": "Total amount", "width": 15},
         {"header": "Description", "width": 100},
@@ -448,7 +450,7 @@ async def export_xlsx():
     await write_summary(summary_page)
 
     # Create a page with free funding balances of all members
-    free_funding_balance_page = wb.create_sheet(title="L3 Engagement")
+    free_funding_balance_page = wb.create_sheet(title="L3 Activity")
     await write_user_activity(free_funding_balance_page)
 
     # Create a page with grants and free funding received by all members

@@ -244,22 +244,25 @@ async def save_proposal_to_history(db, proposal, result, remove_from_main_db=Tru
         return re.sub(r"<@(\d+)>", replace_mention, description)
 
     try:
-        # Copy all attributes from Proposals table (excluding some of them)
-        proposal_dict = {
-            key: value
-            for key, value in proposal.__dict__.items()
-            # Exclude id and _sa_instance_state because they're unique to each table
-            if key != "_sa_instance_state" and key != "id"
-            # Exclude voters and finance_recipients because they are attached to another ORM
-            # session, and also we need to recreate them in the history DB with their unique ids
-            and key != "voters" and key != "finance_recipients"
-        }
-
         # Retrieving voting message to save URL
         voting_message = await get_message(client, VOTING_CHANNEL_ID, proposal.voting_message_id)
-        # Create a history item
+        # Create a history item (such verbose form is used because copying values from proposal.__dict__
+        # has resulted into floating bugs related to ORM "lazy loading")
         history_item = ProposalHistory(
-            **proposal_dict,
+            # Proposal attributes
+            message_id=proposal.message_id,
+            channel_id=proposal.channel_id,
+            author_id=proposal.author_id,
+            voting_message_id=proposal.voting_message_id,
+            description=proposal.description,
+            submitted_at=proposal.submitted_at,
+            closed_at=proposal.closed_at,
+            bot_response_message_id=proposal.bot_response_message_id,
+            not_financial=proposal.not_financial,
+            total_amount=proposal.total_amount,
+            threshold_negative=proposal.threshold_negative,
+            threshold_positive=proposal.threshold_positive,
+            # ProposalHistory attributes
             result=result.value,
             voting_message_url=voting_message.jump_url,
             # Retrieve author nickname by ID, so it can be used quickly when exporting analytics
