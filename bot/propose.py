@@ -16,6 +16,7 @@ from bot.utils.proposal_utils import (
     is_relevant_proposal,
     get_voters_with_vote,
     add_finance_recipient,
+    proposal_lock,
 )
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.validation import (
@@ -61,9 +62,6 @@ async def approve_proposal(voting_message_id):
         # Sleep until the next check
         await asyncio.sleep(APPROVAL_SLEEP_SECONDS)
     try:
-        # When the time has come, double check to make sure the proposal wasn't cancelled
-        if not is_relevant_proposal(voting_message_id):
-            return
         # If full consensus is enabled for this proposal, and the minimal number of supporting votes is not reached, cancel the proposal
         if (
             proposal.threshold_positive != THRESHOLD_DISABLED_DB_VALUE
@@ -71,16 +69,31 @@ async def approve_proposal(voting_message_id):
         ):
             # Retrieve the voting message
             voting_message = await get_message(client, VOTING_CHANNEL_ID, voting_message_id)
-            # Cancel the proposal
-            await cancel_proposal(
-                proposal,
-                ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD,
-                voting_message,
-            )
-            return
-
-        # Apply the grant
-        await grant(voting_message_id)
+            # Acquire the proposal lock when accepting or cancelling to avoid concurrency errors
+            async with proposal_lock:
+                # Double check to make sure the proposal wasn't accepted or cancelled while the lock was acquired by other thread
+                if not is_relevant_proposal(voting_message_id):
+                    logger.info(
+                        "Proposal became irrelevant while waiting for a lock to cancel the proposal by not reaching enough support."
+                    )
+                    return
+                # Cancel the proposal
+                await cancel_proposal(
+                    proposal,
+                    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD,
+                    voting_message,
+                )
+                return
+        # Acquire the proposal lock when accepting or cancelling to avoid concurrency errors
+        async with proposal_lock:
+            # Double check to make sure the proposal wasn't accepted or cancelled while the lock was acquired by other thread
+            if not is_relevant_proposal(voting_message_id):
+                logger.info(
+                    "Proposal became irrelevant while waiting for a lock to accept the proposal."
+                )
+                return
+            # Apply the grant
+            await grant(voting_message_id)
     except ValueError as e:
         logger.error(f"Error while removing grant proposal: {e}")
 

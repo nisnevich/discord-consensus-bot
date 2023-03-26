@@ -44,7 +44,7 @@ class ServerEnvironment(Enum):
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 30  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
@@ -306,7 +306,7 @@ Your vote against a proposal of {author} has been counted. The voting ends {coun
 If you change your mind after talking to the author, remember to remove {cancel_emoji} from {voting_link}
 """
 HELP_MESSAGE_REMOVED_FROM_VOTING_CHANNEL = "Hi there! Your message was removed from `#l3-voting`, because it was decided to leave the channel opened only for messages by bots (for example, EasyPoll can write there too, but not humans). This is to maintain the channel cleaner, so others can simply see all active votings. Please use `#l3-general` or other channels to post your message. The decision was made here: https://discord.com/channels/768556386404794448/1060864279303172136/1077580065648427060"
-EXPORT_CHANNEL_REPLY = "Here you go! You'll find three tabs in the document - lazy consensus history, tips balances and tips history. "
+EXPORT_CHANNEL_REPLY = "Here you go! You'll find five tabs in the document - Summary, L3 Activity, Grant Receivers, Proposals and Tips Transactions."
 
 # Free funding messages
 FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season. Use the '!tips' command just like you would use '!send'."

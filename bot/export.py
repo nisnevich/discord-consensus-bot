@@ -167,12 +167,6 @@ async def write_summary(page):
     set_bottom_border(page, 2)
 
 
-def datetime_to_excel_serial(date):
-    temp = datetime(1899, 12, 31)
-    delta = date - temp
-    return float(delta.days) + (float(delta.seconds) / 86400)
-
-
 async def write_user_activity(page):
     """
     Creates a page with the activity of users who are allowed to send free funding, submit proposals
@@ -196,18 +190,14 @@ async def write_user_activity(page):
     for row_num, (user_id, user_nickname) in enumerate(
         sorted(unique_active_users, key=lambda x: x[0]), 2
     ):
-        user_balance = next(
-            (
-                balance.balance
-                for balance in await db.filter(FreeFundingBalance)
-                if balance.author_id == user_id
-            ),
-            None,
-        )
-        # If the user haven't used free funding before, show his balance as default; we could have
-        # added him to db here, but it's not the best place to do so in analytics
-        if not user_balance:
-            user_balance = FREE_FUNDING_LIMIT_PERSON_PER_SEASON
+        balances = await db.filter(FreeFundingBalance, is_history=False)
+        # If the user haven't used free funding before, show his balance as default (we could have
+        # added his balance to db here, but it's not the best place to do so in analytics)
+        user_balance = FREE_FUNDING_LIMIT_PERSON_PER_SEASON
+        for balance in balances.all():
+            if balance.author_id == user_id:
+                user_balance = balance.balance
+                break
 
         # User
         page.cell(row=row_num, column=1, value=str(user_nickname))
@@ -257,8 +247,17 @@ async def write_user_grants_recieved(page):
             else:
                 free_funding_by_user[recipient] = amount
 
-    # Retrieve finance recipients and group by user
-    finance_recipients = await db.filter(FinanceRecipients)
+    # Retrieve accepted proposals from ProposalHistory
+    accepted_proposals = await db.filter(
+        ProposalHistory, condition=ProposalHistory.result == ProposalResult.ACCEPTED.value
+    )
+    # Get the finance recipient IDs of the accepted proposals
+    accepted_proposal_ids = [proposal.id for proposal in accepted_proposals]
+    # Retrieve finance recipients whose proposal_id is in the list of accepted_proposal_ids
+    finance_recipients = await db.filter(
+        FinanceRecipients, condition=FinanceRecipients.proposal_id.in_(accepted_proposal_ids)
+    )
+    # Group by user
     grants_by_user = {}
     for recipient in finance_recipients:
         recipients = recipient.recipient_nicknames.split(COMMA_LIST_SEPARATOR)
@@ -448,7 +447,7 @@ async def export_xlsx():
     await write_summary(summary_page)
 
     # Create a page with free funding balances of all members
-    free_funding_balance_page = wb.create_sheet(title="L3 Engagement")
+    free_funding_balance_page = wb.create_sheet(title="L3 Activity")
     await write_user_activity(free_funding_balance_page)
 
     # Create a page with grants and free funding received by all members

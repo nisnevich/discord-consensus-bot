@@ -13,6 +13,7 @@ from bot.utils.proposal_utils import (
     add_voter,
     remove_voter,
     get_voters_with_vote,
+    proposal_lock,
 )
 from bot.utils.discord_utils import get_discord_client, get_message
 from bot.utils.validation import validate_roles
@@ -104,8 +105,18 @@ async def sync_voters_db_with_discord(voting_message, proposal, vote, emoji):
         if vote == Vote.NO and int(proposal.author_id) == reactor.id:
             # cancel_proposal will remove all voters, so we just run it and exit
             logger.debug("The proposer voted against, cancelling")
-            await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
-            return
+            # Acquire the proposal lock to avoid concurrency errors
+            async with proposal_lock:
+                # Double check to make sure the proposal wasn't accepted or cancelled while the lock was acquired by other thread
+                if not is_relevant_proposal(proposal.voting_message_id):
+                    logger.info(
+                        "Proposal became irrelevant while waiting for a lock to cancel the proposal after recovery."
+                    )
+                    return
+                await cancel_proposal(
+                    proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message
+                )
+                return
         # For supporting votes, don't count the author if he has upvoted
         if vote == Vote.YES and int(proposal.author_id) == reactor.id:
             logger.debug("The author has voted in his own favor, not counting")
@@ -135,9 +146,19 @@ async def sync_voters_db_with_discord(voting_message, proposal, vote, emoji):
         if len(voters_against) >= proposal.threshold_negative:
             logger.debug("Threshold is reached, cancelling")
             # Cancel the proposal
-            await cancel_proposal(
-                proposal, ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD, voting_message
-            )
+            # Acquire the proposal lock to avoid concurrency errors
+            async with proposal_lock:
+                # Double check to make sure the proposal wasn't accepted or cancelled while the lock was acquired by other thread
+                if not is_relevant_proposal(proposal.voting_message_id):
+                    logger.info(
+                        "Proposal became irrelevant while waiting for a lock to cancel the proposal after recovery."
+                    )
+                    return
+                await cancel_proposal(
+                    proposal,
+                    ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD,
+                    voting_message,
+                )
 
 
 @measure_time_async
