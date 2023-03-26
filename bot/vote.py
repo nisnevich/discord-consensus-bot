@@ -15,6 +15,8 @@ from bot.utils.proposal_utils import (
     find_matching_voter,
     get_proposal_initiated_by,
     get_voters_with_vote,
+    proposal_lock,
+    save_proposal_to_history,
 )
 from bot.utils.db_utils import DBUtil
 from bot.utils.validation import validate_roles
@@ -140,101 +142,101 @@ async def on_raw_reaction_remove(payload):
 
 
 async def cancel_proposal(proposal, reason, voting_message):
-    # Extracting dynamic data to fill messages
-    # Don't remove unused variables because messages texts change too often
-    mention_author = get_mention_by_id(proposal.author_id)
-    description_of_proposal = proposal.description
+    # Acquire the proposal lock when accepting or cancelling to avoid concurrency errors
+    async with proposal_lock:
+        # Extracting dynamic data to fill messages
+        # Don't remove unused variables because messages texts change too often
+        mention_author = get_mention_by_id(proposal.author_id)
+        description_of_proposal = proposal.description
 
-    # Create lists of voters
-    list_of_voters_for = []
-    list_of_voters_against = []
-    for voter in proposal.voters:
-        voter_mention = get_mention_by_id(voter.user_id)
-        if int(voter.value) == Vote.YES.value:
-            list_of_voters_for.append(voter_mention)
-        else:
-            list_of_voters_against.append(voter_mention)
-    number_of_voters_for = len(list_of_voters_for)
-    list_of_voters_for = COMMA_LIST_SEPARATOR.join(list_of_voters_for)
-    list_of_voters_against = COMMA_LIST_SEPARATOR.join(list_of_voters_against)
+        # Create lists of voters
+        list_of_voters_for = []
+        list_of_voters_against = []
+        for voter in proposal.voters:
+            voter_mention = get_mention_by_id(voter.user_id)
+            if int(voter.value) == Vote.YES.value:
+                list_of_voters_for.append(voter_mention)
+            else:
+                list_of_voters_against.append(voter_mention)
+        number_of_voters_for = len(list_of_voters_for)
+        list_of_voters_for = COMMA_LIST_SEPARATOR.join(list_of_voters_for)
+        list_of_voters_against = COMMA_LIST_SEPARATOR.join(list_of_voters_against)
 
-    # Retrieve links to the messages
-    original_message = await get_message(client, proposal.channel_id, proposal.message_id)
-    link_to_voting_message = voting_message.jump_url
-    link_to_initial_proposer_message = original_message.jump_url if original_message else None
+        # Retrieve links to the messages
+        original_message = await get_message(client, proposal.channel_id, proposal.message_id)
+        link_to_voting_message = voting_message.jump_url
+        link_to_initial_proposer_message = original_message.jump_url if original_message else None
 
-    # Filling the proposer response message based on the reason of cancelling
-    if reason == ProposalResult.CANCELLED_BY_PROPOSER:
-        if proposal.not_financial:
-            response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
-                author=mention_author
+        # Filling the proposer response message based on the reason of cancelling
+        if reason == ProposalResult.CANCELLED_BY_PROPOSER:
+            if proposal.not_financial:
+                response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
+                    author=mention_author
+                )
+            else:
+                response_to_proposer = GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
+                    author=mention_author
+                )
+            log_message = "(by the proposer)"
+        elif reason == ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD:
+            if proposal.not_financial:
+                response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
+                    author=mention_author,
+                    threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
+                    voting_link=link_to_voting_message,
+                )
+            else:
+                response_to_proposer = GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
+                    author=mention_author,
+                    threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
+                    voting_link=link_to_voting_message,
+                )
+            log_message = "(by reaching negative threshold_negative)"
+        elif reason == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD:
+            if proposal.not_financial:
+                response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format()
+            else:
+                response_to_proposer = GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format()
+            log_message = "(by not reaching positive threshold)"
+
+        # Filling the voting channel message based on the reason of cancelling
+        if reason == ProposalResult.CANCELLED_BY_PROPOSER:
+            edit_in_voting_channel = PROPOSAL_CANCELLED_VOTING_CHANNEL[reason].format(
+                author=mention_author, link_to_original_message=link_to_initial_proposer_message
             )
-        else:
-            response_to_proposer = GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
-                author=mention_author
-            )
-        log_message = "(by the proposer)"
-    elif reason == ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD:
-        if proposal.not_financial:
-            response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
-                author=mention_author,
+        elif reason == ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD:
+            edit_in_voting_channel = PROPOSAL_CANCELLED_VOTING_CHANNEL[reason].format(
                 threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
-                voting_link=link_to_voting_message,
+                voters_list=list_of_voters_against,
+                link_to_original_message=link_to_initial_proposer_message,
             )
-        else:
-            response_to_proposer = GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format(
-                author=mention_author,
-                threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
-                voting_link=link_to_voting_message,
+        elif reason == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD:
+            edit_in_voting_channel = PROPOSAL_CANCELLED_VOTING_CHANNEL[reason].format(
+                supporters_number=number_of_voters_for,
+                yes_voting_reaction=EMOJI_VOTING_YES,
+                supporters_list=f" ({list_of_voters_for})" if list_of_voters_for else "",
+                threshold=proposal.threshold_positive,
+                link_to_original_message=link_to_initial_proposer_message,
             )
-        log_message = "(by reaching negative threshold_negative)"
-    elif reason == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD:
-        if proposal.not_financial:
-            response_to_proposer = GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format()
-        else:
-            response_to_proposer = GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE[reason].format()
-        log_message = "(by not reaching positive threshold)"
 
-    # Filling the voting channel message based on the reason of cancelling
-    if reason == ProposalResult.CANCELLED_BY_PROPOSER:
-        edit_in_voting_channel = PROPOSAL_CANCELLED_VOTING_CHANNEL[reason].format(
-            author=mention_author, link_to_original_message=link_to_initial_proposer_message
-        )
-    elif reason == ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD:
-        edit_in_voting_channel = PROPOSAL_CANCELLED_VOTING_CHANNEL[reason].format(
-            threshold=LAZY_CONSENSUS_THRESHOLD_NEGATIVE,
-            voters_list=list_of_voters_against,
-            link_to_original_message=link_to_initial_proposer_message,
-        )
-    elif reason == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD:
-        edit_in_voting_channel = PROPOSAL_CANCELLED_VOTING_CHANNEL[reason].format(
-            supporters_number=number_of_voters_for,
-            yes_voting_reaction=EMOJI_VOTING_YES,
-            supporters_list=f" ({list_of_voters_for})" if list_of_voters_for else "",
-            threshold=proposal.threshold_positive,
-            link_to_original_message=link_to_initial_proposer_message,
-        )
+        if original_message:
+            await original_message.add_reaction(REACTION_ON_PROPOSAL_CANCELLED)
+        # Reply in the original channel, unless it's not the voting channel itself (then not replying to avoid flooding)
+        if original_message and voting_message.channel.id != original_message.channel.id:
+            message = await original_message.reply(response_to_proposer)
+            # Remove embeds
+            await message.edit(suppress=True)
+        # Edit the proposal in the voting channel; suppress=True will remove embeds
+        await voting_message.edit(content=edit_in_voting_channel, suppress=True)
 
-    if original_message:
-        await original_message.add_reaction(REACTION_ON_PROPOSAL_CANCELLED)
-    # Reply in the original channel, unless it's not the voting channel itself (then not replying to avoid flooding)
-    if original_message and voting_message.channel.id != original_message.channel.id:
-        message = await original_message.reply(response_to_proposer)
-        # Remove embeds
-        await message.edit(suppress=True)
-    # Edit the proposal in the voting channel; suppress=True will remove embeds
-    await voting_message.edit(content=edit_in_voting_channel, suppress=True)
-
-    # Add history item for analytics
-    await db.add_proposals_history_item(proposal, reason)
-    # Remove the proposal
-    await remove_proposal(proposal.voting_message_id, db)
-    logger.info(
-        "Cancelled %s %s. voting_message_id=%d",
-        "grantless proposal" if proposal.not_financial else "proposal with a grant",
-        log_message,
-        proposal.voting_message_id,
-    )
+        # Add history item for analytics
+        await save_proposal_to_history(db, proposal, reason)
+        logger.info(
+            "Cancelled %s %s. voting_message_id=%d",
+            "grantless proposal" if proposal.not_financial else "proposal with a grant",
+            log_message,
+            proposal.voting_message_id,
+        )
 
 
 @client.event

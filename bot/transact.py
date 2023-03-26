@@ -120,7 +120,7 @@ async def send_transaction(ctx, original_message, mentions, ids, amount, descrip
     for mention in mentions:
         recipient_nicknames.append(await get_nickname_by_id_or_mention(mention))
     # Add transaction to history
-    await db.add_free_transactions_history_item(
+    await db.add(
         FreeFundingTransaction(
             author_id=ctx.message.author.id,
             author_nickname=await get_nickname_by_id_or_mention(author_mention),
@@ -130,7 +130,8 @@ async def send_transaction(ctx, original_message, mentions, ids, amount, descrip
             description=description,
             submitted_at=datetime.now(),
             message_url=grant_message.jump_url,
-        )
+        ),
+        is_history=True,
     )
     await ctx.message.add_reaction(REACTION_ON_TRANSACTION_SUCCEED)
 

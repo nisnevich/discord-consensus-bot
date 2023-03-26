@@ -34,6 +34,7 @@ from bot.propose import approve_proposal, propose_command
 from bot.transact import free_funding_transact_command
 from bot.vote import cancel_proposal, on_raw_reaction_add
 from bot.help import help
+from bot.export import export_command
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)

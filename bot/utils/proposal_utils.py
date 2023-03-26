@@ -1,7 +1,10 @@
+import re
+
 import discord
 import logging
 import sys
-from datetime import datetime
+import asyncio
+import datetime
 from typing import List
 from sqlalchemy.orm.collections import InstrumentedList
 
@@ -10,18 +13,32 @@ from multipledispatch import dispatch
 
 from bot.utils.db_utils import DBUtil
 
+from bot.utils.formatting_utils import get_nickname_by_id_or_mention
+from bot.utils.discord_utils import get_discord_client, get_message
 from bot.config.logging_config import log_handler, console_handler
-from bot.config.schemas import Proposals, Voters, FinanceRecipients
-from bot.config.const import DEFAULT_LOG_LEVEL, Vote
+from bot.config.schemas import Proposals, Voters, FinanceRecipients, ProposalHistory
+from bot.config.const import (
+    DEFAULT_LOG_LEVEL,
+    Vote,
+    VOTING_CHANNEL_ID,
+    DB_ARRAY_COLUMN_SEPARATOR,
+    COMMA_LIST_SEPARATOR,
+    GRANT_APPLY_CHANNEL_ID,
+    RESPONSIBLE_MENTION,
+)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(DEFAULT_LOG_LEVEL)
 logger.addHandler(log_handler)
 logger.addHandler(console_handler)
 
+client = get_discord_client()
 db = DBUtil()
 
 proposals = {}
+# The lock is used while cancelling or accepting a proposal. This way concurrency errors related to
+# removing and adding DB items can be avoided
+proposal_lock = asyncio.Lock()
 
 
 def find_matching_voter(user_id, voting_message_id):
@@ -144,13 +161,13 @@ def validate_grantless_proposal(new_proposal):
         raise ValueError(
             f"not_financial should be bool, got {type(new_proposal.not_financial)} instead: {new_proposal.not_financial}"
         )
-    if not isinstance(new_proposal.submitted_at, datetime):
+    if not isinstance(new_proposal.submitted_at, datetime.datetime):
         raise ValueError(
-            f"submitted_at should be datetime, got {type(new_proposal.submitted_at)} instead: {new_proposal.submitted_at}"
+            f"submitted_at should be datetime.datetime, got {type(new_proposal.submitted_at)} instead: {new_proposal.submitted_at}"
         )
-    if not isinstance(new_proposal.closed_at, datetime):
+    if not isinstance(new_proposal.closed_at, datetime.datetime):
         raise ValueError(
-            f"closed_at should be datetime, got {type(new_proposal.closed_at)} instead: {new_proposal.closed_at}"
+            f"closed_at should be datetime.datetime, got {type(new_proposal.closed_at)} instead: {new_proposal.closed_at}"
         )
     if not isinstance(new_proposal.bot_response_message_id, int):
         raise ValueError(
@@ -204,3 +221,117 @@ async def add_proposal(new_proposal, db):
         logger.info("Inserted proposal into DB: %s", new_proposal)
     else:
         raise Exception("Incorrect DB identifier was given.")
+
+
+async def save_proposal_to_history(db, proposal, result, remove_from_main_db=True):
+    """
+    Adds a proposal to the ProposalHistory table after it has been processed.
+
+    Parameters:
+    proposal (Proposals): The original proposal that needs to be added to the history.
+    result (ProposalResult): The result of the proposal. This should be one of the enumerated values in `ProposalResult`.
+    """
+
+    def replace_mentions_with_nicknames(description, id_to_nickname_map):
+        """
+        Replaces all mentions in a proposal description with nicknames, based on the mapping provided in id_to_nickname_map.
+        """
+
+        def replace_mention(match):
+            user_id = match.group(1)
+            return id_to_nickname_map.get(user_id, f"<@{user_id}>")
+
+        return re.sub(r"<@(\d+)>", replace_mention, description)
+
+    try:
+        # Copy all attributes from Proposals table (excluding some of them)
+        proposal_dict = {
+            key: value
+            for key, value in proposal.__dict__.items()
+            # Exclude id and _sa_instance_state because they're unique to each table
+            if key != "_sa_instance_state" and key != "id"
+            # Exclude voters and finance_recipients because they are attached to another ORM
+            # session, and also we need to recreate them in the history DB with their unique ids
+            and key != "voters" and key != "finance_recipients"
+        }
+
+        # Retrieving voting message to save URL
+        voting_message = await get_message(client, VOTING_CHANNEL_ID, proposal.voting_message_id)
+        # Create a history item
+        history_item = ProposalHistory(
+            **proposal_dict,
+            result=result.value,
+            voting_message_url=voting_message.jump_url,
+            # Retrieve author nickname by ID, so it can be used quickly when exporting analytics
+            author_nickname=await get_nickname_by_id_or_mention(proposal.author_id),
+        )
+        # Add a history item and flush the changes so to assign id to the history proposal and associate other objects with it later
+        await db.add(history_item, is_history=True)
+
+        # Make a copy of the voters
+        copied_voters = []
+        for voter in proposal.voters:
+            copied_voter = Voters(
+                user_id=voter.user_id,
+                user_nickname=await get_nickname_by_id_or_mention(voter.user_id),
+                value=voter.value,
+                voting_message_id=voter.voting_message_id,
+                proposal_id=history_item.id,
+            )
+            copied_voters.append(copied_voter)
+        # Add the copied voters to the Voters table
+        await db.add_all(copied_voters, is_history=True)
+
+        # Make a copy of the recipients
+        copied_recipients = []
+        for recipient in proposal.finance_recipients:
+            copied_recipient = FinanceRecipients(
+                proposal_id=history_item.id,
+                recipient_ids=recipient.recipient_ids,
+                recipient_nicknames=recipient.recipient_nicknames,
+                amount=recipient.amount,
+            )
+            copied_recipients.append(copied_recipient)
+        # Add the copied recipients to the FinanceRecipients table
+        await db.add_all(copied_recipients, is_history=True)
+
+        # Create a mapping of ids to nicknames
+        id_to_nickname_map = {}
+        for recipient in copied_recipients:
+            ids = recipient.recipient_ids.split(DB_ARRAY_COLUMN_SEPARATOR)
+            nicknames = recipient.recipient_nicknames.split(COMMA_LIST_SEPARATOR)
+            id_to_nickname_map.update(zip(ids, nicknames))
+        # Replace all mentions in description with the actual nicknames
+        # Once I faced a bug during recovery when cancelling proposals, that the description got empty for unknown reason, so we do null checks just in case
+        if history_item.description and id_to_nickname_map:
+            history_item.description = replace_mentions_with_nicknames(
+                history_item.description, id_to_nickname_map
+            )
+
+        # Save the changes
+        await db.save(is_history=True)
+        logger.debug(
+            "Added history item %s",
+            history_item,
+        )
+
+        # Remove the proposal (it's done here under the lock, in order to ensure DB
+        # consistency, otherwise concurrency errors occur)
+        if remove_from_main_db:
+            await remove_proposal(proposal.voting_message_id, db)
+    except Exception as e:
+        try:
+            grant_channel = client.get_channel(GRANT_APPLY_CHANNEL_ID)
+            await grant_channel.send(
+                f"An unexpected error occurred when saving proposal history. cc {RESPONSIBLE_MENTION}"
+            )
+        except Exception as e:
+            logger.critical("Unable to reply in the chat that a critical error has occurred.")
+
+        logger.critical(
+            "Unexpected error in %s while saving proposal history, result=%s, proposal=%s",
+            __name__,
+            result,
+            proposal,
+            exc_info=True,
+        )
