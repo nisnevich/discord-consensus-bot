@@ -2,6 +2,7 @@ import logging
 import os
 
 from enum import Enum
+from typing import Optional
 
 PROJECT_ROOT = os.getcwd()
 
@@ -44,7 +45,7 @@ class ServerEnvironment(Enum):
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 45  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
@@ -76,16 +77,30 @@ APPROVAL_SLEEP_SECONDS = 5
 #  the bot will reject all proposals and votes for the sake of data integrity.
 SLEEP_BEFORE_RECOVERY_SECONDS = 7
 
+# The bot is using the prefix command syntax instead of interactions, for the reasons of compatibility with existing Eco Discord Accountant bot that has used the prefix "!" for all commands since 2 years. Unfortunately, the interactions module which is mainstreamed by Discord doesn't support the custom prefix for commands, thereby we stick to old good discord.ext.commands (which unfortunately doesn't have tooltips support).
 DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
-PROPOSAL_COMMAND_ALIASES = ['lazy', 'suggest', 'prop', 'consensus']
+PROPOSAL_COMMAND_ALIASES = ['prop', 'idea', 'lazy', 'suggest', 'consensus', 'proposal']
+PROPOSAL_ANONYMOUS_VOTING_COMMAND_NAME = 'propose-anonymous'
+PROPOSAL_ANONYMOUS_VOTING_ALIASES = [
+    'anonymous-propose',
+    'anonymous-proposal',
+    'proposal-anonymous',
+    'anonymous-voting',
+    'voting-anonymous',
+    'anonymous',
+    'anon',
+    'voting-anon',
+    'anon-voting',
+    'secret-ballot',
+    'secret',
+]
 GRANT_APPLY_COMMAND_NAME = 'grant'
 FREE_FUNDING_COMMAND_NAME = 'tips'
 FREE_FUNDING_COMMAND_ALIASES = [
     'personal',
     'free',
     'my',
-    'easy',
     'gift',
     'love',
     'tip',
@@ -146,17 +161,27 @@ class Vote(Enum):
 
     def __str__(self):
         if self.value == Vote.YES.value:
-            return 'YES'
+            return EMOJI_VOTING_YES
         elif self.value == Vote.NO.value:
-            return 'NO'
+            return EMOJI_VOTING_NO
+
+    @classmethod
+    def from_emoji(cls, emoji: str) -> Optional['Vote']:
+        if emoji == EMOJI_VOTING_YES:
+            return cls.YES
+        elif emoji == EMOJI_VOTING_NO:
+            return cls.NO
+        else:
+            return None
 
 
 class ProposalVotingType(Enum):
     YES_OR_NO = 0
+    # Multichoice proposals aren't implemented and reserved for later
     MULTI_CHOICE = 1
 
 
-class ProposalAnonymityType(Enum):
+class ProposalVotingAnonymityType(Enum):
     OPENED = 0
     REVEAL_VOTERS_AT_THE_END = 1
 
@@ -252,7 +277,9 @@ ERROR_MESSAGE_INVALID_ROLE = "Sorry, you need Layer 3 role to use this command. 
 ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED = "The {amount} grant was applied, but I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author} is applied! However, I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_AUTHOR_SUPPORTING_OWN_PROPOSAL = "Sorry, but supporting your own proposal is a no-no."
-ERROR_MESSAGE_ALREADY_VOTED = "It appears that you have already voted on this proposal. Before casting another vote, please ensure that your previous vote has been removed: {link_to_voting_message}"
+ERROR_MESSAGE_ALREADY_VOTED = (
+    "You have already voted {reaction} previously on this proposal: {link_to_voting_message}"
+)
 ERROR_MESSAGE_ORIGINAL_MESSAGE_MISSING = (
     "Unable to find the original proposers message, probably it was removed."
 )
@@ -312,7 +339,7 @@ For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The pro
 """
 HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on a wrong message! 😕 To make your vote count, please head to the voting message in #l3-voting: {voting_link}."
 HELP_MESSAGE_VOTED_FOR = """
-Your vote supporting a proposal of {author} has been counted. {vote_emoji} The voting ends {countdown}. If you change your mind later, you can remove your vote from {voting_link}
+Your vote supporting a proposal of {author} has been counted! {vote_emoji} The voting ends {countdown}. If you change your mind later, you can remove your vote from {voting_link}
 """
 HELP_MESSAGE_VOTED_AGAINST = """
 Your vote against a proposal of {author} has been counted. The voting ends {countdown}. Make sure to explain why you're against it, be clear, concise and respectful.
@@ -334,6 +361,8 @@ PROPOSAL_CANCELLED_VOTING_CHANNEL = {
     ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "The proposal didn't pass because it lacked enough support. {supporters_number} member(s) voted {yes_voting_reaction}{supporters_list}, but it needs at least {threshold} supporter(s): {link_to_original_message}",
 }
 PROPOSAL_ACCEPTED_SUPPORTED_BY_VOTING_CHANNEL_EDIT = "*Supported by*: {supporters_list}\n"
+OPENED_VOTING_CHANNEL_EDIT = ""
+REVEAL_VOTERS_AT_THE_END_VOTING_CHANNEL_EDIT = "(voters to be revealed upon completion)"
 
 # =====================
 # Proposals with grants
@@ -363,7 +392,7 @@ NEW_GRANT_PROPOSAL_RESPONSE = """
 Alright, let's make this happen! The proposal has been submitted: {voting_link}
 """
 NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:rocket:{amount_reaction} **Active grant proposal** by {author}
+:rocket:{amount_reaction} **Active grant proposal** by {author} {anonymity}
 {countdown} will grant a total of {amount_sum} points: {description}
 """
 
@@ -376,7 +405,7 @@ GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given!",
     ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
-    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Sorry, your proposal didn't receive enough support and was cancelled. Don't be disheartened, and feel free to submit new ideas. Your contributions are valued, and we look forward to seeing more great ideas from you in the future.",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Sorry, your proposal didn't receive enough support. Don't be disheartened, and feel free to submit new ideas. Your contributions are valued, and we look forward to seeing more great ideas from you in the future.",
 }
 
 # =====================
@@ -386,7 +415,7 @@ GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
 # Active voting
 NEW_GRANTLESS_PROPOSAL_RESPONSE = "Nice one, let's see what the community thinks: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:rocket: **Active proposal** (no grant) by {author}
+:rocket: **Active proposal** (no grant) by {author} {anonymity}
 {countdown}: {description}
 """
 
@@ -399,5 +428,5 @@ GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The proposal has been accepted!",
     ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
-    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Sorry, your proposal didn't receive enough support and was cancelled. Don't be disheartened, and feel free to submit new ideas. Your contributions are valued, and we look forward to seeing more great ideas from you in the future.",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Sorry, your proposal didn't receive enough support. Don't be disheartened, and feel free to submit new ideas. Your contributions are valued, and we look forward to seeing more great ideas from you in the future.",
 }

@@ -31,7 +31,11 @@ from bot.config.schemas import Voters
 from bot.utils.dev_utils import measure_time_async
 
 # imports below are needed to make discord client aware of decorated methods
-from bot.propose import approve_proposal, propose_command
+from bot.propose import (
+    approve_proposal,
+    command_propose_opened_voting,
+    command_propose_anonymous_voting,
+)
 from bot.transact import free_funding_transact_command
 from bot.vote import cancel_proposal, on_raw_reaction_add
 from bot.help import help

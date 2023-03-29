@@ -43,25 +43,25 @@ async def is_valid_voting_reaction(payload):
     # Check if the reaction matches
     if payload.emoji.name != EMOJI_VOTING_NO and payload.emoji.name != EMOJI_VOTING_YES:
         return False
-    logger.debug("Emoji is correct")
+    logger.debug("Emoji is a correct voting emoji - OK")
 
     # The bot adds voting reactions to each message as a template, so it should be filtered out
     if payload.user_id == BOT_ID:
         return False
-    logger.debug("Voter is not the bot itself.")
+    logger.debug("Voter is not the bot itself - OK")
 
     # Check if the user role matches
     guild = client.get_guild(payload.guild_id)
     member = guild.get_member(payload.user_id)
     if not await validate_roles(member):
         return False
-    logger.debug("Role is correct")
+    logger.debug("The user has permissions to vote - OK")
 
     reaction_channel = guild.get_channel(payload.channel_id)
 
     # A hotfix for discord forums (the None channel is returned when a reaction is added to a message in a forum; though it works fine in other functions that use ctx.message.channel.id, such as propose)
     if not reaction_channel:
-        logger.debug("Seems like a forum message.")
+        logger.debug("Seems like a forum message - exiting")
         return
 
     # When adding reaction, check if the user has attempted to vote on a wrong message - either the original proposer message, or the bots reply to it, associated with an active proposal though (in order to help onboard new users)
@@ -86,12 +86,12 @@ async def is_valid_voting_reaction(payload):
     # Check if this is a voting channel
     if reaction_channel.id != VOTING_CHANNEL_ID:
         return False
-    logger.debug("Channel is correct")
+    logger.debug("The channel is a correct voting channel - OK")
 
     # Check if the reaction message is a relevant lazy consensus voting
     if not is_relevant_proposal(payload.message_id):
         return False
-    logger.debug("Proposal is correct")
+    logger.debug("The message is an active proposal - OK")
     return True
 
 
@@ -112,6 +112,13 @@ async def on_raw_reaction_remove(payload):
 
             # Get the proposal (it was already validated that it exists)
             proposal = get_proposal(payload.message_id)
+            # If the voting is anonymous, this method will be triggered every time after the user
+            # adds a reaction, but we should keep the voter in DB
+            if (
+                proposal.anonymity_type
+                == ProposalVotingAnonymityType.REVEAL_VOTERS_AT_THE_END.value
+            ):
+                return
 
             # Error handling - retrieve the voter object from the DB
             voter = find_matching_voter(payload.user_id, payload.message_id)
@@ -254,19 +261,22 @@ async def on_raw_reaction_add(payload):
         payload (discord.RawReactionActionEvent): The event containing data about the reaction.
     """
 
-    async def remove_reaction_and_send_dm(client, payload, message):
+    async def remove_reaction(client, payload, reaction_message=None, message_text=None):
         """
         Creates DM channel, replies to user with the given message, and removes the reaction added
-        in a given payload object.
+        in a given payload object. If the message is not given, it will simply remove the reaction.
         """
         # Create DM channel (not using send_dm function here, because the 'member' is used to remove the reaction later)
         guild = client.get_guild(payload.guild_id)
         member = guild.get_member(payload.user_id)
         dm_channel = await member.create_dm()
         # Reply the user in DM
-        await dm_channel.send(message)
+        if message_text:
+            await dm_channel.send(message_text)
+        # Fetch the reaction message if it wasn't provided
+        if reaction_message is None:
+            reaction_message = await get_message(client, payload.channel_id, payload.message_id)
         # Remove the reaction
-        reaction_message = await get_message(client, payload.channel_id, payload.message_id)
         await reaction_message.remove_reaction(payload.emoji, member)
 
     try:
@@ -283,7 +293,7 @@ async def on_raw_reaction_add(payload):
         # Don't allow to vote if recovery is in progress
         if db.is_recovery():
             # Remove the vote emoji, reply to user and exit
-            await remove_reaction_and_send_dm(client, payload, VOTING_PAUSED_RECOVERY_RESPONSE)
+            await remove_reaction(client, payload, voting_message, VOTING_PAUSED_RECOVERY_RESPONSE)
             logger.info(
                 "Rejecting the vote because recovery is in progress.",
             )
@@ -305,40 +315,59 @@ async def on_raw_reaction_add(payload):
             voter = find_matching_voter(payload.user_id, payload.message_id)
             logger.debug("Voter: %s", voter)
             if voter:
-                # Remove the vote emoji, reply to user and exit
-                await remove_reaction_and_send_dm(
-                    client,
-                    payload,
-                    ERROR_MESSAGE_ALREADY_VOTED.format(
-                        link_to_voting_message=voting_message.jump_url
-                    ),
-                )
-                logger.info(
-                    "The user has already voted on this proposal: channel=%s, message=%s, user=%s, proposal=%s, voter=%s",
-                    payload.channel_id,
-                    payload.message_id,
-                    payload.user_id,
-                    proposal,
-                    voter,
-                )
-                return
-            logger.debug("User hasn't voted on this proposal before")
+                # If the vote is the same as before (could be the case with anonymous voting), reply about it and exit
+                if voter.value == Vote.from_emoji(payload.emoji.name).value:
+                    # Remove the vote emoji,
+                    await remove_reaction(
+                        client,
+                        payload,
+                        voting_message,
+                        ERROR_MESSAGE_ALREADY_VOTED.format(
+                            reaction=payload.emoji.name,
+                            link_to_voting_message=voting_message.jump_url,
+                        ),
+                    )
+                    logger.info(
+                        "The user has already voted on this proposal: channel=%s, message=%s, user=%s, proposal=%s, voter=%s",
+                        payload.channel_id,
+                        payload.message_id,
+                        payload.user_id,
+                        proposal,
+                        voter,
+                    )
+                    # Exit, the vote has already been counted
+                    return
+                # Otherwise, remove the previous vote and simply proceed to add the new one
+                else:
+                    await remove_voter(proposal, voter)
+            logger.debug("User hasn't voted on this proposal before - OK")
 
-            # If it's a positive vote and the author is the proposer himself, don't count the vote,
+            # If it's a positive vote and the author is the proposer himself, don't count the vote
             if (
                 payload.emoji.name == EMOJI_VOTING_YES
                 and int(proposal.author_id) == payload.user_id
             ):
                 # Remove the vote emoji, reply to user and exit
-                await remove_reaction_and_send_dm(
-                    client, payload, ERROR_MESSAGE_AUTHOR_SUPPORTING_OWN_PROPOSAL
+                await remove_reaction(
+                    client, payload, voting_message, ERROR_MESSAGE_AUTHOR_SUPPORTING_OWN_PROPOSAL
                 )
                 logger.info(
                     "The author can't upvote their own proposal: proposal=%s, voter=%s",
                     proposal,
                     voter,
                 )
+                # Exit, we don't count the vote in this case
                 return
+            logger.debug("Not an attempt to upvote user's own proposal - OK")
+
+            # If the proposal is with anonymous voting, remove the reaction
+            if (
+                proposal.anonymity_type
+                == ProposalVotingAnonymityType.REVEAL_VOTERS_AT_THE_END.value
+            ):
+                # Remove reaction without sending any message (later the user will be notified that
+                # the vote has been counted)
+                await remove_reaction(client, payload, voting_message)
 
             # Add voter to DB and dict
             await add_voter(
@@ -383,11 +412,11 @@ async def on_raw_reaction_add(payload):
                     proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message
                 )
                 return
-            logger.debug("The proposer isn't the author of the proposal")
+            logger.debug("The dissenter isn't the author of the proposal - OK")
 
             # Check if the threshold_negative is reached
             if len(get_voters_with_vote(proposal, Vote.NO)) >= proposal.threshold_negative:
-                logger.debug("Threshold is reached, cancelling")
+                logger.info("Threshold is reached, cancelling")
                 await cancel_proposal(
                     proposal,
                     ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD,
