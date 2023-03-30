@@ -362,7 +362,7 @@ PROPOSAL_CANCELLED_VOTING_CHANNEL = {
 }
 PROPOSAL_ACCEPTED_SUPPORTED_BY_VOTING_CHANNEL_EDIT = "*Supported by*: {supporters_list}\n"
 OPENED_VOTING_CHANNEL_EDIT = ""
-REVEAL_VOTERS_AT_THE_END_VOTING_CHANNEL_EDIT = "(voters to be revealed upon completion)"
+REVEAL_VOTERS_AT_THE_END_VOTING_CHANNEL_EDIT = "(voters hidden)"
 
 # =====================
 # Proposals with grants
