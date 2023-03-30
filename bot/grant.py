@@ -6,7 +6,7 @@ from bot.utils.proposal_utils import (
 from bot.utils.db_utils import DBUtil
 from bot.config.const import *
 from bot.config.logging_config import log_handler, console_handler
-from bot.utils.discord_utils import get_discord_client, get_message
+from bot.utils.discord_utils import get_discord_client, get_message, remove_reactions
 from bot.utils.formatting_utils import get_amount_to_print, get_mention_by_id
 
 
@@ -156,6 +156,8 @@ async def grant(voting_message_id):
 
         # Add history item for analytics
         await save_proposal_to_history(db, proposal, result)
+        # Remove all voting reactions from the voting message, to keep the channel clean
+        await remove_reactions(voting_message, EMOJI_VOTING_YES, EMOJI_VOTING_NO)
         logger.info("Successfully approved proposal. voting_message_id=%d", voting_message_id)
 
     except Exception as e:

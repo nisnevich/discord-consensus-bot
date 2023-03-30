@@ -20,7 +20,7 @@ from bot.utils.proposal_utils import (
 )
 from bot.utils.db_utils import DBUtil
 from bot.utils.validation import validate_roles
-from bot.utils.discord_utils import get_discord_client, get_message, send_dm
+from bot.utils.discord_utils import get_discord_client, get_message, send_dm, remove_reactions
 from bot.utils.formatting_utils import (
     get_amount_to_print,
     get_discord_countdown_plus_delta,
@@ -242,9 +242,10 @@ async def cancel_proposal(proposal, reason, voting_message):
         await message.edit(suppress=True)
     # Edit the proposal in the voting channel; suppress=True will remove embeds
     await voting_message.edit(content=edit_in_voting_channel, suppress=True)
-
     # Add history item for analytics
     await save_proposal_to_history(db, proposal, reason)
+    # Remove all voting reactions from the voting message, to keep the channel clean
+    await remove_reactions(voting_message, EMOJI_VOTING_YES, EMOJI_VOTING_NO)
     logger.info(
         "Cancelled %s %s. voting_message_id=%d",
         "grantless proposal" if proposal.not_financial else "proposal with a grant",
@@ -261,10 +262,13 @@ async def on_raw_reaction_add(payload):
         payload (discord.RawReactionActionEvent): The event containing data about the reaction.
     """
 
-    async def remove_reaction(client, payload, reaction_message=None, message_text=None):
+    async def remove_reaction(
+        client, payload, reaction_message=None, message_text=None, emoji=None
+    ):
         """
-        Creates DM channel, replies to user with the given message, and removes the reaction added
-        in a given payload object. If the message is not given, it will simply remove the reaction.
+        Creates DM channel, replies to user with the given message, and removes the given reaction.
+        If the message is not given, it will simply remove the reaction. If the emoji parameter is
+        missing, removes the reaction added in a given payload object.
         """
         # Create DM channel (not using send_dm function here, because the 'member' is used to remove the reaction later)
         guild = client.get_guild(payload.guild_id)
@@ -277,7 +281,7 @@ async def on_raw_reaction_add(payload):
         if reaction_message is None:
             reaction_message = await get_message(client, payload.channel_id, payload.message_id)
         # Remove the reaction
-        await reaction_message.remove_reaction(payload.emoji, member)
+        await reaction_message.remove_reaction(emoji if emoji else payload.emoji, member)
 
     try:
         logger.debug("Adding a reaction: %s", payload.event_type)
@@ -289,6 +293,9 @@ async def on_raw_reaction_add(payload):
                 message = await get_message(client, payload.channel_id, payload.message_id)
                 await message.add_reaction(payload.emoji)
             return
+
+        # Retrieve the voting message (to format the replies of the bot later)
+        voting_message = await get_message(client, payload.channel_id, payload.message_id)
 
         # Don't allow to vote if recovery is in progress
         if db.is_recovery():
@@ -308,15 +315,13 @@ async def on_raw_reaction_add(payload):
 
             # Retrieve the proposal
             proposal = get_proposal(payload.message_id)
-            # Retrieve the voting message (to format the replies of the bot later)
-            voting_message = await get_message(client, payload.channel_id, payload.message_id)
-
-            # Check if the user has already voted for this proposal
+            # Retrieve previous votes of the user on this proposal
             voter = find_matching_voter(payload.user_id, payload.message_id)
             logger.debug("Voter: %s", voter)
+            # If the user has already voted
             if voter:
                 # If the vote is the same as before (could be the case with anonymous voting), reply about it and exit
-                if voter.value == Vote.from_emoji(payload.emoji.name).value:
+                if voter.value == Vote.from_emoji(payload.emoji.name):
                     # Remove the vote emoji,
                     await remove_reaction(
                         client,
@@ -339,7 +344,19 @@ async def on_raw_reaction_add(payload):
                     return
                 # Otherwise, remove the previous vote and simply proceed to add the new one
                 else:
+                    # For opened voting, remove the previous reactions of the user
+                    if proposal.anonymity_type == ProposalVotingAnonymityType.OPENED.value:
+                        # Iterate through message reactions to find the matching one
+                        for reaction in voting_message.reactions:
+                            # Check if the reaction is a voting emoji the user has used
+                            if str(reaction.emoji) == VOTE_EMOJI_MAPPING[voter.value]:
+                                # Remove the reactors previous voting emoji
+                                await remove_reaction(
+                                    client, payload, voting_message, emoji=reaction.emoji
+                                )
+                    # Remove the previous vote from DB
                     await remove_voter(proposal, voter)
+
             logger.debug("User hasn't voted on this proposal before - OK")
 
             # If it's a positive vote and the author is the proposer himself, don't count the vote

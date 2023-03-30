@@ -1,8 +1,16 @@
+# =======
+# Imports
+# =======
+
 import logging
 import os
 
 from enum import Enum
 from typing import Optional
+
+# ===========
+# Environment
+# ===========
 
 PROJECT_ROOT = os.getcwd()
 
@@ -37,15 +45,16 @@ class ServerEnvironment(Enum):
     PROD = 2
 
 
-# ==================
-# Critical constants
-# ==================
+# ==============================
+# Critical application constants
+# ==============================
+# Note: this section must be adopted to any new server where the bot will run
 
 # Required Discord permissions: 415538474048
 
 SERVER_ENVIRONMENT = ServerEnvironment.DEV
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 15  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 25  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 2
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
@@ -56,13 +65,19 @@ FULL_CONSENSUS_THRESHOLD_POSITIVE = 2
 # A total number of free funding for each person per season
 FREE_FUNDING_LIMIT_PERSON_PER_SEASON = 3000
 
+# Which roles are allowed to run voting and distribute free funding
 ROLE_IDS_ALLOWED = (1063903240925749389,)
+# Where to publish proposals for voting
 VOTING_CHANNEL_ID = 1067119414731886645
+# Where to apply grants
 GRANT_APPLY_CHANNEL_ID = 1067127829654937692
+# The ID of the bot
 BOT_ID = 1061680925425012756
+# Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping)
+RESPONSIBLE_MENTION = "<@703574259401883728>"
 
 # =====================
-# Bot related constants
+# Application constants
 # =====================
 
 # Invite link with required permissions
@@ -115,7 +130,6 @@ FREE_FUNDING_BALANCE_ALIASES = ['balance-tips', 'personal-balance', 'balance-per
 RESET_BALANCE_COMMAND_NAME = 'reset'
 
 COMMA_LIST_SEPARATOR = ", "  # A comma separator between the items stored in DB or shown in Discord
-RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 MIN_DESCRIPTION_LENGTH = 30  # just some common sense value
 # Maximal amount in any transaction (used primarily to avoid overflow, but also as a limit to unreasonably high amounts)
@@ -136,54 +150,6 @@ EMPTY_ANALYTICS_VALUE = "n/a"
 THRESHOLD_DISABLED_DB_VALUE = -1
 # The name of the file sent to user with !export command
 EXPORT_DATA_FILENAME = "analytics.xlsx"
-
-
-class ProposalResult(Enum):
-    ACCEPTED = 0
-    CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD = 1
-    CANCELLED_BY_PROPOSER = 2
-    CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD = 3
-
-    def __str__(self):
-        if self.value == ProposalResult.ACCEPTED.value:
-            return 'Accepted'
-        elif self.value == ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD.value:
-            return 'Cancelled by reaching threshold of votes against'
-        elif self.value == ProposalResult.CANCELLED_BY_PROPOSER.value:
-            return 'Cancelled by proposer'
-        elif self.value == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD.value:
-            return 'Cancelled by not reaching minimal supporting votes'
-
-
-class Vote(Enum):
-    NO = 0
-    YES = 1
-
-    def __str__(self):
-        if self.value == Vote.YES.value:
-            return EMOJI_VOTING_YES
-        elif self.value == Vote.NO.value:
-            return EMOJI_VOTING_NO
-
-    @classmethod
-    def from_emoji(cls, emoji: str) -> Optional['Vote']:
-        if emoji == EMOJI_VOTING_YES:
-            return cls.YES
-        elif emoji == EMOJI_VOTING_NO:
-            return cls.NO
-        else:
-            return None
-
-
-class ProposalVotingType(Enum):
-    YES_OR_NO = 0
-    # Multichoice proposals aren't implemented and reserved for later
-    MULTI_CHOICE = 1
-
-
-class ProposalVotingAnonymityType(Enum):
-    OPENED = 0
-    REVEAL_VOTERS_AT_THE_END = 1
 
 
 # =============
@@ -232,6 +198,64 @@ HEART_EMOJI_LIST = [
     "❤️‍🔥",
     "😘",
 ]
+
+# ==================
+# Mappings and enums
+# ==================
+
+
+VOTE_EMOJI_MAPPING = {
+    0: EMOJI_VOTING_NO,
+    1: EMOJI_VOTING_YES,
+}
+# Reverse mapping to get vote values from emojis
+EMOJI_VOTE_MAPPING = {emoji: value for value, emoji in VOTE_EMOJI_MAPPING.items()}
+
+
+class Vote(Enum):
+    NO = EMOJI_VOTE_MAPPING[EMOJI_VOTING_NO]
+    YES = EMOJI_VOTE_MAPPING[EMOJI_VOTING_YES]
+
+    def __str__(self):
+        """
+        Returns emoji based on a vote.
+        """
+        return VOTE_EMOJI_MAPPING[self.value] if self.value in VOTE_EMOJI_MAPPING else None
+
+    @classmethod
+    def from_emoji(cls, emoji: str) -> Optional['Vote']:
+        """
+        Returns the vote value based on emoji.
+        """
+        return EMOJI_VOTE_MAPPING[emoji] if emoji in EMOJI_VOTE_MAPPING else None
+
+
+class ProposalVotingType(Enum):
+    YES_OR_NO = 0
+    # Multichoice proposals aren't implemented and reserved for later
+    MULTI_CHOICE = 1
+
+
+class ProposalVotingAnonymityType(Enum):
+    OPENED = 0
+    REVEAL_VOTERS_AT_THE_END = 1
+
+
+class ProposalResult(Enum):
+    ACCEPTED = 0
+    CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD = 1
+    CANCELLED_BY_PROPOSER = 2
+    CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD = 3
+
+    def __str__(self):
+        if self.value == ProposalResult.ACCEPTED.value:
+            return 'Accepted'
+        elif self.value == ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD.value:
+            return 'Cancelled by reaching threshold of votes against'
+        elif self.value == ProposalResult.CANCELLED_BY_PROPOSER.value:
+            return 'Cancelled by proposer'
+        elif self.value == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD.value:
+            return 'Cancelled by not reaching minimal supporting votes'
 
 
 # ==============
@@ -356,9 +380,9 @@ FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season.
 # ======================
 
 PROPOSAL_CANCELLED_VOTING_CHANNEL = {
-    ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Proposal cancelled due to opposition from {threshold} members - {voters_list}: {link_to_original_message}",
-    ProposalResult.CANCELLED_BY_PROPOSER: ":leaves: Proposal cancelled by author ({author}): {link_to_original_message}",
-    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "The proposal didn't pass because it lacked enough support. {supporters_number} member(s) voted {yes_voting_reaction}{supporters_list}, but it needs at least {threshold} supporter(s): {link_to_original_message}",
+    ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Proposal was cancelled due to opposition from {threshold} members - {voters_list}: {link_to_original_message}",
+    ProposalResult.CANCELLED_BY_PROPOSER: ":leaves: Proposal was cancelled by author {author}: {link_to_original_message}",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Proposal didn't pass because it lacked enough support. {supporters_number} member(s) voted {yes_voting_reaction}{supporters_list}, but it needs at least {threshold} supporter(s): {link_to_original_message}",
 }
 PROPOSAL_ACCEPTED_SUPPORTED_BY_VOTING_CHANNEL_EDIT = "*Supported by*: {supporters_list}\n"
 OPENED_VOTING_CHANNEL_EDIT = ""

@@ -11,6 +11,7 @@ from bot.config.const import (
     Vote,
     BOT_ID,
     THRESHOLD_DISABLED_DB_VALUE,
+    ProposalVotingAnonymityType,
 )
 from bot.config.logging_config import log_handler, console_handler, DEFAULT_LOG_LEVEL
 from bot.config.schemas import Voters
@@ -91,6 +92,15 @@ async def sync_voters_db_with_discord(voting_message, proposal, vote, emoji):
 
     # Add new voters to DB
     async for reactor in reaction_voting.users():
+        # If anonymous voting, remove reaction unless the reactor is the consensus bot itself (its reactions are kept as a sample)
+        if (
+            reactor
+            and proposal.anonymity_type
+            == ProposalVotingAnonymityType.REVEAL_VOTERS_AT_THE_END.value
+            and reactor.id != BOT_ID
+        ):
+            # Remove reactors emoji from the reaction
+            await reaction_voting.remove(reactor)
         # Check if the reactor is allowed to participate in voting
         if not await validate_roles(reactor) or reactor.id == BOT_ID:
             continue
@@ -99,20 +109,17 @@ async def sync_voters_db_with_discord(voting_message, proposal, vote, emoji):
         if vote == Vote.NO and int(proposal.author_id) == reactor.id:
             # cancel_proposal will remove all voters, so we just run it and exit
             logger.debug("The proposer voted against, cancelling")
-            # Acquire the proposal lock to avoid concurrency errors
-            async with proposal_lock:
-                # Double check to make sure the proposal wasn't accepted or cancelled while the lock was acquired by other thread
-                if not is_relevant_proposal(proposal.voting_message_id):
-                    logger.info(
-                        "Proposal became irrelevant while waiting for a lock to cancel the proposal after recovery."
-                    )
-                    return
-                await cancel_proposal(
-                    proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message
+            # Double check to make sure the proposal wasn't accepted or cancelled while the lock was acquired by other thread
+            if not is_relevant_proposal(proposal.voting_message_id):
+                logger.info(
+                    "Proposal became irrelevant while waiting for a lock to cancel the proposal after recovery."
                 )
                 return
-        # For supporting votes, don't count the author if he has upvoted
+            await cancel_proposal(proposal, ProposalResult.CANCELLED_BY_PROPOSER, voting_message)
+            return
+        # For supporting votes, don't count the author if he has upvoted, and remove their reaction
         if vote == Vote.YES and int(proposal.author_id) == reactor.id:
+            await reaction_voting.remove(reactor)
             logger.debug("The author has voted in his own favor, not counting")
             continue
         # Attempt to retrieve the voter from DB
@@ -139,20 +146,17 @@ async def sync_voters_db_with_discord(voting_message, proposal, vote, emoji):
         # Check if the threshold_negative is reached
         if len(voters_against) >= proposal.threshold_negative:
             logger.debug("Threshold is reached, cancelling")
-            # Cancel the proposal
-            # Acquire the proposal lock to avoid concurrency errors
-            async with proposal_lock:
-                # Double check to make sure the proposal wasn't accepted or cancelled while the lock was acquired by other thread
-                if not is_relevant_proposal(proposal.voting_message_id):
-                    logger.info(
-                        "Proposal became irrelevant while waiting for a lock to cancel the proposal after recovery."
-                    )
-                    return
-                await cancel_proposal(
-                    proposal,
-                    ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD,
-                    voting_message,
+            # Double check to make sure the proposal wasn't accepted or cancelled while the lock was acquired by other thread
+            if not is_relevant_proposal(proposal.voting_message_id):
+                logger.info(
+                    "Proposal became irrelevant while waiting for a lock to cancel the proposal after recovery."
                 )
+                return
+            await cancel_proposal(
+                proposal,
+                ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD,
+                voting_message,
+            )
 
 
 @measure_time_async
@@ -177,34 +181,38 @@ async def start_proposals_coroutines(client, pending_grant_proposals):
         )
         await asyncio.sleep(SLEEP_BEFORE_RECOVERY_SECONDS)
 
-        # Start background tasks to approve pending proposals
-        for proposal in pending_grant_proposals:
-            # Retrieve the voting message
-            voting_message = await get_message(
-                client, VOTING_CHANNEL_ID, proposal.voting_message_id
-            )
-            logger.info(
-                "Recovery: synchronizing voters of id=%d, voting_message_id=%d",
-                proposal.id,
-                proposal.voting_message_id,
-            )
-            # Update voters that were added or removed during the downtime
-            # Update dissenters
-            await sync_voters_db_with_discord(voting_message, proposal, Vote.NO, EMOJI_VOTING_NO)
-
-            # If the proposal wasn't removed, proceed
-            if is_relevant_proposal(proposal.voting_message_id):
-                # Update supporters, if full consensus is enabled for the proposal
-                if proposal.threshold_positive != THRESHOLD_DISABLED_DB_VALUE:
-                    await sync_voters_db_with_discord(
-                        voting_message, proposal, Vote.YES, EMOJI_VOTING_YES
-                    )
-
-                client.loop.create_task(approve_proposal(proposal.voting_message_id))
+        # Additionally, acquire the proposal lock to avoid concurrency errors
+        async with proposal_lock:
+            # Start background tasks to approve pending proposals
+            for proposal in pending_grant_proposals:
+                # Retrieve the voting message
+                voting_message = await get_message(
+                    client, VOTING_CHANNEL_ID, proposal.voting_message_id
+                )
                 logger.info(
-                    "Added task to event loop to approve voting_message_id=%d",
+                    "Recovery: synchronizing voters of id=%d, voting_message_id=%d",
+                    proposal.id,
                     proposal.voting_message_id,
                 )
-                logger.debug("Loaded a proposal: %s", proposal)
+                # Update voters that were added or removed during the downtime
+                # Update dissenters
+                await sync_voters_db_with_discord(
+                    voting_message, proposal, Vote.NO, EMOJI_VOTING_NO
+                )
+
+                # If the proposal wasn't removed, proceed
+                if is_relevant_proposal(proposal.voting_message_id):
+                    # Update supporters, if full consensus is enabled for the proposal
+                    if proposal.threshold_positive != THRESHOLD_DISABLED_DB_VALUE:
+                        await sync_voters_db_with_discord(
+                            voting_message, proposal, Vote.YES, EMOJI_VOTING_YES
+                        )
+
+                    client.loop.create_task(approve_proposal(proposal.voting_message_id))
+                    logger.info(
+                        "Added task to event loop to approve voting_message_id=%d",
+                        proposal.voting_message_id,
+                    )
+                    logger.debug("Loaded a proposal: %s", proposal)
 
         logger.info("Recovery has finished!")
