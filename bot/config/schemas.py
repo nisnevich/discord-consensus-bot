@@ -66,9 +66,9 @@ class Proposals(Base):
     threshold_positive = Column(Integer)
 
     # Reserved for future usage
-    # Holds ProposalAnonymityType value
+    # Holds ProposalVotingAnonymityType value
     anonymity_type = Column(Integer)
-    # Holds ProposalType value
+    # Holds ProposalVotingType value
     proposal_type = Column(Integer)
     # Maximum number of choices that a user can make (for ProposalVotingType.MULTI_CHOICE)
     number_of_choices_allowed = Column(Integer)

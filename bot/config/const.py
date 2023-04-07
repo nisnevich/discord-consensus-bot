@@ -1,7 +1,16 @@
+# =======
+# Imports
+# =======
+
 import logging
 import os
 
 from enum import Enum
+from typing import Optional
+
+# ===========
+# Environment
+# ===========
 
 PROJECT_ROOT = os.getcwd()
 
@@ -36,16 +45,17 @@ class ServerEnvironment(Enum):
     PROD = 2
 
 
-# ==================
-# Critical constants
-# ==================
+# ==============================
+# Critical application constants
+# ==============================
+# Note: this section must be adopted to any new server where the bot will run
 
 # Required Discord permissions: 415538474048
 
 # Beta values
 SERVER_ENVIRONMENT = ServerEnvironment.BETA
 # How long will each proposal be active
-PROPOSAL_DURATION_SECONDS = 300  # 3 days is 259200
+PROPOSAL_DURATION_SECONDS = 30  # 3 days is 259200
 # Minimal number of voters "against" needed to cancel a proposal
 LAZY_CONSENSUS_THRESHOLD_NEGATIVE = 1
 # Is full consensus enabled (requires a minimal number of supporting votes, besides not reaching a
@@ -66,8 +76,16 @@ GRANT_APPLY_CHANNEL_ID = 1069357820392259587
 CHANNELS_TO_REMOVE_HELPER_MESSAGES_AND_REACTIONS = [1069357639802302484, 1069378370665709579]
 BOT_ID = 1069353417207713883
 
+# A user who's responsible for maintaining the bot (used in some error messages to ping)
+RESPONSIBLE_ID = 703574259401883728
+RESPONSIBLE_MENTION = f"<@{RESPONSIBLE_ID}>"
+# If True, will send errors when they occur directly in the channel, otherwise will simply DM the responsible person
+PING_RESPONSIBLE_IN_CHANNEL = False
+# The guild ID of main Eco server
+ECO_GUILD_ID = 768556386404794448
+
 # =====================
-# Bot related constants
+# Application constants
 # =====================
 
 # Invite link with required permissions
@@ -82,16 +100,30 @@ APPROVAL_SLEEP_SECONDS = 5
 #  the bot will reject all proposals and votes for the sake of data integrity.
 SLEEP_BEFORE_RECOVERY_SECONDS = 7
 
+# The bot is using the prefix command syntax instead of interactions, for the reasons of compatibility with existing Eco Discord Accountant bot that has used the prefix "!" for all commands since 2 years. Unfortunately, the interactions module which is mainstreamed by Discord doesn't support the custom prefix for commands, thereby we stick to old good discord.ext.commands (which unfortunately doesn't have tooltips support).
 DISCORD_COMMAND_PREFIX = "!"
 GRANT_PROPOSAL_COMMAND_NAME = 'propose'
-PROPOSAL_COMMAND_ALIASES = ['lazy', 'suggest', 'prop', 'consensus']
+PROPOSAL_COMMAND_ALIASES = ['prop', 'idea', 'lazy', 'suggest', 'consensus', 'proposal']
+PROPOSAL_ANONYMOUS_VOTING_COMMAND_NAME = 'propose-anonymous'
+PROPOSAL_ANONYMOUS_VOTING_ALIASES = [
+    'anonymous-propose',
+    'anonymous-proposal',
+    'proposal-anonymous',
+    'anonymous-voting',
+    'voting-anonymous',
+    'anonymous',
+    'anon',
+    'voting-anon',
+    'anon-voting',
+    'secret-ballot',
+    'secret',
+]
 GRANT_APPLY_COMMAND_NAME = 'grant'
 FREE_FUNDING_COMMAND_NAME = 'tips'
 FREE_FUNDING_COMMAND_ALIASES = [
     'personal',
     'free',
     'my',
-    'easy',
     'gift',
     'love',
     'tip',
@@ -106,7 +138,6 @@ FREE_FUNDING_BALANCE_ALIASES = ['balance-tips', 'personal-balance', 'balance-per
 RESET_BALANCE_COMMAND_NAME = 'reset'
 
 COMMA_LIST_SEPARATOR = ", "  # A comma separator between the items stored in DB or shown in Discord
-RESPONSIBLE_MENTION = "<@703574259401883728>"  # Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping).
 MAX_DESCRIPTION_LENGTH = 1600  # 1600 is determined experimentally; Discord API has some limitations, and this way we can make sure the app will not crash with discord.errors.HTTPException
 MIN_DESCRIPTION_LENGTH = 30  # just some common sense value
 # Maximal amount in any transaction (used primarily to avoid overflow, but also as a limit to unreasonably high amounts)
@@ -127,44 +158,6 @@ EMPTY_ANALYTICS_VALUE = "n/a"
 THRESHOLD_DISABLED_DB_VALUE = -1
 # The name of the file sent to user with !export command
 EXPORT_DATA_FILENAME = "analytics.xlsx"
-
-
-class ProposalResult(Enum):
-    ACCEPTED = 0
-    CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD = 1
-    CANCELLED_BY_PROPOSER = 2
-    CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD = 3
-
-    def __str__(self):
-        if self.value == ProposalResult.ACCEPTED.value:
-            return 'Accepted'
-        elif self.value == ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD.value:
-            return 'Cancelled by reaching threshold of votes against'
-        elif self.value == ProposalResult.CANCELLED_BY_PROPOSER.value:
-            return 'Cancelled by proposer'
-        elif self.value == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD.value:
-            return 'Cancelled by not reaching minimal supporting votes'
-
-
-class Vote(Enum):
-    NO = 0
-    YES = 1
-
-    def __str__(self):
-        if self.value == Vote.YES.value:
-            return 'YES'
-        elif self.value == Vote.NO.value:
-            return 'NO'
-
-
-class ProposalVotingType(Enum):
-    YES_OR_NO = 0
-    MULTI_CHOICE = 1
-
-
-class ProposalAnonymityType(Enum):
-    OPENED = 0
-    REVEAL_VOTERS_AT_THE_END = 1
 
 
 # =============
@@ -218,6 +211,64 @@ HEART_EMOJI_LIST = [
     "😘",
 ]
 
+# ==================
+# Mappings and enums
+# ==================
+
+
+VOTE_EMOJI_MAPPING = {
+    0: EMOJI_VOTING_NO,
+    1: EMOJI_VOTING_YES,
+}
+# Reverse mapping to get vote values from emojis
+EMOJI_VOTE_MAPPING = {emoji: value for value, emoji in VOTE_EMOJI_MAPPING.items()}
+
+
+class Vote(Enum):
+    NO = EMOJI_VOTE_MAPPING[EMOJI_VOTING_NO]
+    YES = EMOJI_VOTE_MAPPING[EMOJI_VOTING_YES]
+
+    def __str__(self):
+        """
+        Returns emoji based on a vote.
+        """
+        return VOTE_EMOJI_MAPPING[self.value] if self.value in VOTE_EMOJI_MAPPING else None
+
+    @classmethod
+    def from_emoji(cls, emoji: str) -> Optional['Vote']:
+        """
+        Returns the vote value based on emoji.
+        """
+        return EMOJI_VOTE_MAPPING[emoji] if emoji in EMOJI_VOTE_MAPPING else None
+
+
+class ProposalVotingType(Enum):
+    YES_OR_NO = 0
+    # Multichoice proposals aren't implemented and reserved for later
+    MULTI_CHOICE = 1
+
+
+class ProposalVotingAnonymityType(Enum):
+    OPENED = 0
+    REVEAL_VOTERS_AT_THE_END = 1
+
+
+class ProposalResult(Enum):
+    ACCEPTED = 0
+    CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD = 1
+    CANCELLED_BY_PROPOSER = 2
+    CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD = 3
+
+    def __str__(self):
+        if self.value == ProposalResult.ACCEPTED.value:
+            return 'Accepted'
+        elif self.value == ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD.value:
+            return 'Cancelled by reaching threshold of votes against'
+        elif self.value == ProposalResult.CANCELLED_BY_PROPOSER.value:
+            return 'Cancelled by proposer'
+        elif self.value == ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD.value:
+            return 'Cancelled by not reaching minimal supporting votes'
+
 
 # ==============
 # Messages texts
@@ -262,7 +313,9 @@ ERROR_MESSAGE_INVALID_ROLE = "Sorry, you need Layer 3 role to use this command. 
 ERROR_MESSAGE_PROPOSAL_WITH_GRANT_VOTING_LINK_REMOVED = "The {amount} grant was applied, but I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_GRANTLESS_PROPOSAL_VOTING_LINK_REMOVED = "The proposal by {author} is applied! However, I couldn't find the voting message in this channel. Was it removed? {link_to_original_message} cc {RESPONSIBLE_MENTION}"
 ERROR_MESSAGE_AUTHOR_SUPPORTING_OWN_PROPOSAL = "Sorry, but supporting your own proposal is a no-no."
-ERROR_MESSAGE_ALREADY_VOTED = "It appears that you have already voted on this proposal. Before casting another vote, please ensure that your previous vote has been removed: {link_to_voting_message}"
+ERROR_MESSAGE_ALREADY_VOTED = (
+    "You have already voted {reaction} previously on this proposal: {link_to_voting_message}"
+)
 ERROR_MESSAGE_ORIGINAL_MESSAGE_MISSING = (
     "Unable to find the original proposers message, probably it was removed."
 )
@@ -322,7 +375,7 @@ For questions, ideas or partnership, reach out to {RESPONSIBLE_MENTION}. The pro
 """
 HELP_MESSAGE_VOTED_INCORRECTLY = "Oops, looks like you're trying to vote, but on a wrong message! 😕 To make your vote count, please head to the voting message in #l3-voting: {voting_link}."
 HELP_MESSAGE_VOTED_FOR = """
-Your vote supporting a proposal of {author} has been counted. {vote_emoji} The voting ends {countdown}. If you change your mind later, you can remove your vote from {voting_link}
+Your vote supporting a proposal of {author} has been counted! {vote_emoji} The voting ends {countdown}. If you change your mind later, you can remove your vote from {voting_link}
 """
 HELP_MESSAGE_VOTED_AGAINST = """
 Your vote against a proposal of {author} has been counted. The voting ends {countdown}. Make sure to explain why you're against it, be clear, concise and respectful.
@@ -339,11 +392,13 @@ FREE_FUNDING_BALANCE_MESSAGE = "You have {balance} 'tips' remaining this season.
 # ======================
 
 PROPOSAL_CANCELLED_VOTING_CHANNEL = {
-    ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Proposal cancelled due to opposition from {threshold} members - {voters_list}: {link_to_original_message}",
-    ProposalResult.CANCELLED_BY_PROPOSER: ":leaves: Proposal cancelled by author ({author}): {link_to_original_message}",
-    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "The proposal didn't pass because it lacked enough support. {supporters_number} member(s) voted {yes_voting_reaction}{supporters_list}, but it needs at least {threshold} supporter(s): {link_to_original_message}",
+    ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Proposal was cancelled due to opposition from {threshold} members - {voters_list}: {link_to_original_message}",
+    ProposalResult.CANCELLED_BY_PROPOSER: ":leaves: Proposal was cancelled by author {author}: {link_to_original_message}",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Proposal didn't pass because it lacked enough support. {supporters_number} member(s) voted {yes_voting_reaction}{supporters_list}, but it needs at least {threshold} supporter(s): {link_to_original_message}",
 }
 PROPOSAL_ACCEPTED_SUPPORTED_BY_VOTING_CHANNEL_EDIT = "*Supported by*: {supporters_list}\n"
+OPENED_VOTING_CHANNEL_EDIT = ""
+REVEAL_VOTERS_AT_THE_END_VOTING_CHANNEL_EDIT = "(voters hidden)"
 
 # =====================
 # Proposals with grants
@@ -373,7 +428,7 @@ NEW_GRANT_PROPOSAL_RESPONSE = """
 Alright, let's make this happen! The proposal has been submitted: {voting_link}
 """
 NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:rocket:{amount_reaction} **Active grant proposal** by {author}
+:rocket:{amount_reaction} **Active grant proposal** by {author} {anonymity}
 {countdown} will grant a total of {amount_sum} points: {description}
 """
 
@@ -386,7 +441,7 @@ GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The grant has been given!",
     ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
-    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Sorry, your proposal didn't receive enough support and was cancelled. Don't be disheartened, and feel free to submit new ideas. Your contributions are valued, and we look forward to seeing more great ideas from you in the future.",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Sorry, your proposal didn't receive enough support. Don't be disheartened, and feel free to submit new ideas. Your contributions are valued, and we look forward to seeing more great ideas from you in the future.",
 }
 
 # =====================
@@ -396,7 +451,7 @@ GRANT_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
 # Active voting
 NEW_GRANTLESS_PROPOSAL_RESPONSE = "Nice one, let's see what the community thinks: {voting_link}"
 NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE = """
-:rocket: **Active proposal** (no grant) by {author}
+:rocket: **Active proposal** (no grant) by {author} {anonymity}
 {countdown}: {description}
 """
 
@@ -409,5 +464,5 @@ GRANTLESS_PROPOSAL_RESULT_PROPOSER_RESPONSE = {
     ProposalResult.ACCEPTED: "Hooray! :tada: The proposal has been accepted!",
     ProposalResult.CANCELLED_BY_REACHING_NEGATIVE_THRESHOLD: "Sorry, {author}, but it looks like {threshold} members weren't on board with your proposal: {voting_link}. No hard feelings, though! Take some time to reflect, make some tweaks, and try again with renewed vigor. :dove:",
     ProposalResult.CANCELLED_BY_PROPOSER: "{author} has cancelled the proposal.",
-    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Sorry, your proposal didn't receive enough support and was cancelled. Don't be disheartened, and feel free to submit new ideas. Your contributions are valued, and we look forward to seeing more great ideas from you in the future.",
+    ProposalResult.CANCELLED_BY_NOT_REACHING_POSITIVE_THRESHOLD: "Sorry, your proposal didn't receive enough support. Don't be disheartened, and feel free to submit new ideas. Your contributions are valued, and we look forward to seeing more great ideas from you in the future.",
 }

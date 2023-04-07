@@ -17,7 +17,7 @@ from bot.utils.proposal_utils import (
 )
 from bot.config.logging_config import log_handler, console_handler
 from bot.utils.validation import validate_roles, validate_free_transaction
-from bot.utils.discord_utils import get_discord_client
+from bot.utils.discord_utils import get_discord_client, send_dm
 from bot.utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
     get_discord_countdown_plus_delta,
@@ -242,9 +242,16 @@ async def free_funding_transact_command(ctx, *args):
     except Exception as e:
         try:
             # Try replying in Discord
-            await ctx.message.reply(
+            error_message = (
                 f"An unexpected error occurred during transaction. cc {RESPONSIBLE_MENTION}"
             )
+            if PING_RESPONSIBLE_IN_CHANNEL:
+                await ctx.message.reply(error_message)
+            else:
+                await send_dm(
+                    ctx.guild.id, RESPONSIBLE_ID, f"{error_message} {ctx.message.jump_url}"
+                )
+
         except Exception as e:
             logger.critical("Unable to reply in the chat that a critical error has occurred.")
 
