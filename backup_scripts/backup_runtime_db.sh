@@ -7,7 +7,7 @@ CURRENT_DATETIME="$(date +%Y-%m-%d-%H-%M-%S)"
 # Name of the bucket
 BUCKET="consensus-bot-dbs"
 # Name of the database to backup
-RUNTIME_DB="consensus-bot.db"
+RUNTIME_DB="db/consensus-bot.db"
 # Create log file if it's missing
 mkdir -p "$(dirname "$LOG_BACKUP_RUNTIME_FILE_PATH")"
 touch "$LOG_BACKUP_RUNTIME_FILE_PATH"
