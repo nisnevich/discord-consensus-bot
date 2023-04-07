@@ -76,8 +76,7 @@ BOT_ID = 1061680925425012756
 # A user who's responsible for maintaining the bot (used in some error messages to ping)
 RESPONSIBLE_ID = 703574259401883728
 RESPONSIBLE_MENTION = f"<@{RESPONSIBLE_ID}>"
-# If True, will send errors when they occur directly in the channel, otherwise will simply DM the
-# responsible person
+# If True, will send errors when they occur directly in the channel, otherwise will simply DM the responsible person
 PING_RESPONSIBLE_IN_CHANNEL = False
 # The guild ID of main Eco server
 ECO_GUILD_ID = 768556386404794448
