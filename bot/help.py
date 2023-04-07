@@ -1,6 +1,6 @@
 from bot.config.const import *
 from bot.config.logging_config import log_handler, console_handler
-from bot.utils.discord_utils import get_discord_client
+from bot.utils.discord_utils import get_discord_client, send_dm
 from bot.utils.validation import validate_roles
 from bot.utils.db_utils import DBUtil
 from bot.utils.formatting_utils import get_amount_to_print, get_nickname_by_id_or_mention
@@ -71,9 +71,13 @@ async def send_free_funding_balance(ctx):
     except Exception as e:
         try:
             # Try replying in Discord
-            await ctx.message.reply(
-                f"An unexpected error occurred when sending free funding balance. cc {RESPONSIBLE_MENTION}"
-            )
+            error_message = f"An unexpected error occurred when sending free funding balance. cc {RESPONSIBLE_MENTION}"
+            if PING_RESPONSIBLE_IN_CHANNEL:
+                await ctx.message.reply(error_message)
+            else:
+                await send_dm(
+                    ctx.guild.id, RESPONSIBLE_ID, f"{error_message} {ctx.message.jump_url}"
+                )
         except Exception as e:
             logger.critical("Unable to reply in the chat that a critical error has occurred.")
 
@@ -102,9 +106,15 @@ async def help(ctx):
     except Exception as e:
         try:
             # Try replying in Discord
-            await ctx.message.reply(
+            error_message = (
                 f"An unexpected error occurred when sending help. cc {RESPONSIBLE_MENTION}"
             )
+            if PING_RESPONSIBLE_IN_CHANNEL:
+                await ctx.message.reply(error_message)
+            else:
+                await send_dm(
+                    ctx.guild.id, RESPONSIBLE_ID, f"{error_message} {ctx.message.jump_url}"
+                )
         except Exception as e:
             logger.critical("Unable to reply in the chat that a critical error has occurred.")
 
@@ -116,4 +126,3 @@ async def help(ctx):
             ctx.message.author.mention,
             exc_info=True,
         )
-

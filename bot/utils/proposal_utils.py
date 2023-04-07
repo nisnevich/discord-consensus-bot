@@ -325,9 +325,12 @@ async def save_proposal_to_history(db, proposal, result, remove_from_main_db=Tru
     except Exception as e:
         try:
             grant_channel = client.get_channel(GRANT_APPLY_CHANNEL_ID)
-            await grant_channel.send(
-                f"An unexpected error occurred when saving proposal history. cc {RESPONSIBLE_MENTION}"
-            )
+
+            error_message = f"An unexpected error occurred when saving proposal history. cc {RESPONSIBLE_MENTION}"
+            if PING_RESPONSIBLE_IN_CHANNEL:
+                await grant_channel.send(error_message)
+            else:
+                await send_dm(ECO_GUILD_ID, RESPONSIBLE_ID, f"{error_message}")
         except Exception as e:
             logger.critical("Unable to reply in the chat that a critical error has occurred.")
 

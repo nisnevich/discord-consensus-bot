@@ -20,7 +20,7 @@ from bot.propose import (
 )
 from bot.utils.db_utils import DBUtil
 from bot.utils.dev_utils import measure_time_async
-from bot.utils.discord_utils import get_message
+from bot.utils.discord_utils import get_message, send_dm
 from bot.utils.proposal_utils import (
     is_relevant_proposal,
     find_matching_voter,

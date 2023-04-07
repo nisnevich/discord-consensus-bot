@@ -73,8 +73,14 @@ VOTING_CHANNEL_ID = 1067119414731886645
 GRANT_APPLY_CHANNEL_ID = 1067127829654937692
 # The ID of the bot
 BOT_ID = 1061680925425012756
-# Nickname of a person who's responsible for maintaining the bot (used in some error messages to ping)
-RESPONSIBLE_MENTION = "<@703574259401883728>"
+# A user who's responsible for maintaining the bot (used in some error messages to ping)
+RESPONSIBLE_ID = 703574259401883728
+RESPONSIBLE_MENTION = f"<@{RESPONSIBLE_ID}>"
+# If True, will send errors when they occur directly in the channel, otherwise will simply DM the
+# responsible person
+PING_RESPONSIBLE_IN_CHANNEL = False
+# The guild ID of main Eco server
+ECO_GUILD_ID = 768556386404794448
 
 # =====================
 # Application constants

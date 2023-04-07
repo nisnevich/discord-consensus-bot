@@ -24,7 +24,7 @@ from bot.utils.validation import (
     validate_financial_proposal,
     validate_not_financial_proposal,
 )
-from bot.utils.discord_utils import get_discord_client, get_message
+from bot.utils.discord_utils import get_discord_client, get_message, send_dm
 from bot.utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
     get_discord_countdown_plus_delta,
@@ -309,9 +309,16 @@ async def parse_propose_command(ctx, proposal_voting_type, proposal_voting_anony
     except Exception as e:
         try:
             # Try replying in Discord
-            await ctx.message.reply(
+            error_message = (
                 f"An unexpected error occurred when adding proposal. cc {RESPONSIBLE_MENTION}"
             )
+            if PING_RESPONSIBLE_IN_CHANNEL:
+                await ctx.message.reply(error_message)
+            else:
+                await send_dm(
+                    ctx.guild.id, RESPONSIBLE_ID, f"{error_message} {ctx.message.jump_url}"
+                )
+
         except Exception as e:
             logger.critical("Unable to reply in the chat that a critical error has occurred.")
 

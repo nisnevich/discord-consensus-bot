@@ -6,7 +6,7 @@ from bot.utils.proposal_utils import (
 from bot.utils.db_utils import DBUtil
 from bot.config.const import *
 from bot.config.logging_config import log_handler, console_handler
-from bot.utils.discord_utils import get_discord_client, get_message, remove_reactions
+from bot.utils.discord_utils import get_discord_client, get_message, remove_reactions, send_dm
 from bot.utils.formatting_utils import get_amount_to_print, get_mention_by_id
 
 
@@ -167,9 +167,13 @@ async def grant(voting_message_id):
             channel = client.get_channel(proposal.channel_id)
             original_message = await channel.fetch_message(voting_message_id)
 
-            await original_message.reply(
-                f"An unexpected error occurred when approving the proposal. cc {RESPONSIBLE_MENTION}"
-            )
+            error_message = f"An unexpected error occurred when approving the proposal. cc {RESPONSIBLE_MENTION}"
+            if PING_RESPONSIBLE_IN_CHANNEL:
+                await original_message.reply(error_message)
+            else:
+                await send_dm(
+                    ECO_GUILD_ID, RESPONSIBLE_ID, f"{error_message} {original_message.jump_url}"
+                )
         except Exception as e:
             logger.critical("Unable to reply in the chat that a critical error has occurred.")
 

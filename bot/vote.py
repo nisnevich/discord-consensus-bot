@@ -139,9 +139,11 @@ async def on_raw_reaction_remove(payload):
         try:
             # Try replying in Discord
             message = await get_message(client, payload.channel_id, payload.message_id)
-            await message.reply(
-                f"An unexpected error occurred when handling reaction removal. cc {RESPONSIBLE_MENTION}"
-            )
+            error_message = f"An unexpected error occurred when handling reaction removal. cc {RESPONSIBLE_MENTION}"
+            if PING_RESPONSIBLE_IN_CHANNEL:
+                await message.reply(error_message)
+            else:
+                await send_dm(ctx.guild.id, RESPONSIBLE_ID, f"{error_message} {message.jump_url}")
         except Exception as e:
             logger.critical("Unable to reply in the chat that a critical error has occurred.")
 
@@ -458,9 +460,11 @@ async def on_raw_reaction_add(payload):
             # Try replying in Discord
             message = await get_message(client, payload.channel_id, payload.message_id)
 
-            await message.reply(
-                f"An unexpected error occurred when handling reaction adding. cc {RESPONSIBLE_MENTION}"
-            )
+            error_message = f"An unexpected error occurred when handling reaction adding. cc {RESPONSIBLE_MENTION}"
+            if PING_RESPONSIBLE_IN_CHANNEL:
+                await message.reply(error_message)
+            else:
+                await send_dm(ctx.guild.id, RESPONSIBLE_ID, f"{error_message} {message.jump_url}")
         except Exception as e:
             logger.critical("Unable to reply in the chat that a critical error has occurred.")
 
