@@ -58,6 +58,9 @@ def is_valid_language(text, threshold=MIN_ENGLISH_TEXT_DESCRIPTION_PROPORTION) -
             logger.debug(f"{word} is English")
         else:
             logger.debug(f"{word} is not English")
+    # NPE hotfix
+    if float(len(words)) <= 0:
+        return False
     result = english_word_count / float(len(words)) >= threshold
     logger.debug(
         "english_word_count=%d, len(words)=%d, result=%s", english_word_count, len(words), result

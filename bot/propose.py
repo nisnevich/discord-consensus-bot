@@ -24,7 +24,7 @@ from bot.utils.validation import (
     validate_financial_proposal,
     validate_not_financial_proposal,
 )
-from bot.utils.discord_utils import get_discord_client, get_message
+from bot.utils.discord_utils import get_discord_client, get_message, send_dm
 from bot.utils.formatting_utils import (
     get_discord_timestamp_plus_delta,
     get_discord_countdown_plus_delta,
@@ -62,21 +62,22 @@ async def approve_proposal(voting_message_id):
         # Sleep until the next check
         await asyncio.sleep(APPROVAL_SLEEP_SECONDS)
     try:
-        # If full consensus is enabled for this proposal, and the minimal number of supporting votes is not reached, cancel the proposal
-        if (
-            proposal.threshold_positive != THRESHOLD_DISABLED_DB_VALUE
-            and len(get_voters_with_vote(proposal, Vote.YES)) < proposal.threshold_positive
-        ):
-            # Retrieve the voting message
-            voting_message = await get_message(client, VOTING_CHANNEL_ID, voting_message_id)
-            # Acquire the proposal lock when accepting or cancelling to avoid concurrency errors
-            async with proposal_lock:
-                # Double check to make sure the proposal wasn't accepted or cancelled while the lock was acquired by other thread
-                if not is_relevant_proposal(voting_message_id):
-                    logger.info(
-                        "Proposal became irrelevant while waiting for a lock to cancel the proposal by not reaching enough support."
-                    )
-                    return
+        # Acquire the proposal lock when accepting or cancelling to avoid concurrency errors
+        async with proposal_lock:
+            # Double check to make sure the proposal wasn't accepted or cancelled while the lock was acquired by other thread
+            if not is_relevant_proposal(voting_message_id):
+                logger.info(
+                    "Proposal became irrelevant while waiting for a lock to accept the proposal (or cancel it by not reaching enough support)."
+                )
+                return
+
+            # If full consensus is enabled for this proposal, and the minimal number of supporting votes is not reached, cancel the proposal
+            if (
+                proposal.threshold_positive != THRESHOLD_DISABLED_DB_VALUE
+                and len(get_voters_with_vote(proposal, Vote.YES)) < proposal.threshold_positive
+            ):
+                # Retrieve the voting message
+                voting_message = await get_message(client, VOTING_CHANNEL_ID, voting_message_id)
                 # Cancel the proposal
                 await cancel_proposal(
                     proposal,
@@ -84,29 +85,51 @@ async def approve_proposal(voting_message_id):
                     voting_message,
                 )
                 return
-        # Acquire the proposal lock when accepting or cancelling to avoid concurrency errors
-        async with proposal_lock:
-            # Double check to make sure the proposal wasn't accepted or cancelled while the lock was acquired by other thread
-            if not is_relevant_proposal(voting_message_id):
-                logger.info(
-                    "Proposal became irrelevant while waiting for a lock to accept the proposal."
-                )
-                return
             # Apply the grant
             await grant(voting_message_id)
+
     except ValueError as e:
         logger.error(f"Error while removing grant proposal: {e}")
 
 
-async def submit_proposal(ctx, description, finance_recipients=None, total_amount=None):
+async def submit_proposal(
+    ctx,
+    proposal_voting_type: ProposalVotingType,
+    proposal_voting_anonymity_type: ProposalVotingAnonymityType,
+    description,
+    finance_recipients=None,
+    total_amount=None,
+):
+    f"""
+    Submit a proposal. The proposal will be approved after {PROPOSAL_DURATION_SECONDS}
+    seconds unless {LAZY_CONSENSUS_THRESHOLD_NEGATIVE} members with {ROLE_IDS_ALLOWED} roles react with
+    {EMOJI_VOTING_NO} emoji to the proposal message which will be posted by the bot in the
+    {VOTING_CHANNEL_ID} channel. Also, if FULL_CONSENSUS_ENABLED is True, the reactions
+    EMOJI_VOTING_YES and EMOJI_VOTING_NO will appear below the voting message, and the proposal will
+    need to have at least FULL_CONSENSUS_THRESHOLD_POSITIVE supporting votes in order to pass.
+    Parameters:
+        ctx (commands.Context): The context in which the command was called.
+        proposal_voting_type: Value from ProposalVotingType, whether the proposal is binary (yes or
+        no), multichoice or something else.
+        proposal_voting_anonymity_type: Value from ProposalVotingAnonymityType, whether the voters will
+        be opened, or will be revealed after the proposal timer will finish.
+        description: The text description of a proposal given by the proposer.
+        finance_recipients: If a proposal has a grant, a list of FinanceRecipients objects parsed
+        from the proposal text, otherwise None.
+        total_amount: If a proposal has a grant, a total amount determined by summing up all
+        recipients multiplied by the amount to give to each, otherwise None.
+    """
     if not finance_recipients:
         # Validity checks
         if not await validate_not_financial_proposal(ctx.message, description):
             return
         # Add proposal to the voting channel
         voting_channel_text = NEW_GRANTLESS_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
-            countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
             author=ctx.message.author.mention,
+            anonymity=OPENED_VOTING_CHANNEL_EDIT
+            if proposal_voting_anonymity_type == ProposalVotingAnonymityType.OPENED
+            else REVEAL_VOTERS_AT_THE_END_VOTING_CHANNEL_EDIT,
+            countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
             description=description,
         )
         # Send proposal to the voting channel
@@ -126,6 +149,9 @@ async def submit_proposal(ctx, description, finance_recipients=None, total_amoun
         voting_channel_text = NEW_GRANT_PROPOSAL_VOTING_CHANNEL_MESSAGE.format(
             amount_reaction=NEW_PROPOSAL_WITH_GRANT_AMOUNT_REACTION(total_amount),
             author=ctx.message.author.mention,
+            anonymity=OPENED_VOTING_CHANNEL_EDIT
+            if proposal_voting_anonymity_type == ProposalVotingAnonymityType.OPENED
+            else REVEAL_VOTERS_AT_THE_END_VOTING_CHANNEL_EDIT,
             countdown=get_discord_countdown_plus_delta(PROPOSAL_DURATION_SECONDS),
             amount_sum=get_amount_to_print(total_amount),
             description=description,
@@ -165,6 +191,8 @@ async def submit_proposal(ctx, description, finance_recipients=None, total_amoun
         threshold_positive=FULL_CONSENSUS_THRESHOLD_POSITIVE
         if FULL_CONSENSUS_ENABLED
         else THRESHOLD_DISABLED_DB_VALUE,
+        proposal_type=proposal_voting_type.value,
+        anonymity_type=proposal_voting_anonymity_type.value,
     )
     # Add proposal to DB
     await add_proposal(new_proposal, db)
@@ -183,20 +211,18 @@ async def submit_proposal(ctx, description, finance_recipients=None, total_amoun
     logger.info("Added task to event loop to approve message_id=%d", voting_message.id)
 
 
-@client.command(name=GRANT_PROPOSAL_COMMAND_NAME, aliases=PROPOSAL_COMMAND_ALIASES)
-async def propose_command(ctx, *args):
+async def parse_propose_command(ctx, proposal_voting_type, proposal_voting_anonymity_type, *args):
     f"""
-    Submit a grant proposal. The proposal will be approved after {PROPOSAL_DURATION_SECONDS}
-    seconds unless {LAZY_CONSENSUS_THRESHOLD_NEGATIVE} members with {ROLE_IDS_ALLOWED} roles react with
-    {EMOJI_VOTING_NO} emoji to the proposal message which will be posted by the bot in the
-    {VOTING_CHANNEL_ID} channel.
+    Parses the proposal command, extracting all necessary arguments.
     Parameters:
         ctx (commands.Context): The context in which the command was called.
-        args: The description of grant being proposed. It may include "mention" and "amount", or it can be a grantless proposal. These two are distinguished as simply as:
-            1) If the first argument is a mention of a discord user - consider it a grant proposal (and validate accordingly)
-            2) If it doesn't start with a mention - consider it grantless
+        proposal_voting_anonymity_type: True or False, whether the voters will be opened, or will be revealed after the
+        proposal timer will finish.
+        args: The description of grant being proposed. It may include "mentions" and "amount", or it
+        can be a grantless proposal. If a sequence of Discord mentions followed by the amount to
+        give is found, the proposal is considered with a grant, otherwise grantless. The amount can be
+        an integer or a fractional number with "." separator.
     """
-
     try:
         logger.debug("Proposal received: %s", ctx.message.content)
 
@@ -264,18 +290,35 @@ async def propose_command(ctx, *args):
                 total_amount += amount * len(ids)
             # Submit the financial proposal
             await submit_proposal(
-                ctx, description, finance_recipients=finance_recipients, total_amount=total_amount
+                ctx,
+                proposal_voting_type,
+                proposal_voting_anonymity_type,
+                description,
+                finance_recipients=finance_recipients,
+                total_amount=total_amount,
             )
         else:
             # Submit the simple proposal
-            await submit_proposal(ctx, description)
+            await submit_proposal(
+                ctx,
+                proposal_voting_type,
+                proposal_voting_anonymity_type,
+                description,
+            )
 
     except Exception as e:
         try:
             # Try replying in Discord
-            await ctx.message.reply(
+            error_message = (
                 f"An unexpected error occurred when adding proposal. cc {RESPONSIBLE_MENTION}"
             )
+            if PING_RESPONSIBLE_IN_CHANNEL:
+                await ctx.message.reply(error_message)
+            else:
+                await send_dm(
+                    ctx.guild.id, RESPONSIBLE_ID, f"{error_message} {ctx.message.jump_url}"
+                )
+
         except Exception as e:
             logger.critical("Unable to reply in the chat that a critical error has occurred.")
 
@@ -287,3 +330,33 @@ async def propose_command(ctx, *args):
             ctx.message.author.mention,
             exc_info=True,
         )
+
+
+@client.command(
+    name=PROPOSAL_ANONYMOUS_VOTING_COMMAND_NAME, aliases=PROPOSAL_ANONYMOUS_VOTING_ALIASES
+)
+async def command_propose_anonymous_voting(ctx, *args):
+    """
+    Submit a proposal with anonymous voting. Votes will be hidden while the voting is active, but
+    once the timer will have been completed, votes will be revealed.
+    """
+    await parse_propose_command(
+        ctx,
+        ProposalVotingType.YES_OR_NO,
+        ProposalVotingAnonymityType.REVEAL_VOTERS_AT_THE_END,
+        args,
+    )
+
+
+@client.command(name=GRANT_PROPOSAL_COMMAND_NAME, aliases=PROPOSAL_COMMAND_ALIASES)
+async def command_propose_opened_voting(ctx, *args):
+    """
+    Submit a proposal with opened voting. All added votes will be immediately visible for all
+    members (who can see the voting message itself).
+    """
+    await parse_propose_command(
+        ctx,
+        ProposalVotingType.YES_OR_NO,
+        ProposalVotingAnonymityType.OPENED,
+        args,
+    )
