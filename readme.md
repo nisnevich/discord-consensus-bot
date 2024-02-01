@@ -11,9 +11,9 @@ These instructions will get you a copy of the project up and running on your mac
 
 1. Clone the project and cd into it:
 ```
-git clone https://github.com/nisnevich/discord-lazy-consensus-bot
+git clone https://github.com/nisnevich/discord-consensus-bot
 
-cd discord-lazy-consensus-bot
+cd discord-consensus-bot
 ```
 
 2. Create token file with your bot's [token](https://discord.com/developers/applications) integrated with your server:
